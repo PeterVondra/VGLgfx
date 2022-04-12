@@ -1,0 +1,12 @@
+VGL-Renderer, build the renderer
+Virtual Machine, Trap routines
+AI, improve hopfield network¨
+AI-NN, improve neural network (extremely buggy)
+Networking, improve server and client communication
+
+Not Yet Implemented
+Create a Bug Tracker
+Create a Linux Debugger
+Create a NES Emulator
+Create a Regex Engine
+Create a Database
