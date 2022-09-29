@@ -9,7 +9,7 @@ Vulkan/OpenGL rendering engine for both 2D and 3D
 &emsp;  -Deferred Rendering.\
 &emsp;  -Basic 2D rendering.\
 &emsp;  -2D Phsyics Enginge eg. impulse resolution with rotational velocity and impulses, using Separating Axis Theorem for collision detection.\
-&emsp; # __-Edit scenes via the vgl editor__\
+&emsp;  ___-Edit scenes via the vgl editor___\
 &emsp;&emsp;    -Add light casters.\
 &emsp;&emsp;    -Editing materials eg. Albedo, Displacement, Normals, Metallic, Roughness and Ambient textures\
 &emsp;&emsp;    -Loading OBJ files (custom obj loader)\
@@ -18,7 +18,7 @@ Vulkan/OpenGL rendering engine for both 2D and 3D
 &emsp;&emsp;    -Configure graphical features\
 &emsp;&emsp;    -Add basic shapes eg. Spheres (UV), Cubes and Grids.\
 &emsp;&emsp;    -Basic Content Browser to directly load textures, obj models or scenes.\
-&emsp;  # __-Graphical Features__\
+&emsp;  ___-Graphical Features___\
 &emsp;&emsp;    -Physically Based Rendering.\
 &emsp;&emsp;    -Screen Space Ambient Occlusion (SSAO)\
 &emsp;&emsp;    -Directional Shadow mapping + Summed-Area Variance Shadow Maps(Nvidia, GPU Gems 3 Chapter 8.), also includes basic PCF Filtering\
