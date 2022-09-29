@@ -1,5 +1,5 @@
 ### __VGL-Engine__
-Vulkan/OpenGL rendering engine for both 2D and 3D
+> Vulkan/OpenGL rendering engine for both 2D and 3D
 
 ## __Enginge Features:__
 &emsp;  -Built on Vulkan API (OpenGL not currently implemented)\
@@ -9,9 +9,9 @@ Vulkan/OpenGL rendering engine for both 2D and 3D
 &emsp;  -Deferred Rendering.\
 &emsp;  -Basic 2D rendering.\
 &emsp;  -2D Phsyics Enginge eg. impulse resolution with rotational velocity and impulses, using Separating Axis Theorem for collision detection.\
-&emsp; 1. ___-Edit scenes via the vgl editor___\
-&emsp;&emsp;    1. -Add light casters.\
-&emsp;&emsp;    2. -Editing materials eg. Albedo, Displacement, Normals, Metallic, Roughness and Ambient textures\
+&emsp;  ___-Edit scenes via the vgl editor___\
+&emsp;&emsp;     -Add light casters.\
+&emsp;&emsp;     -Editing materials eg. Albedo, Displacement, Normals, Metallic, Roughness and Ambient textures\
 &emsp;&emsp;    -Loading OBJ files (custom obj loader)\
 &emsp;&emsp;    -Translation, Scaling and Rotating\
 &emsp;&emsp;    -Interactable virtual camera, includes both First person and 3rd person view\
