@@ -1,5 +1,5 @@
 ### __VGL-Engine__
-> C++ Vulkan/OpenGL rendering engine for both 2D and 3D
+> C++ Vulkan/OpenGL graphics engine for both 2D and 3D
 
 ## __Enginge Features:__
 - Built on Vulkan API (OpenGL not implemented at the moment)
