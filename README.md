@@ -1,15 +1,15 @@
-# VGL-Engine
+### VGL-Engine
 Vulkan/OpenGL rendering engine for both 2D and 3D
 
-__Enginge Features:__\
-&emsp;  *-Built on Vulkan API (OpenGL not currently implemented)\
+##__Enginge Features:__\
+&emsp;  -Built on Vulkan API (OpenGL not currently implemented)\
 &emsp;  -Custom Math Library.\
 &emsp;  -Load/Save scenes (editable in .yaml format)\
 &emsp;  -ImGui integration\
 &emsp;  -Deferred Rendering.\
 &emsp;  -Basic 2D rendering.\
 &emsp;  -2D Phsyics Enginge eg. impulse resolution with rotational velocity and impulses, using Separating Axis Theorem for collision detection.\
-&emsp;  __-Edit scenes via the vgl editor__\
+&emsp; #__-Edit scenes via the vgl editor__\
 &emsp;&emsp;    -Add light casters.\
 &emsp;&emsp;    -Editing materials eg. Albedo, Displacement, Normals, Metallic, Roughness and Ambient textures\
 &emsp;&emsp;    -Loading OBJ files (custom obj loader)\
@@ -18,7 +18,7 @@ __Enginge Features:__\
 &emsp;&emsp;    -Configure graphical features\
 &emsp;&emsp;    -Add basic shapes eg. Spheres (UV), Cubes and Grids.\
 &emsp;&emsp;    -Basic Content Browser to directly load textures, obj models or scenes.\
-&emsp;  __-Graphical Features__\
+&emsp;  #__-Graphical Features__\
 &emsp;&emsp;    -Physically Based Rendering.\
 &emsp;&emsp;    -Screen Space Ambient Occlusion (SSAO)\
 &emsp;&emsp;    -Directional Shadow mapping + Summed-Area Variance Shadow Maps(Nvidia, GPU Gems 3 Chapter 8.), also includes basic PCF Filtering\
