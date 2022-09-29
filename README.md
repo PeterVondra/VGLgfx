@@ -2,13 +2,13 @@
 > Vulkan/OpenGL rendering engine for both 2D and 3D
 
 ## __Enginge Features:__
-&emsp;  -Built on Vulkan API (OpenGL not currently implemented)\
-&emsp;  -Custom Math Library.\
-&emsp;  -Load/Save scenes (editable in .yaml format)\
-&emsp;  -ImGui integration\
-&emsp;  -Deferred Rendering.\
-&emsp;  -Basic 2D rendering.\
-&emsp;  -2D Phsyics Enginge eg. impulse resolution with rotational velocity and impulses, using Separating Axis Theorem for collision detection.\
+&emsp;  - Built on Vulkan API (OpenGL not currently implemented)\
+&emsp;  - Custom Math Library.\
+&emsp;  - Load/Save scenes (editable in .yaml format)\
+&emsp;  - ImGui integration\
+&emsp;  - Deferred Rendering.\
+&emsp;  - Basic 2D rendering.\
+&emsp;  - 2D Phsyics Enginge eg. impulse resolution with rotational velocity and impulses, using Separating Axis Theorem for collision detection.\
 &emsp;  ___-Edit scenes via the vgl editor___\
 &emsp;&emsp;     -Add light casters.\
 &emsp;&emsp;     -Editing materials eg. Albedo, Displacement, Normals, Metallic, Roughness and Ambient textures\
