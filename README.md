@@ -1,7 +1,7 @@
 ### VGL-Engine
 Vulkan/OpenGL rendering engine for both 2D and 3D
 
-##__Enginge Features:__\
+## __Enginge Features:__\
 &emsp;  -Built on Vulkan API (OpenGL not currently implemented)\
 &emsp;  -Custom Math Library.\
 &emsp;  -Load/Save scenes (editable in .yaml format)\
