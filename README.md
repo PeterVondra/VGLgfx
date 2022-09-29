@@ -32,7 +32,7 @@
   - Currently working on Screen Space Reflection + Screens Space Refraction. (SSR)
   
   
-___(Currently not running, still refactoring)___
+___(Currently not running, still needs refactoring)___
   
 
 ## __Screenshots from previous working versions:__
