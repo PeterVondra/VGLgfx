@@ -35,7 +35,7 @@
 (Currently not running, still refactoring)
   
 
-## __Screenshots from working previous versions:__
+## __Screenshots from previous working versions:__
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(174).png?raw=true)
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(179).png?raw=true)
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(183).png?raw=true)
