@@ -9,7 +9,7 @@
 - Deferred Rendering.\
 - Basic 2D rendering.\
 - 2D Phsyics Enginge eg. impulse resolution with rotational velocity and impulses, using Separating Axis Theorem for collision detection.\
-- ___-Edit scenes via the vgl editor___\
+- __Edit scenes via the vgl editor__
   - Add light casters.\
   - Editing materials eg. Albedo, Displacement, Normals, Metallic, Roughness and Ambient textures\
   - Loading OBJ files (custom obj loader)\
@@ -18,7 +18,7 @@
   - Configure graphical features\
   - Add basic shapes eg. Spheres (UV), Cubes and Grids.\
   - Basic Content Browser to directly load textures, obj models or scenes.\
-- ___-Graphical Features___\
+- __Graphical Features__
   - Physically Based Rendering.\
   - Screen Space Ambient Occlusion (SSAO)\
   - Directional Shadow mapping + Summed-Area Variance Shadow Maps(Nvidia, GPU Gems 3 Chapter 8.), also includes basic PCF Filtering\
