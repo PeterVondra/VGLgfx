@@ -5,6 +5,7 @@
 - Built on Vulkan API (OpenGL not implemented at the moment)
 - Custom Math Library.
 - Load/Save scenes (editable in .yaml format)
+- Custom Entity Component System (ECS)
 - ImGui integration
 - Deferred Rendering.
 - Basic 2D rendering.
