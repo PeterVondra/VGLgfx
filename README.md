@@ -30,7 +30,7 @@ Features:\
 &emsp;&emsp;    -Auto Adaptive Exposure(HDR + Gamma Correction)\
 &emsp;&emsp;    -Other features like Filmic noise, vignette and other post-processing effects.\
 &emsp;&emsp;    -Currently working on Screen Space Reflection + Screens Space Refraction. (SSR)\
-  
+\\
 
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(174).png?raw=true)
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(179).png?raw=true)
