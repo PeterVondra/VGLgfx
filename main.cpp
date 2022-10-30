@@ -66,7 +66,7 @@ class TestLayer : public vgl::Layer
 
 class TestApp : public vgl::Application
 {
-	public
+	public:
 		TestApp(vgl::AppConfig& p_Config) : vgl::Application(p_Config) {};
 		~TestApp() {};
 

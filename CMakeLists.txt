@@ -207,14 +207,14 @@ add_executable(
 	lib/imgui/examples/imgui_impl_glfw.h
 	lib/imgui/examples/imgui_impl_glfw.cpp
 
-	#lib/ImGuizmo/ImGuizmo.h
-	#lib/ImGuizmo/ImGuizmo.cpp
-	#lib/ImGuizmo/ImCurveEdit.h
-	#lib/ImGuizmo/ImCurveEdit.cpp
-	#lib/ImGuizmo/ImGradient.h
-	#lib/ImGuizmo/ImGradient.cpp
-	#lib/ImGuizmo/ImSequencer.h
-	#lib/ImGuizmo/ImSequencer.cpp
+	lib/ImGuizmo/ImGuizmo.h
+	lib/ImGuizmo/ImGuizmo.cpp
+	lib/ImGuizmo/ImCurveEdit.h
+	lib/ImGuizmo/ImCurveEdit.cpp
+	lib/ImGuizmo/ImGradient.h
+	lib/ImGuizmo/ImGradient.cpp
+	lib/ImGuizmo/ImSequencer.h
+	lib/ImGuizmo/ImSequencer.cpp
 
 	#lib/ImGuiColorTextEdit/TextEditor.h
 	#lib/ImGuiColorTextEdit/TextEditor.cppy

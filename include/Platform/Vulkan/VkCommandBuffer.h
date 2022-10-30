@@ -26,6 +26,7 @@ namespace vgl
 		class CommandBuffer
 		{
 			public:
+				CommandBuffer() : CommandBuffer(Level::Primary) {}
 				CommandBuffer(Level p_Level);
 				~CommandBuffer();
 
@@ -42,7 +43,7 @@ namespace vgl
 				// Execute secondary command buffers, if this command buffer level is set to primary
 				void cmdExecuteCommands(std::vector<CommandBuffer>& p_CommandBuffers);
 				void cmdExecuteCommands(CommandBuffer& p_CommandBuffer);
-				void cmdExecuteCommands(std::vector<CommandBuffer>& p_CommandBuffers, size_t p_Size);
+				void cmdExecuteCommands(std::vector<CommandBuffer>& p_CommandBuffers, uint32_t p_Size);
 
 				void cmdBindPipeline(g_Pipeline& p_Pipeline);
 				void cmdBindDescriptorSets(DescriptorSetManager& p_DescriptorSetManager, const uint32_t p_ImageIndex);

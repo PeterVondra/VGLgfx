@@ -148,19 +148,22 @@ namespace vgl
 
 				void deviceWaitIdle();
 
+				VkCommandBuffer beginSingleTimeCmds();
+				void endSingleTimeCmds(VkCommandBuffer& p_CommandBuffer);
+
 				// Utility functions for image handling
 				void setImageLayout(VkCommandBuffer p_CommandBuffer, VkImage p_Image, VkImageAspectFlags p_Aspect, VkImageLayout p_OldLayout, VkImageLayout p_NewLayout);
 				void setImageLayout(VkCommandBuffer p_CommandBuffer, VkImage p_Image, VkImageLayout p_OldLayout, VkImageLayout p_NewLayout, VkImageSubresourceRange p_SubRSRCRange);
-				void transitionLayoutImage(VkImage p_Image, VkFormat p_Format, VkImageLayout p_OldLayout, VkImageLayout p_NewLayout, const int p_NumLayers);
-				void transitionLayoutImage(VkImage p_Image, VkFormat p_Format, VkImageLayout p_OldLayout, VkImageLayout p_NewLayout, uint32_t p_MipLevels = 1);
-				void copyBufferToImage(VkBuffer& p_Buffer, VkImage& p_Image, uint32_t p_Width, uint32_t p_Height);
+				void transitionLayoutImage(VkImage p_Image, VkFormat p_Format, VkImageLayout p_OldLayout, VkImageLayout p_NewLayout, uint32_t p_MipLevels = 1, uint32_t p_ArrayLayers = 1);
+				void copyBufferToImage(VkBuffer& p_Buffer, VkImage& p_Image, uint32_t p_Width, uint32_t p_Height, uint32_t p_ArrayLayers = 1);
 
 				AllocationInfo createImage(
 					uint32_t p_Width, uint32_t p_Height,
 					VkFormat p_Format,
 					VkImageTiling p_Tiling, VkImageUsageFlags p_UsageFlags,
 					VmaMemoryUsage p_MemoryUsage,
-					VkImage& p_Image, uint32_t p_MipLevels = 1
+					VkImage& p_Image, uint32_t p_MipLevels = 1,
+					uint32_t p_ArrayLayers = 1
 				);
 
 				AllocationInfo createImage(
@@ -171,7 +174,7 @@ namespace vgl
 					VkImage& p_Image, VkSampleCountFlagBits p_Samples
 				);
 
-				VkImageView createImageView(VkImage p_Image, VkFormat p_Format, VkImageAspectFlags p_AspectFlags, uint32_t p_MipLevels = 1);
+				VkImageView createImageView(VkImage p_Image, VkFormat p_Format, VkImageAspectFlags p_AspectFlags, uint32_t p_MipLevels = 1, VkImageViewType p_ImageViewType = VK_IMAGE_VIEW_TYPE_2D);
 
 				void destroyImage(VkImage& p_Image, VmaAllocation& p_BufferAlloc);
 
@@ -242,9 +245,6 @@ namespace vgl
 
 				// Check if device supports extensions
 				static bool checkDeviceExtensionSupport(std::vector<const char*>& p_DeviceExtensions, VkPhysicalDevice& p_Device);
-
-				VkCommandBuffer beginSingleTimeCmds();
-				void endSingleTimeCmds(VkCommandBuffer& p_CommandBuffer);
 
 			private:
 				static std::string m_DebugMessage;

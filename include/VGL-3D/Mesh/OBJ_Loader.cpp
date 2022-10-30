@@ -1,4 +1,5 @@
 #include "OBJ_Loader.h"
+#include "../../Platform/Definitions.h"
 
 namespace vgl
 {
@@ -10,19 +11,19 @@ namespace vgl
 	std::vector<Vector3f>* OBJ_Loader::temp_Positions = new std::vector<Vector3f>;
 	std::vector<Vector2f>* OBJ_Loader::temp_Uvs = new std::vector<Vector2f>;
 	std::vector<Vector3f>* OBJ_Loader::temp_Normals = new std::vector<Vector3f>;
-	Utils::ThreadPool OBJ_Loader::pool = Utils::ThreadPool(std::thread::hardware_concurrency());
+	//Utils::ThreadPool OBJ_Loader::pool = Utils::ThreadPool(std::thread::hardware_concurrency());
 
 	bool OBJ_Loader::loadModel(const char* p_Directory, const char* p_FileName, MeshData& p_MeshData, bool p_TangentSpaceUVCorrection)
 	{
 		p_MeshData.m_FileLocation = std::string(p_Directory) + std::string(p_FileName);
 
-		for (auto& mtl : p_MeshData.m_MtlUniformManagers)
-			if (!mtl.complete)
-				mtl.destroyDscLayout();
+		for (auto& mtl : p_MeshData.m_MTLDescriptors)
+			if (!mtl.isValid())
+				mtl.destroy();
 
 		p_MeshData.m_Materials.clear();
-		p_MeshData.m_MtlUniformManagers.clear();
-		p_MeshData.m_MaterialIndices.clear();
+		p_MeshData.m_MTLDescriptors.clear();
+		p_MeshData.m_SubMeshIndices.clear();
 
 		bool result = loadOBJ
 		(
@@ -43,13 +44,13 @@ namespace vgl
 	{
 		p_MeshData->m_FileLocation = (std::string)p_Directory + (std::string)p_FileName;
 
-		for (auto& mtl : p_MeshData->m_MtlUniformManagers)
-			if(!mtl.complete)
-				mtl.destroyDscLayout();
+		for (auto& mtl : p_MeshData->m_MTLDescriptors)
+			if(!mtl.isValid())
+				mtl.destroy();
 
 		p_MeshData->m_Materials.clear();
-		p_MeshData->m_MtlUniformManagers.clear();
-		p_MeshData->m_MaterialIndices.clear();
+		p_MeshData->m_MTLDescriptors.clear();
+		p_MeshData->m_SubMeshIndices.clear();
 
 		bool result = loadOBJ
 		(
@@ -135,8 +136,8 @@ namespace vgl
 				if (!mtlFound)
 				{
 					p_MeshData.m_Materials.resize(1);
-					p_MeshData.m_MaterialIndices.resize(1);
-					p_MeshData.m_MtlUniformManagers.resize(1);
+					p_MeshData.m_SubMeshIndices.resize(1);
+					p_MeshData.m_MTLDescriptors.resize(1);
 					mtlVertexIndices.resize(1);
 
 					materialIndex = 0;
@@ -157,16 +158,16 @@ namespace vgl
 				if (!mtlFound)
 				{
 					p_MeshData.m_Materials.resize(1);
-					p_MeshData.m_MaterialIndices.resize(1);
-					p_MeshData.m_MtlUniformManagers.resize(1);
+					p_MeshData.m_SubMeshIndices.resize(1);
+					p_MeshData.m_MTLDescriptors.resize(1);
 					mtlVertexIndices.resize(1);
 
 					materialIndex = 0;
 				}
 				else
 				{
-					p_MeshData.m_MaterialIndices.resize(p_MeshData.m_Materials.size());
-					p_MeshData.m_MtlUniformManagers.resize(p_MeshData.m_Materials.size());
+					p_MeshData.m_SubMeshIndices.resize(p_MeshData.m_Materials.size());
+					p_MeshData.m_MTLDescriptors.resize(p_MeshData.m_Materials.size());
 					mtlVertexIndices.resize(p_MeshData.m_Materials.size());
 				}
 
@@ -393,7 +394,7 @@ namespace vgl
 		{
 			first = last;
 			last = first + mtlVertexIndices[j].pos.size();
-			p_MeshData.m_MaterialIndices[j] = std::pair<unsigned int, unsigned int>(first, last);
+			p_MeshData.m_SubMeshIndices[j] = std::pair<unsigned int, unsigned int>(first, last);
 			
 			for (int i = 0; i < mtlVertexIndices[j].pos.size(); i++)
 			{
@@ -617,8 +618,8 @@ namespace vgl
 				read_size += sizeof(char) * char_size;
 
 				//get the diffuse texture for the materials
-				vk::ImageLoader::getImageFromPath(materials[material_index].m_AlbedoMap, (texture_directory + std::string(texture_path)).c_str(), vk::SamplerMode::Repeat);
-				if (!materials[material_index].m_AlbedoMap.isComplete())
+				ImageLoader::getImageFromPath(materials[material_index].m_AlbedoMap, (texture_directory + std::string(texture_path)).c_str(), SamplerMode::Repeat);
+				if (!materials[material_index].m_AlbedoMap.isValid())
 					std::cerr << "failed to load diffuse texture" << std::endl;
 			}
 			else if (strcmp(lineHeader, "map_Ks") == 0) {
@@ -632,8 +633,8 @@ namespace vgl
 				read_size += sizeof(char) * char_size;
 
 				//get the specular texture for the materials
-				vk::ImageLoader::getImageFromPath(materials[material_index].m_MetallicMap, (texture_directory + std::string(texture_path)).c_str(), vk::SamplerMode::Repeat);
-				if (!materials[material_index].m_MetallicMap.isComplete())
+				vk::ImageLoader::getImageFromPath(materials[material_index].m_MetallicMap, (texture_directory + std::string(texture_path)).c_str(), SamplerMode::Repeat);
+				if (!materials[material_index].m_MetallicMap.isValid())
 					std::cerr << "failed to load specular texture" << std::endl;
 			}
 			else if (strcmp(lineHeader, "map_bump") == 0) {
@@ -647,8 +648,8 @@ namespace vgl
 				read_size += sizeof(char) * char_size;
 
 				//get the specular texture for the materials
-				vk::ImageLoader::getImageFromPath(materials[material_index].m_NormalMap, (texture_directory + std::string(texture_path)).c_str(), vk::SamplerMode::Repeat);
-				if (!materials[material_index].m_NormalMap.isComplete())
+				ImageLoader::getImageFromPath(materials[material_index].m_NormalMap, (texture_directory + std::string(texture_path)).c_str(), SamplerMode::Repeat);
+				if (!materials[material_index].m_NormalMap.isValid())
 					std::cerr << "failed to load normal texture" << texture_path << std::endl;
 			}
 			else if (strcmp(lineHeader, "map_Bump") == 0) {
@@ -662,8 +663,8 @@ namespace vgl
 				read_size += sizeof(char) * char_size;
 
 				//get the normal texture for the materials
-				vk::ImageLoader::getImageFromPath(materials[material_index].m_NormalMap, (texture_directory + std::string(texture_path)).c_str(), vk::SamplerMode::Repeat);
-				if (!materials[material_index].m_NormalMap.isComplete())
+				ImageLoader::getImageFromPath(materials[material_index].m_NormalMap, (texture_directory + std::string(texture_path)).c_str(), SamplerMode::Repeat);
+				if (!materials[material_index].m_NormalMap.isValid())
 					std::cerr << "failed to load normal texture" << texture_path << std::endl;
 			}
 			else if (strcmp(lineHeader, "map_disp") == 0) {
@@ -677,8 +678,8 @@ namespace vgl
 				read_size += sizeof(char) * char_size;
 
 				//get the normal texture for the materials
-				vk::ImageLoader::getImageFromPath(materials[material_index].m_DisplacementMap, (texture_directory + std::string(texture_path)).c_str(), vk::SamplerMode::Repeat);
-				if (!materials[material_index].m_DisplacementMap.isComplete())
+				ImageLoader::getImageFromPath(materials[material_index].m_DisplacementMap, (texture_directory + std::string(texture_path)).c_str(), SamplerMode::Repeat);
+				if (!materials[material_index].m_DisplacementMap.isValid())
 					std::cerr << "failed to load displacement texture" << texture_path << std::endl;
 			}
 			else if (strcmp(lineHeader, "map_Ao") == 0) {
@@ -692,8 +693,8 @@ namespace vgl
 				read_size += sizeof(char) * char_size;
 
 				//get the normal texture for the materials
-				vk::ImageLoader::getImageFromPath(materials[material_index].m_AOMap, (texture_directory + std::string(texture_path)).c_str(), vk::SamplerMode::Repeat);
-				if (!materials[material_index].m_AOMap.isComplete())
+				ImageLoader::getImageFromPath(materials[material_index].m_AOMap, (texture_directory + std::string(texture_path)).c_str(), SamplerMode::Repeat);
+				if (!materials[material_index].m_AOMap.isValid())
 					std::cerr << "failed to load ambient occlusion texture" << texture_path << std::endl;
 			}
 			else if (strcmp(lineHeader, "map_M") == 0) {
@@ -707,8 +708,8 @@ namespace vgl
 				read_size += sizeof(char) * char_size;
 
 				//get the normal texture for the materials
-				vk::ImageLoader::getImageFromPath(materials[material_index].m_MetallicMap, (texture_directory + std::string(texture_path)).c_str(), vk::SamplerMode::Repeat);
-				if (!materials[material_index].m_MetallicMap.isComplete())
+				ImageLoader::getImageFromPath(materials[material_index].m_MetallicMap, (texture_directory + std::string(texture_path)).c_str(), SamplerMode::Repeat);
+				if (!materials[material_index].m_MetallicMap.isValid())
 					std::cerr << "failed to load metallic texture" << texture_path << std::endl;
 			}
 			else if (strcmp(lineHeader, "map_R") == 0) {
@@ -722,8 +723,8 @@ namespace vgl
 				read_size += sizeof(char) * char_size;
 
 				//get the normal texture for the materials
-				vk::ImageLoader::getImageFromPath(materials[material_index].m_RoughnessMap, (texture_directory + std::string(texture_path)).c_str(), vk::SamplerMode::Repeat);
-				if (!materials[material_index].m_RoughnessMap.isComplete())
+				ImageLoader::getImageFromPath(materials[material_index].m_RoughnessMap, (texture_directory + std::string(texture_path)).c_str(), SamplerMode::Repeat);
+				if (!materials[material_index].m_RoughnessMap.isValid())
 					std::cerr << "failed to load roughness texture" << texture_path << std::endl;
 			}
 		}

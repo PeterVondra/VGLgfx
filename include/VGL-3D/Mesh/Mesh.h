@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "../../VGL_Internal.h"
+#include "../../Application/RenderAPI.h"// Possible dual inclusion (investage later)
 
 #include "../../Math/Vector.h"
 #include "../../Math/Transform.h"
@@ -116,16 +116,7 @@ namespace vgl
 	class MeshData
 	{
 		public:
-			MeshData() 
-				: verticesf(std::vector<float>()), indices(std::vector<uint32_t>()) {};
-			MeshData(std::vector<float>& p_Vertices, std::vector<uint32_t>& p_Indices)
-				: verticesf(p_Vertices), indices(p_Indices) {};
-			MeshData(std::vector<Vertex2T>& p_Vertices, std::vector<uint32_t>& p_Indices)
-				: vertices2T(p_Vertices), indices(p_Indices) {};
-			MeshData(std::vector<Vertex3T>& p_Vertices, std::vector<uint32_t>& p_Indices)
-				: vertices3T(p_Vertices), indices(p_Indices) {};
-			MeshData(std::vector<Vertex5T>& p_Vertices, std::vector<uint32_t>& p_Indices)
-				: vertices5T(p_Vertices), indices(p_Indices) {};
+			MeshData() : vertices(std::vector<Vertex5T>()), indices(std::vector<uint32_t>()) {};
 			~MeshData() {};
 
 			void updateVertices(); // If the vertices(array) was modified, this function will update the GPU buffers
@@ -142,14 +133,10 @@ namespace vgl
 			static void indexVertexData(std::vector<Vertex2T>& p_Vertices, MeshData& p_Data);
 
 		public:
-			// All vector data is shared, only the layout is different
-			union {
-				std::vector<float> verticesf;     // Float only layout
-				std::vector<Vertex2T> vertices2T; // Positions and Normals
-				std::vector<Vertex3T> vertices3T; // Position, Normals and Texture coordinates
-				std::vector<Vertex5T> vertices5T; // Positions, Normals, Texture coordinates, Tangents and Bitangents
-			};
+			
+			std::vector<Vertex5T> vertices;
 			std::vector<uint32_t> indices;
+			std::vector<std::pair<uint32_t, uint32_t>> m_SubMeshIndices; // Materials
 
 		public:
 			std::string m_FileLocation; // File location of the 3D model file
@@ -162,20 +149,27 @@ namespace vgl
 			Vector3f m_MaxPosition;
 			Vector3f m_MinPosition;
 
-			bool recreate = false; // If the mesh needs to be recreated (for example if a texture was destroyed/removed)
+			// If material is set to be recreated (eg. For any new changes to material)
+			bool m_MTLRecreateFlag = false;
+			// If mesh is set to be recreated (eg. For any new changes to the vertex data)
+			bool m_RecreateFlag = false;
 
 			void init(); // Initialize the necessary data
-			std::vector<std::pair<uint32_t, uint32_t>> m_SubMeshIndices; // Materials
+
+			// All indices correpsond for all vectors
+			std::vector<Material> m_Materials;
 		private:
 			friend class OBJ_Loader;
 			friend class Grid;
 			friend class Skybox;
-			friend class Renderer;
+			friend class vk::Renderer;
+			//friend class gl::Renderer;
 
 			// If there is a MTL file (For OBJ file format)
 			bool m_MTLValid = false;
-			// All indices correpsond for all vectors
-			std::vector<Material> m_Materials;
+
+			std::vector<ShaderDescriptorInfo> m_MTLDescriptorInfo;
+			std::vector<ShaderDescriptor> m_MTLDescriptors;
 
 			// Initialize the material info needed for rendering
 			void initMaterials(EnvData& p_EnvData);

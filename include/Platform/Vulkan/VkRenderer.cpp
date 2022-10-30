@@ -373,12 +373,12 @@ namespace vgl
 				m_ShaderData.emplace_back();
 
 				Shader shader;
-				shader.compile(ShaderPermutationsGenerator::generateGBufferShader(p_MeshData.m_Materials[i].m_ShaderInfo));
+				shader.compile(ShaderPermutationsGenerator::generateGBufferShader(p_MeshData.m_Materials[i].m_ShaderInfo, ShaderType::Deferred));
 				m_ShaderData[m_ShaderData.size() - 1].p_Shader = shader;
 
 				pipelineInfo.p_Shader = &m_ShaderData[m_ShaderData.size() - 1].p_Shader;
 
-				pipelineInfo.p_DescriptorSetLayout = p_MeshData.m_MtlDescriptors[i].m_DescriptorSetLayout;
+				pipelineInfo.p_DescriptorSetLayout = p_MeshData.m_MTLDescriptors[i].m_DescriptorSetLayout;
 				
 				m_ShaderData[m_ShaderData.size() - 1].p_Pipeline.create(pipelineInfo);
 
@@ -390,22 +390,22 @@ namespace vgl
 		{
 			waitForFences();
 
-			if (p_MeshData.newRT || p_MeshData.recreate) {
-				if (p_MeshData.recreate) {
-					for (auto& mtl : p_MeshData.m_MtlDescriptors)
+			if (p_MeshData.m_MTLRecreateFlag || p_MeshData.m_RecreateFlag) {
+				if (p_MeshData.m_RecreateFlag) {
+					for (auto& mtl : p_MeshData.m_MTLDescriptors)
 						if (mtl.isValid()) {
 							m_ContextPtr->deviceWaitIdle();
 							mtl.destroy();
 						}
 				}
 
-				if (!p_MeshData.m_MTLCompleted || p_MeshData.recreate || p_MeshData.newRT)
+				if (!p_MeshData.m_MTLValid || p_MeshData.m_RecreateFlag || p_MeshData.m_MTLRecreateFlag)
 					p_MeshData.initMaterials(m_EnvData);
 
 				createPipelines(p_MeshData, m_RenderInfo, m_FramebufferAttachmentPtr->m_RenderPass);
 
-				p_MeshData.recreate = false;
-				p_MeshData.newRT = false;
+				p_MeshData.m_RecreateFlag = false;
+				p_MeshData.m_MTLRecreateFlag = false;
 			}
 
 			for (int16_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
@@ -425,12 +425,12 @@ namespace vgl
 				//	}
 
 				//if (!(p_MeshData.m_Materials[i].m_PrevConfig == p_MeshData.m_Materials[i].config)) {
-					p_MeshData.m_MtlDescriptors[i].copy(ShaderStage::FragmentBit, Vector4f(
+					p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::FragmentBit, Vector4f(
 						p_MeshData.m_Materials[i].config.m_Albedo.r,
 						p_MeshData.m_Materials[i].config.m_Albedo.g,
 						p_MeshData.m_Materials[i].config.m_Albedo.b,
 						p_MeshData.m_Materials[i].config.m_PDMDepth), 0);
-					p_MeshData.m_MtlDescriptors[i].copy(ShaderStage::FragmentBit,
+					p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::FragmentBit,
 						Vector4f(
 							p_MeshData.m_Materials[i].config.m_Metallic,
 							p_MeshData.m_Materials[i].config.m_Roughness,
@@ -439,18 +439,18 @@ namespace vgl
 					);
 				//}
 
-				p_MeshData.m_MtlDescriptors[i].copy(ShaderStage::FragmentBit, Vector3f(3, 3, 3), 12 * sizeof(float));
+				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::FragmentBit, Vector3f(3, 3, 3), 12 * sizeof(float));
 				for(int k = 0; k < p_MeshData.m_Materials.size(); k++)
 					for(int j = 0; j < p_MeshData.m_Materials[k].m_ShaderInfo.p_PointLights.size(); j++)
-						p_MeshData.m_MtlDescriptors[i].copy(ShaderStage::FragmentBit, p_MeshData.m_Materials[k].m_ShaderInfo.p_PointLights[j], 16 * sizeof(float) + sizeof(P_Light)*j);
+						p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::FragmentBit, p_MeshData.m_Materials[k].m_ShaderInfo.p_PointLights[j], 16 * sizeof(float) + sizeof(P_Light)*j);
 
 				// MVP Matrix
-				p_MeshData.m_MtlDescriptors[i].copy(ShaderStage::VertexBit, p_Transform.model * m_ViewProjection, MeshUBOAlignment::mvp_offset);
+				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, p_Transform.model * m_ViewProjection, MeshUBOAlignment::mvp_offset);
 				// Model Matrix
-				p_MeshData.m_MtlDescriptors[i].copy(ShaderStage::VertexBit, p_Transform.model, MeshUBOAlignment::model_offset);
+				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, p_Transform.model, MeshUBOAlignment::model_offset);
 
 				// Camera position
-				p_MeshData.m_MtlDescriptors[i].copy(ShaderStage::VertexBit, m_Camera->getPosition(), MeshUBOAlignment::viewPosition_offset + sizeof(Matrix4f));
+				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, m_Camera->getPosition(), MeshUBOAlignment::viewPosition_offset + sizeof(Matrix4f));
 
 				p_MeshData.m_Materials[i].m_PrevConfig = p_MeshData.m_Materials[i].config;
 			}
@@ -467,10 +467,11 @@ namespace vgl
 			{
 				if (!p_MeshData.m_Materials[i].config.render)
 					continue;
+				
 				p_CommandBuffer.cmdBindPipeline(m_ShaderData[p_MeshData.m_Materials[i].m_PipelineIndex].p_Pipeline);
-				p_CommandBuffer.cmdBindDescriptorSets(p_MeshData.m_MtlDescriptors[i], p_ImageIndex);
+				p_CommandBuffer.cmdBindDescriptorSets(p_MeshData.m_MTLDescriptors[i], p_ImageIndex);
 				p_CommandBuffer.cmdBindVertexArray(p_MeshData.m_VertexArray);
-				p_CommandBuffer.cmdDrawIndexed(p_MeshData.m_MaterialIndices[i].first, p_MeshData.m_MaterialIndices[i].second);
+				p_CommandBuffer.cmdDrawIndexed(p_MeshData.m_SubMeshIndices[i].first, p_MeshData.m_SubMeshIndices[i].second);
 			}
 
 			p_CommandBuffer.cmdEnd();
@@ -652,6 +653,7 @@ namespace vgl
 			//	m_DescriptorSetManager.create(m_DescriptorSetInfo);
 			//m_DescriptorSetInfo.clearDescriptors();
 
+			// Record all submitted renderpasses
 			for (auto& cmdFun : m_RecordPrimaryCmdBuffersFunPtrs)
 				(this->*cmdFun.pcmdRecFun)(cmdFun.ptr, m_PrimaryCommandBuffers[p_ImageIndex], p_ImageIndex);
 
@@ -661,11 +663,21 @@ namespace vgl
 			}
 
 			// Default
-			m_PrimaryCommandBuffers[p_ImageIndex].cmdBeginRenderPass(m_DefaultRenderPass, SubpassContents::Secondary, m_WindowPtr->m_Swapchain.m_SwapchainFramebuffers[p_ImageIndex], m_WindowPtr->getWindowSize());
+			m_PrimaryCommandBuffers[p_ImageIndex].cmdBeginRenderPass(
+				m_DefaultRenderPass,
+				SubpassContents::Secondary, 
+				m_WindowPtr->m_Swapchain.m_SwapchainFramebuffers[p_ImageIndex], 
+				m_WindowPtr->getWindowSize()
+			);
 			m_PrimaryCommandBuffers[p_ImageIndex].cmdEndRenderPass();
 
 #ifdef IMGUI_VK_IMPL
-			m_PrimaryCommandBuffers[p_ImageIndex].cmdBeginRenderPass(*m_ImGuiContext.m_RenderPass, SubpassContents::Secondary, m_WindowPtr->m_Swapchain.m_SwapchainFramebuffers[p_ImageIndex], m_WindowPtr->getWindowSize());
+			m_PrimaryCommandBuffers[p_ImageIndex].cmdBeginRenderPass(
+				*m_ImGuiContext.m_RenderPass, 
+				SubpassContents::Secondary, 
+				m_WindowPtr->m_Swapchain.m_SwapchainFramebuffers[p_ImageIndex], 
+				m_WindowPtr->getWindowSize()
+			);
 			//m_PrimaryCommandBuffers[p_ImageIndex].cmdExecuteCommands(m_ImGuiContext.m_CommandBuffer);
 			// Record Imgui Draw Data and draw funcs into command buffer
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_PrimaryCommandBuffers[p_ImageIndex].vkHandle());
@@ -681,7 +693,7 @@ namespace vgl
 			m_ContextPtr->m_ImageIndex = p_ImageIndex;
 
 			if (framebufferPtr) {
-				if (framebufferPtr->m_FramebufferAttachmentInfo.p_CreateGraphicsPipeline)
+				if (framebufferPtr->m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_CreateGraphicsPipeline)
 					framebufferPtr->recordCmdBuffer(p_PrimaryCommandBuffer, p_ImageIndex);
 				else if (!m_CommandBuffers.empty()) {
 					framebufferPtr->cmdBeginRenderPass(p_PrimaryCommandBuffer, SubpassContents::Secondary, p_ImageIndex);

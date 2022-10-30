@@ -77,24 +77,34 @@ namespace vgl
 		// Image, Image Array or CubeMap
 		template<typename ImageType> struct SamplerDescriptorData
 		{
+			SamplerDescriptorData() {}
+			SamplerDescriptorData(ImageType* p_Image_, uint32_t p_Binding_, int32_t p_FrameIndex_ = -1);
 			ImageType* p_Image = nullptr;
 			uint32_t p_Binding = UINT32_MAX; // Has to be set
-			int32_t p_FrameIndex = -1; // If index < 0 then index will not be used
+			// Frame index is used when image is only used for an individual frame,
+			// in case of double buffering (2 frames), index 0 and 1 refers to two different images/frames.
+			// If index < 0 then index will not be used
+			int32_t p_FrameIndex = -1;
 
-			VkDescriptorImageInfo p_ImageInfo;
-			VkImageLayout p_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Optional
 			ShaderStage p_ShaderStage = ShaderStage::FragmentBit; // Can be set to vertexbit, but fragmentbit is the default
 
 			bool isValid() { return p_Image && p_Binding != UINT32_MAX; }
+
+			private:
+				friend class DescriptorSetManager;
+
+				VkDescriptorImageInfo p_ImageInfo;
+				VkImageLayout p_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Optional
 		};
 		
 		template<> struct SamplerDescriptorData<std::vector<Image>>
 		{
+			SamplerDescriptorData() {}
+			SamplerDescriptorData(std::vector<Image>* p_Image_, uint32_t p_Binding_);
+
 			std::vector<Image>* p_Image = nullptr;
 			uint32_t p_Binding = UINT32_MAX; // Has to be set
 
-			std::vector<std::pair<VkImageView, VkSampler>> p_ImageInfo;
-			VkImageLayout p_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Optional
 			ShaderStage p_ShaderStage = ShaderStage::FragmentBit; // Can be set to vertexbit, but fragmentbit is the default
 			
 			bool isValid() { return p_Image && p_Binding != UINT32_MAX; }
@@ -102,6 +112,8 @@ namespace vgl
 			private:
 				friend class DescriptorSetManager;
 
+				std::vector<std::pair<VkImageView, VkSampler>> p_ImageInfo;
+				VkImageLayout p_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Optional
 				std::vector<VkDescriptorImageInfo> m_ImageArrayDescriptorInfo;
 				std::vector<uint32_t> m_ImageArrayDescriptorBindings;
 
@@ -109,17 +121,32 @@ namespace vgl
 
 		struct DescriptorSetInfo
 		{
-			DescriptorSetInfo() : p_UniformBuffers(3), p_VertexUniformBuffer(p_UniformBuffers[0]), p_FragmentUniformBuffer(p_UniformBuffers[1]), p_GeometryUniformBuffer(p_UniformBuffers[2]) {};
+			DescriptorSetInfo() {};
 			~DescriptorSetInfo() {};
 
 			StorageBuffer p_StorageBuffer;
-			UniformBuffer& p_VertexUniformBuffer;
-			UniformBuffer& p_FragmentUniformBuffer;
-			UniformBuffer& p_GeometryUniformBuffer;
-			std::vector<UniformBuffer> p_UniformBuffers;
+
+			union{
+				struct{
+					UniformBuffer p_VertexUniformBuffer;
+					UniformBuffer p_FragmentUniformBuffer;
+					UniformBuffer p_GeometryUniformBuffer;
+				};
+				UniformBuffer p_UniformBuffers[3];
+			};
+
+			void addImage(Image* p_Image, uint32_t p_Binding, int32_t p_FrameIndex = -1){
+				p_ImageDescriptors.emplace_back(SamplerDescriptorData(p_Image, p_Binding, p_FrameIndex));
+			}
+			void addImageCube(ImageCube* p_Image, uint32_t p_Binding, int32_t p_FrameIndex = -1){
+				p_CubeMapDescriptors.emplace_back(SamplerDescriptorData(p_Image, p_Binding, p_FrameIndex));
+			}
+			void addImageArray(std::vector<Image>* p_Image, uint32_t p_Binding){
+				p_ImageArrayDescriptors.emplace_back(SamplerDescriptorData(p_Image, p_Binding));
+			}
 
 			std::vector<SamplerDescriptorData<Image>> p_ImageDescriptors;
-			//std::vector<SamplerDescriptorData<StorageImage3D>> p_StorageImage3dDescriptors; // TODO: Implement 3D images
+			//std::vector<SamplerDescriptorData<StorageImage3D>> p_StorageImage3dDescriptors; // TODO: Implement 3D image functionality
 			std::vector<SamplerDescriptorData<ImageCube>> p_CubeMapDescriptors;
 			std::vector<SamplerDescriptorData<std::vector<Image>>> p_ImageArrayDescriptors;
 

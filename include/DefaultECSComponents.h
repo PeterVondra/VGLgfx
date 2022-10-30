@@ -20,7 +20,12 @@ namespace vgl
 		uint32_t materialID = 0;
 		Transform3D transform;
 	};
-
+	// Material component
+	struct VGL_ECS_COMPONENT(MaterialComponent)
+	{
+		Material* material = nullptr;
+		uint32_t materialID = 0;
+	};
 	// Camera 3D component
 	struct VGL_ECS_COMPONENT(Camera3DComponent)
 	{

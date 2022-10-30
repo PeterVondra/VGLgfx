@@ -42,6 +42,7 @@ namespace vgl
 
 		private:
 			friend class ImageLoader;
+			template<typename ImageType> friend class SamplerDescriptorData;
 			friend class DescriptorSetManager;
 			friend class ImageAttachment;
 			friend class Framebuffer;
@@ -101,6 +102,7 @@ namespace vgl
 
 		private:
 			friend class ImageLoader;
+			template<typename ImageType> friend class SamplerDescriptorData;
 			friend class DescriptorSetManager;
 			friend class Framebuffer;
 
@@ -115,10 +117,15 @@ namespace vgl
 			VkBuffer m_StagingBuffer;
 			void* m_Mapped;
 
+			SamplerMode m_SamplerMode;
+			Filter m_MagFilter;
+			Filter m_MinFilter;
+
 			VkImage			m_VkImageHandle;
 			VmaAllocation	m_ImageAllocation;
 			VkImageView		m_ImageView;
 			VkSampler		m_Sampler;
+			VkImageLayout	m_Layout;
 
 			Channels m_CurrentChannels;
 			std::vector<std::pair<Channels, unsigned int>> m_Channels;

@@ -93,23 +93,9 @@ namespace vgl
 			Vector2i p_Size;
 			std::vector<AttachmentDescriptor> p_AttachmentDescriptors;
 
-			ShaderPackage p_ShaderPackage;
+			Shader* p_Shader;
+			RenderPipelineInfo p_RenderPipelineInfo;
 			DescriptorSetManager* p_Descriptors; 
-
-			bool					p_SampleRateShading;
-			bool					p_AlphaBlending;
-			bool					p_DepthBuffering;
-			bool					p_DepthBias;
-			PolygonMode				p_PolygonMode;
-			CullMode				p_CullMode;
-			FrontFace				p_FrontFace;
-			IATopoogy				p_IATopology;
-			Viewport				p_Viewport;
-			Scissor					p_Scissor;
-
-			float p_DepthBiasConstantFactor;
-			float p_DepthBiasClamp;
-			float p_DepthBiasSlopeFactor;
 
 			// Only works in Vulkan
 			ShaderStage p_PushConstantShaderStage;

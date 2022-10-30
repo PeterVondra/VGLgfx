@@ -4,6 +4,43 @@ namespace vgl
 {
 	namespace vk
 	{
+		SamplerDescriptorData<Image>::SamplerDescriptorData(Image* p_Image_, uint32_t p_Binding_, int32_t p_FrameIndex_)
+			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_)
+		{
+			p_ImageInfo.imageLayout = p_Image->m_FinalLayout;
+			p_ImageInfo.imageView = p_Image->m_ImageView;
+			p_ImageInfo.sampler = p_Image->m_Sampler;
+
+			p_ImageLayout = p_Image->m_FinalLayout;
+		}
+		SamplerDescriptorData<ImageCube>::SamplerDescriptorData(ImageCube* p_Image_, uint32_t p_Binding_, int32_t p_FrameIndex_)
+			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_)
+		{
+			p_ImageInfo.imageLayout = p_Image->m_Layout;
+			p_ImageInfo.imageView = p_Image->m_ImageView;
+			p_ImageInfo.sampler = p_Image->m_Sampler;
+
+			p_ImageLayout = p_Image->m_Layout;
+		}
+		SamplerDescriptorData<std::vector<Image>>::SamplerDescriptorData(std::vector<Image>* p_Image_, uint32_t p_Binding_)
+			: p_Image(p_Image_), p_Binding(p_Binding_)
+		{
+			p_ImageInfo.resize(p_Image->size());
+			m_ImageArrayDescriptorInfo.resize(p_Image->size());
+			m_ImageArrayDescriptorBindings.resize(p_Image->size());
+
+			for(uint32_t i = 0; i < p_Image->size(); i++){
+				p_ImageInfo[i].first = p_Image->operator[](i).m_ImageView;
+				p_ImageInfo[i].second = p_Image->operator[](i).m_Sampler;
+
+				m_ImageArrayDescriptorInfo[i].imageLayout = p_Image->operator[](i).m_FinalLayout;
+				m_ImageArrayDescriptorInfo[i].imageView = p_Image->operator[](i).m_ImageView;
+				m_ImageArrayDescriptorInfo[i].sampler = p_Image->operator[](i).m_Sampler;
+
+				m_ImageArrayDescriptorBindings[i] = p_Binding + i;
+			}
+		}
+
 		bool DescriptorSetInfo::isImageDescriptorsValid()
 		{
 			bool valid = false;

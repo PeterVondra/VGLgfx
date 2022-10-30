@@ -21,7 +21,7 @@ namespace vgl
 		private:
 			friend class Skybox;
 
-			static Utils::ThreadPool pool;
+			//static Utils::ThreadPool pool;
 
 			static bool loadModel(const char* p_Directory, const char* p_FileName, MeshData* p_Data, bool p_ignoreMaterialsInit, bool p_TangentSpaceUVCorrection);
 

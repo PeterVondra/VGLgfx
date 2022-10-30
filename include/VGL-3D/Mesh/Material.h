@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "../../Math/Vector.h"
-#include "../../VGL_Internal.h"
+#include "../../Application/RenderAPI.h"
 
 namespace vgl
 {
@@ -86,12 +86,12 @@ namespace vgl
 
 			std::string getName();
 
-			vk::Image m_AlbedoMap;
-			vk::Image m_NormalMap;
-			vk::Image m_DisplacementMap;
-			vk::Image m_RoughnessMap;
-			vk::Image m_AOMap;
-			vk::Image m_MetallicMap;
+			Image m_AlbedoMap;
+			Image m_NormalMap;
+			Image m_DisplacementMap;
+			Image m_RoughnessMap;
+			Image m_AOMap;
+			Image m_MetallicMap;
 			
 			std::string m_AlbedoMapPath;
 			std::string m_NormalMapPath;
@@ -104,14 +104,9 @@ namespace vgl
 			uint32_t m_PipelineIndex;
 
 			MTLShaderConfig config;
-		private:
-			friend class MeshData;
-			friend class Renderer;
 
 			MTLShaderConfig m_PrevConfig;
 			ShaderInfo m_ShaderInfo;
-
-			std::vector<ShaderDescriptor> m_Descriptors;
 
 			bool recreate = false;
 	};

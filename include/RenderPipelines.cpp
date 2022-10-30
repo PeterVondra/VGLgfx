@@ -19,6 +19,9 @@ namespace vgl
 		//				Geometry Buffer
 		/////////////////////////////////////////////////////////////////////////////////////////////
 		m_GBuffer.m_FramebufferAttachmentInfo.p_Size = p_Window->getWindowSize();
+		m_GBuffer.m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_CreateGraphicsPipeline = false;
+		//m_GBuffer.m_FramebufferAttachmentInfo.p_RenderPipelineInfo.
+
 		// RGBA = Position
 		m_GBuffer.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
 			p_Window->getWindowSize(),
@@ -51,7 +54,8 @@ namespace vgl
 		m_GBuffer.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
 			p_Window->getWindowSize(),
 			ImageFormat::D32SF,
-			Layout::DepthR, true, true
+			Layout::DepthR, 
+			true, true
 		);
 		m_GBuffer.create();
 
@@ -100,7 +104,6 @@ namespace vgl
 		m_SSAOShader.setShader("data/Shaders/SSAO/vert.spv", "data/Shaders/SSAO/frag.spv");
 		m_SSAOFramebuffer.m_FramebufferAttachmentInfo.p_Size = p_Window->getWindowSize();
 		m_SSAOFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_SSAOShader;
-		m_SSAOFramebuffer.m_FramebufferAttachmentInfo.p_CreateGraphicsPipeline = true;
 		m_SSAOFramebuffer.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
 			p_Window->getWindowSize(),
 			ImageFormat::C16SF_1C,
@@ -111,7 +114,7 @@ namespace vgl
 		);
 		m_SSAOFramebuffer.create();
 		
-		static vk::DescriptorSetInfo infoSSAOBlur;
+		static ShaderDescriptorInfo infoSSAOBlur;
 		for (int32_t i = 0; i < m_SSAOFramebuffer.getImageAttachments().size(); i++)
 			infoSSAOBlur.p_ImageDescriptors.emplace_back(i, &m_SSAOFramebuffer.getImageAttachments()[i][0].getImage(), 0);
 
@@ -119,7 +122,6 @@ namespace vgl
 		m_SSAOBlurShader.setShader("data/Shaders/SSAO/Blur/vert.spv", "data/Shaders/SSAO/Blur/frag.spv");
 		m_SSAOBlurFramebuffer.m_FramebufferAttachmentInfo.p_Size = p_Window->getWindowSize();
 		m_SSAOBlurFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_SSAOBlurShader;
-		m_SSAOBlurFramebuffer.m_FramebufferAttachmentInfo.p_CreateGraphicsPipeline = true;
 		m_SSAOBlurFramebuffer.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
 			p_Window->getWindowSize(),
 			ImageFormat::C16SF_1C,
@@ -140,7 +142,6 @@ namespace vgl
 
 		m_LightPassFramebuffer.m_FramebufferAttachmentInfo.p_Size = p_Window->getWindowSize();
 		m_LightPassFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_GBufferLightPassShader;
-		m_LightPassFramebuffer.m_FramebufferAttachmentInfo.p_CreateGraphicsPipeline = true;
 		m_LightPassFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantShaderStage = ShaderStage::FragmentBit;
 		m_LightPassFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantData = &volumetric_light_mie_scattering;
 		m_LightPassFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantSize = sizeof(float);
@@ -151,8 +152,8 @@ namespace vgl
 			Layout::ShaderR,
 			true, true, true
 		);
-		static vk::DescriptorSetInfo infoLightPass;
-		infoLightPass.p_FragmentUniformBuffer = vk::UniformBuffer(3 * sizeof(Vector4f) + sizeof(Matrix4f) + sizeof(P_Light) * 500, 0);
+		static ShaderDescriptorInfo infoLightPass;
+		infoLightPass.p_FragmentUniformBuffer = UniformBuffer(3 * sizeof(Vector4f) + sizeof(Matrix4f) + sizeof(P_Light) * 500, 0);
 		for (int32_t i = 0; i < m_GBuffer.getImageAttachments().size(); i++) {
 			infoLightPass.p_ImageDescriptors.emplace_back(i, &m_GBuffer.getImageAttachments()[i][0].getImage(), 1);
 			infoLightPass.p_ImageDescriptors.emplace_back(i, &m_GBuffer.getImageAttachments()[i][1].getImage(), 2);
@@ -175,7 +176,7 @@ namespace vgl
 		/////////////////////////////////////////////////////////////////////////////////////////////
 		//				Screen-Space-Reflections
 		/////////////////////////////////////////////////////////////////////////////////////////////
-		static vk::DescriptorSetInfo infoSSR;
+		static ShaderDescriptorInfo infoSSR;
 		infoSSR.p_FragmentUniformBuffer = vk::UniformBuffer(4 * sizeof(float) + 2 * sizeof(Matrix4f) + sizeof(Vector4f), 0);
 		for (int32_t i = 0; i < m_GBuffer.getImageAttachments().size(); i++) {
 			infoSSR.p_ImageDescriptors.emplace_back(i, &m_LightPassFramebuffer.getImageAttachments()[i][0].getImage(), 1);
@@ -190,7 +191,6 @@ namespace vgl
 		m_SSRShader.setShader("data/Shaders/SSR/vert.spv", "data/Shaders/SSR/frag.spv");
 		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Size = p_Window->getWindowSize();
 		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_SSRShader;
-		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_CreateGraphicsPipeline = true;
 		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
 			p_Window->getWindowSize(),
 			ImageFormat::C16SF_4C,
@@ -204,9 +204,9 @@ namespace vgl
 		/////////////////////////////////////////////////////////////////////////////////////////////
 		//				Hight-Definition-Range & Post-Processing
 		/////////////////////////////////////////////////////////////////////////////////////////////
-		static vk::DescriptorSetInfo infoHDR;
-		infoHDR.p_StorageBuffer = vk::StorageBuffer(ShaderStage::FragmentBit, sizeof(float) * 2, 2);
-		infoHDR.p_FragmentUniformBuffer = vk::UniformBuffer(sizeof(m_DOFInfo), 1);
+		static ShaderDescriptorInfo infoHDR;
+		infoHDR.p_StorageBuffer = StorageBuffer(ShaderStage::FragmentBit, sizeof(float) * 2, 2);
+		infoHDR.p_FragmentUniformBuffer = UniformBuffer(sizeof(m_DOFInfo), 1);
 		for (int32_t i = 0; i < m_LightPassFramebuffer.getImageAttachments().size(); i++)
 			infoHDR.p_ImageDescriptors.emplace_back(i, &m_LightPassFramebuffer.getImageAttachments()[i][0].getImage(), 0);
 		m_HDRFramebuffer.getDescriptors().create(infoHDR);
@@ -219,7 +219,6 @@ namespace vgl
 		m_HDRFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantData = &m_HDRInfo;
 		m_HDRFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantSize = sizeof(m_HDRInfo);
 		m_HDRFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantShaderStage = ShaderStage::FragmentBit;
-		m_HDRFramebuffer.m_FramebufferAttachmentInfo.p_CreateGraphicsPipeline = true;
 		auto& info = m_HDRFramebuffer.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
 			p_Window->getWindowSize(),
 			ImageFormat::C16SF_4C,
@@ -307,20 +306,20 @@ namespace vgl
 					m_RendererPtr->submit(shadow_map->ShadowMap);
 			}
 
-			auto skybox = m_ScenePtr->getComponent<SkyboxComponent>(entity);
-			if (skybox) {
-				if (skybox->EnvironmentData.p_IrradianceMap && skybox->EnvironmentData.p_PrefilteredMap && skybox->EnvironmentData.p_BRDFLut)
-					if (skybox->EnvironmentData.p_IrradianceMap->isValid() &&
-						skybox->EnvironmentData.p_PrefilteredMap->isValid() &&
-						skybox->EnvironmentData.p_BRDFLut->isValid())
-						m_RendererPtr->submit(
-							*skybox->EnvironmentData.p_IrradianceMap,
-							*skybox->EnvironmentData.p_PrefilteredMap, 
-							*skybox->EnvironmentData.p_BRDFLut
-						);
-				if (skybox->AtmosphericScattering)
-					m_RendererPtr->submit(skybox->SkyBox, skybox->AtmosphericScatteringInfo);
-			}
+			//auto skybox = m_ScenePtr->getComponent<SkyboxComponent>(entity);
+			//if (skybox) {
+			//	if (skybox->EnvironmentData.p_IrradianceMap && skybox->EnvironmentData.p_PrefilteredMap && skybox->EnvironmentData.p_BRDFLut)
+			//		if (skybox->EnvironmentData.p_IrradianceMap->isValid() &&
+			//			skybox->EnvironmentData.p_PrefilteredMap->isValid() &&
+			//			skybox->EnvironmentData.p_BRDFLut->isValid())
+			//			m_RendererPtr->submit(
+			//				*skybox->EnvironmentData.p_IrradianceMap,
+			//				*skybox->EnvironmentData.p_PrefilteredMap, 
+			//				*skybox->EnvironmentData.p_BRDFLut
+			//			);
+			//	if (skybox->AtmosphericScattering)
+			//		m_RendererPtr->submit(skybox->SkyBox, skybox->AtmosphericScatteringInfo);
+			//}
 
 			auto mesh = m_ScenePtr->getComponent<Mesh3DComponent>(entity);
 			auto transform = m_ScenePtr->getComponent<Transform3DComponent>(entity);

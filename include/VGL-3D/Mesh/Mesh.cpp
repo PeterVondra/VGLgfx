@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include <map>
 
 namespace vgl
 {
@@ -7,11 +8,11 @@ namespace vgl
 		if (m_Materials.size() == 0)
 		{
 			m_Materials.resize(1);
-			m_MaterialIndices.resize(1);
-			m_MtlDescriptors.resize(1);
+			m_SubMeshIndices.resize(1);
+			m_MTLDescriptors.resize(1);
 
-			m_MaterialIndices[0].first = 0;
-			m_MaterialIndices[0].second = indices.size();
+			m_SubMeshIndices[0].first = 0;
+			m_SubMeshIndices[0].second = indices.size();
 		}
 
 		BufferLayout layout = { {
@@ -24,27 +25,26 @@ namespace vgl
 		};
 
 		m_Vertices.setLayout(layout);
-		m_Vertices.fill(vertices5T);
+		m_Vertices.fill(vertices);
 		m_Indices.fill(indices);
 		m_VertexArray.fill(m_Vertices, m_Indices);
 	}
 	void MeshData::updateVertices()
 	{
-		m_Vertices.update(verticesf);
+		m_Vertices.update(vertices);
 		m_Indices.update(indices);
 	}
 	void MeshData::initMaterials(EnvData& p_EnvData)
 	{
-		m_MTLCompleted = true;
+		m_MTLValid = true;
 
-		if (m_Materials.size() == 0)
-		{
+		if (m_Materials.size() == 0){
 			m_Materials.resize(1);
-			m_MaterialIndices.resize(1);
-			m_MtlDescriptors.resize(1);
+			m_SubMeshIndices.resize(1);
+			m_Materials.resize(1);
 
-			m_MaterialIndices[0].first = 0;
-			m_MaterialIndices[0].second = indices.size();
+			m_SubMeshIndices[0].first = 0;
+			m_SubMeshIndices[0].second = indices.size();
 
 			m_Materials[0].config.m_Albedo = Vector3f(1.0f);
 			m_Materials[0].config.m_Metallic = 1.0f;
@@ -52,13 +52,16 @@ namespace vgl
 			m_Materials[0].config.m_Ambient = 1.0f;
 		}
 
-		for (int i = 0; i < m_Materials.size(); i++)
-		{
+		for (int i = 0; i < m_Materials.size(); i++){
 			m_Materials[i].config.m_Ambient = 1.0f;
 
 			// Plus 16 for alignment
-			m_MtlDescriptors[i].setUniformBlock(ShaderStage::VertexBit, "ubo", nullptr, 3 * sizeof(Matrix4f) + 16);
-			m_MtlDescriptors[i].setUniformBlock(ShaderStage::FragmentBit, "ubo", nullptr, 14 * sizeof(float) );
+			//m_Materials[i].m_Descriptor.setUniformBlock(ShaderStage::VertexBit, "ubo", nullptr, 3 * sizeof(Matrix4f) + 16);
+			//m_Materials[i].m_Descriptor.setUniformBlock(ShaderStage::FragmentBit, "ubo", nullptr, 14 * sizeof(float) );
+		
+			// Plus 16 for alignment
+			m_MTLDescriptorInfo[i].p_VertexUniformBuffer = UniformBuffer(3 * sizeof(Matrix4f) + 16 + sizeof(Vector3f), 0);
+			m_MTLDescriptorInfo[i].p_FragmentUniformBuffer = UniformBuffer(10 * sizeof(float), 1);
 
 			ShaderInfo& info = m_Materials[i].m_ShaderInfo;
 			info.p_LightCaster = (uint32_t)LightCaster::Direction;
@@ -66,39 +69,33 @@ namespace vgl
 			info.p_LightMaps = 0;
 			info.p_Effects = 0;
 
-			if (m_Materials[i].m_AlbedoMap.isComplete())
-			{
-				m_MtlUniformManagers[i].setUniform("image", m_Materials[i].m_AlbedoMap, 2);
+			if (m_Materials[i].m_AlbedoMap.isValid()){
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_AlbedoMap, 2);
 				info.p_LightMaps |= (uint32_t)LightMaps::Albedo;
 			}
 
-			if (m_Materials[i].m_MetallicMap.isComplete())
-			{
-				m_MtlUniformManagers[i].setUniform("image", m_Materials[i].m_MetallicMap, 3);
+			if (m_Materials[i].m_MetallicMap.isValid()){
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_MetallicMap, 3);
 				info.p_LightMaps |= (uint32_t)LightMaps::Metallic;
 			}
 
-			if (m_Materials[i].m_RoughnessMap.isComplete())
-			{
-				m_MtlUniformManagers[i].setUniform("image", m_Materials[i].m_RoughnessMap, 4);
+			if (m_Materials[i].m_RoughnessMap.isValid()){
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_RoughnessMap, 4);
 				info.p_LightMaps |= (uint32_t)LightMaps::Roughness;
 			}
 
-			if (m_Materials[i].m_AOMap.isComplete())
-			{
-				m_MtlUniformManagers[i].setUniform("image", m_Materials[i].m_AOMap, 5);
+			if (m_Materials[i].m_AOMap.isValid()){
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_AOMap, 5);
 				info.p_LightMaps |= (uint32_t)LightMaps::AO;
 			}
 
-			if (m_Materials[i].m_NormalMap.isComplete())
-			{
-				m_MtlUniformManagers[i].setUniform("image", m_Materials[i].m_NormalMap, 6);
+			if (m_Materials[i].m_NormalMap.isValid()){
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_NormalMap, 6);
 				info.p_Effects |= (uint32_t)Effects::NormalMapping;
 			}
 
-			if (m_Materials[i].m_DisplacementMap.isComplete())
-			{
-				m_MtlUniformManagers[i].setUniform("imageDisp", m_Materials[i].m_DisplacementMap, 7);
+			if (m_Materials[i].m_DisplacementMap.isValid()){
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_DisplacementMap, 7);
 				info.p_Effects |= (uint32_t)Effects::POM;
 			}
 
@@ -130,9 +127,9 @@ namespace vgl
 			//	binding++;
 			//}
 			
-			if(p_EnvData.p_IrradianceMap && p_EnvData.p_PrefilteredMap && p_EnvData.p_BRDFLut)
-				if (p_EnvData.p_IrradianceMap->isComplete() && p_EnvData.p_PrefilteredMap->isComplete() && p_EnvData.p_BRDFLut->isComplete()) {
-					m_MtlUniformInfos[i].p_CubeMapDescriptors.emplace_back(p_EnvData.p_IrradianceMap, binding);
+			/*if(p_EnvData.p_IrradianceMap && p_EnvData.p_PrefilteredMap && p_EnvData.p_BRDFLut)
+				if (p_EnvData.p_IrradianceMap->isValid() && p_EnvData.p_PrefilteredMap->isValid() && p_EnvData.p_BRDFLut->isValid()) {
+					m_MTLDescriptorInfo[i].p_CubeMapDescriptors.emplace_back(p_EnvData.p_IrradianceMap, binding);
 					binding++;
 					m_MtlUniformInfos[i].p_CubeMapDescriptors.emplace_back(p_EnvData.p_PrefilteredMap, binding);
 
@@ -142,9 +139,9 @@ namespace vgl
 					m_MtlUniformInfos[i].p_ImageDescriptors.emplace_back(p_EnvData.p_BRDFLut, binding);
 					binding++;
 					info.p_Effects |= (uint32_t)Effects::IBL;
-				}
+				}*/
 
-			m_MtlUniformManagers[i].create();
+			m_MTLDescriptors[i].create(m_MTLDescriptorInfo[i]);
 		}
 	}
 
@@ -167,33 +164,33 @@ namespace vgl
 	void MeshData::flush()
 	{
 		indices.clear();
-		verticesf.clear();
+		vertices.clear();
 		m_Vertices.destroy();
 		m_Indices.destroy();
 	}
 
 	void MeshData::destroy()
 	{
-		for (int i = 0; i < m_MtlUniformManagers.size(); i++)
+		for (int i = 0; i < m_MTLDescriptors.size(); i++)
 		{
-			m_MtlUniformManagers[i].destroy();
+			m_MTLDescriptors[i].destroy();
 
-			if (m_Materials[i].m_AlbedoMap.isComplete())
+			if (m_Materials[i].m_AlbedoMap.isValid())
 				m_Materials[i].m_AlbedoMap.destroy();
 
-			if (m_Materials[i].m_NormalMap.isComplete())
+			if (m_Materials[i].m_NormalMap.isValid())
 				m_Materials[i].m_NormalMap.destroy();
 
-			if (m_Materials[i].m_DisplacementMap.isComplete())
+			if (m_Materials[i].m_DisplacementMap.isValid())
 				m_Materials[i].m_DisplacementMap.destroy();
 
-			if (m_Materials[i].m_MetallicMap.isComplete())
+			if (m_Materials[i].m_MetallicMap.isValid())
 				m_Materials[i].m_MetallicMap.destroy();
 
-			if (m_Materials[i].m_RoughnessMap.isComplete())
+			if (m_Materials[i].m_RoughnessMap.isValid())
 				m_Materials[i].m_RoughnessMap.destroy();
 
-			if (m_Materials[i].m_AOMap.isComplete())
+			if (m_Materials[i].m_AOMap.isValid())
 				m_Materials[i].m_AOMap.destroy();
 		}
 
@@ -213,19 +210,19 @@ namespace vgl
 			{
 				index = it->second;
 
-				p_Data.vertices5T[index].tangent += p_Vertices[i].tangent;
-				p_Data.vertices5T[index].normal += p_Vertices[i].normal;
-				p_Data.vertices5T[index].bitangent += p_Vertices[i].bitangent;
+				p_Data.vertices[index].tangent += p_Vertices[i].tangent;
+				p_Data.vertices[index].normal += p_Vertices[i].normal;
+				p_Data.vertices[index].bitangent += p_Vertices[i].bitangent;
 				p_Data.indices.push_back(index);
 				continue;
 			}
-			p_Data.vertices5T.push_back(p_Vertices[i]);
+			p_Data.vertices.push_back(p_Vertices[i]);
 
-			p_Data.indices.push_back(p_Data.vertices5T.size() - 1);
-			vertexToIndex[p_Vertices[i]] = p_Data.vertices5T.size() - 1;
+			p_Data.indices.push_back(p_Data.vertices.size() - 1);
+			vertexToIndex[p_Vertices[i]] = p_Data.vertices.size() - 1;
 		}
 	}
-	void MeshData::indexVertexData(std::vector<Vertex3T>& p_Vertices, MeshData& p_Data)
+	/*void MeshData::indexVertexData(std::vector<Vertex3T>& p_Vertices, MeshData& p_Data)
 	{
 		std::map<Vertex3T, uint32_t> vertexToIndex;
 
@@ -270,5 +267,5 @@ namespace vgl
 			p_Data.indices.push_back(p_Data.vertices2T.size() - 1);
 			vertexToIndex[p_Vertices[i]] = p_Data.vertices2T.size() - 1;
 		}
-	}
+	}*/
 }

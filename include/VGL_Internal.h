@@ -5,6 +5,6 @@
 
 #ifdef VGL_USING_VULKAN
 #include "Platform/VkIncludes.h"
-#elif defined VLG_USING_OPENGL
+#elif defined VGL_USING_OPENGL
 #include "Platform/GlIncludes.h"
 #endif

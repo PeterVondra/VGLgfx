@@ -1,32 +1,36 @@
 #pragma once
 
 #ifdef VGL_USING_VULKAN
+#include "../Platform/Vulkan/VkDescriptorSetManager.h"
+#include "../Platform/Vulkan/VkBuffers.h"
 namespace vgl
 {
 	namespace vk {
 		class Window;
 		class Renderer;
 		class Shader;
-		class DescriptorSetManager;
-		class UniformBuffer;
-		class StorageBuffer;
 		class IndexBuffer;
 		class VertexBuffer;
 		class VertexArray;
+		class RenderPipelineInfo;
 		class FramebufferAttachment;
 		class Image;
 		class ImageCube;
 		class ImageLoader;
 	}
+
 	typedef vk::Window Window;
 	typedef vk::Renderer Renderer;
 	typedef vk::Shader Shader;
+	template<typename ImageType> using SamplerData = vk::SamplerDescriptorData<ImageType>;
 	typedef vk::DescriptorSetManager ShaderDescriptor;
+	typedef vk::DescriptorSetInfo ShaderDescriptorInfo;
 	typedef vk::UniformBuffer UniformBuffer;
 	typedef vk::StorageBuffer StorageBuffer;
 	typedef vk::IndexBuffer IndexBuffer;
 	typedef vk::VertexBuffer VertexBuffer;
 	typedef vk::VertexArray VertexArray;
+	typedef vk::RenderPipelineInfo RenderPipelineInfo;
 	typedef vk::FramebufferAttachment FramebufferAttachment;
 	typedef vk::Image Image;
 	typedef vk::ImageCube ImageCube;

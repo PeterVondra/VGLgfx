@@ -184,5 +184,13 @@ namespace vgl
 		
 			bool m_IsValid = false;
 		};
+
+		struct RenderPipelineInfo
+		{
+			bool p_CreateGraphicsPipeline = false;
+			RenderPass* p_RenderPass = nullptr;
+			g_Pipeline* p_Pipeline = nullptr; // Use another pipeline
+			g_PipelineInfo p_GraphicsPipelineInfo;
+		};
 	}
 }

@@ -6,16 +6,18 @@ namespace vgl
 	{
 		void FramebufferAttachment::create()
 		{
+			#define FBAinfo m_FramebufferAttachmentInfo
+
 			////////////////////////////////////////////////////////
 			// CREATE RENDERPASS
 			////////////////////////////////////////////////////////
 
 			// If no renderpass is provided in m_FramebufferAttachmentInfo then create one here
-			if(!m_FramebufferAttachmentInfo.p_ShaderPackage.p_RenderPass){
+			if(!FBAinfo.p_RenderPipelineInfo.p_RenderPass){
 				VkSubpassDependency dependency = {};
 
 				bool flag = false;
-				for(auto& attachment : m_FramebufferAttachmentInfo.p_AttachmentDescriptors){
+				for(auto& attachment : FBAinfo.p_AttachmentDescriptors){
 					m_RenderPass.addAttachment(attachment.p_AttachmentInfo);
 
 					// If depth will be read from in the future, layout needs to be transitioned (using subpass dependencies)
@@ -64,47 +66,46 @@ namespace vgl
 
 				m_RenderPass.create();
 
-				m_FramebufferAttachmentInfo.p_ShaderPackage.p_RenderPass = &m_RenderPass;
+				FBAinfo.p_RenderPipelineInfo.p_RenderPass = &m_RenderPass;
 			}
 
 			////////////////////////////////////////////////////////
 			// CREATE GRAPHICS PIPELINE
 			////////////////////////////////////////////////////////
 
-			if(m_FramebufferAttachmentInfo.p_PushConstantSize > 0) {
-				m_FramebufferAttachmentInfo.p_ShaderPackage.p_GraphicsPipelineInfo.p_UsePushConstants = true;
-				m_FramebufferAttachmentInfo.p_ShaderPackage.p_GraphicsPipelineInfo.p_PushConstantShaderStage = getShaderStageVkH(m_FramebufferAttachmentInfo.p_PushConstantShaderStage);
-				m_FramebufferAttachmentInfo.p_ShaderPackage.p_GraphicsPipelineInfo.p_PushConstantSize = m_FramebufferAttachmentInfo.p_PushConstantSize;
+			if(FBAinfo.p_PushConstantSize > 0) {
+				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_UsePushConstants = true;
+				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_PushConstantShaderStage = getShaderStageVkH(FBAinfo.p_PushConstantShaderStage);
+				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_PushConstantSize = FBAinfo.p_PushConstantSize;
 			}
-			m_FramebufferAttachmentInfo.p_ShaderPackage.p_GraphicsPipelineInfo.p_RenderPass = m_FramebufferAttachmentInfo.p_ShaderPackage.p_RenderPass;
-			m_FramebufferAttachmentInfo.p_ShaderPackage.p_GraphicsPipelineInfo.p_Shader = m_FramebufferAttachmentInfo.p_ShaderPackage.p_Shader;
 
-			if(m_FramebufferAttachmentInfo.p_ShaderPackage.p_CreateGraphicsPipeline)
-				m_Pipeline.create(m_FramebufferAttachmentInfo.p_ShaderPackage.p_GraphicsPipelineInfo);
+			FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_RenderPass = FBAinfo.p_RenderPipelineInfo.p_RenderPass;
+			FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_Shader = FBAinfo.p_Shader;
+
+			if(FBAinfo.p_RenderPipelineInfo.p_CreateGraphicsPipeline)
+				m_Pipeline.create(FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo);
 
 			for(uint16_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++){
-				m_ImageAttachments[i].resize(m_FramebufferAttachmentInfo.p_AttachmentDescriptors.size());
-
+				m_ImageAttachments[i].resize(FBAinfo.p_AttachmentDescriptors.size());
 				FramebufferInfo framebufferInfo;
 
-				for(uint16_t j = 0; j < m_FramebufferAttachmentInfo.p_AttachmentDescriptors.size(); j++){
+				for(uint16_t j = 0; j < FBAinfo.p_AttachmentDescriptors.size(); j++){
 					ImageAttachmentInfo attachmentInfo;
-					attachmentInfo.p_AttachmentInfo = &m_FramebufferAttachmentInfo.p_AttachmentDescriptors[j].p_AttachmentInfo;
-					attachmentInfo.p_AllowMipMapping = m_FramebufferAttachmentInfo.p_AttachmentDescriptors[j].p_AllowMipMapping;
-					attachmentInfo.p_CreateSampler = m_FramebufferAttachmentInfo.p_AttachmentDescriptors[j].m_CreateSampler;
-					attachmentInfo.p_BorderColor = m_FramebufferAttachmentInfo.p_AttachmentDescriptors[j].p_BorderColor;
-					attachmentInfo.p_SamplerMode = m_FramebufferAttachmentInfo.p_AttachmentDescriptors[j].p_SamplerMode;
-					attachmentInfo.p_Size = m_FramebufferAttachmentInfo.p_Size;
-
+					attachmentInfo.p_AttachmentInfo = &FBAinfo.p_AttachmentDescriptors[j].p_AttachmentInfo;
+					attachmentInfo.p_AllowMipMapping = FBAinfo.p_AttachmentDescriptors[j].p_AllowMipMapping;
+					attachmentInfo.p_CreateSampler = FBAinfo.p_AttachmentDescriptors[j].m_CreateSampler;
+					attachmentInfo.p_BorderColor = FBAinfo.p_AttachmentDescriptors[j].p_BorderColor;
+					attachmentInfo.p_SamplerMode = FBAinfo.p_AttachmentDescriptors[j].p_SamplerMode;
+					attachmentInfo.p_Size = FBAinfo.p_Size;
 					m_ImageAttachments[i][j].create(attachmentInfo);
 
-					if(m_FramebufferAttachmentInfo.p_AttachmentDescriptors[j].p_AllowMipMapping) 
+					if(FBAinfo.p_AttachmentDescriptors[j].p_AllowMipMapping) 
 						framebufferInfo.p_AllowMipMapping = true;
 				}
-
+				
 				framebufferInfo.p_ImageAttachments = m_ImageAttachments[i];
-				framebufferInfo.p_Size = m_FramebufferAttachmentInfo.p_Size;
-				framebufferInfo.p_RenderPass = m_FramebufferAttachmentInfo.p_ShaderPackage.p_RenderPass;
+				framebufferInfo.p_Size = FBAinfo.p_Size;
+				framebufferInfo.p_RenderPass = FBAinfo.p_RenderPipelineInfo.p_RenderPass;
 				m_Framebuffer[i].create(framebufferInfo);
 			}
 
@@ -153,7 +154,7 @@ namespace vgl
 		{
 			m_CurrentCommandBuffer = &p_CommandBuffer;
 			m_CurrentCommandBuffer->cmdBeginRenderPass(
-				*m_FramebufferAttachmentInfo.p_ShaderPackage.p_RenderPass,
+				*m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_RenderPass,
 				p_SubpassContents,
 				m_Framebuffer[p_ImageIndex]
 			);
@@ -173,7 +174,12 @@ namespace vgl
 				p_CommandBuffer.cmdBeginRenderPass(m_RenderPass, SubpassContents::Inline, m_Framebuffer[p_ImageIndex], &m_AttachmentBeginInfo);
 			} else p_CommandBuffer.cmdBeginRenderPass(m_RenderPass, SubpassContents::Inline, m_Framebuffer[p_ImageIndex]);
 
-			p_CommandBuffer.cmdSetViewport(Viewport({ m_FramebufferAttachmentInfo.p_Size.x, -m_FramebufferAttachmentInfo.p_Size.y }, { 0, m_FramebufferAttachmentInfo.p_Size.y }));
+			p_CommandBuffer.cmdSetViewport(
+				Viewport(
+					{ m_FramebufferAttachmentInfo.p_Size.x, -m_FramebufferAttachmentInfo.p_Size.y },
+					{ 0, m_FramebufferAttachmentInfo.p_Size.y }
+				)
+			);
 			p_CommandBuffer.cmdSetScissor(Scissor({ m_FramebufferAttachmentInfo.p_Size.x, m_FramebufferAttachmentInfo.p_Size.y }, { 0, 0 }));
 			p_CommandBuffer.cmdBindPipeline(m_Pipeline);
 			p_CommandBuffer.cmdBindVertexArray(m_RecVao);

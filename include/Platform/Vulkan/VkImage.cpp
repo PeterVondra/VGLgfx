@@ -1,6 +1,5 @@
 #include "VkImage.h"
 #include "../../Utils/Logger.h"
-#include "VkCommandBuffer.h"
 
 #include <SOIL/SOIL.h>
 
@@ -339,8 +338,7 @@ namespace vgl
 			if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
 				Utils::Logger::logMSG("texture image format does not support linear blitting!", "Vulkan Texture", Utils::Severity::Warning);
 
-				m_ContextPtr->transitionLayoutImage
-				(
+				m_ContextPtr->transitionLayoutImage(
 					p_Image,
 					p_Format,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -350,7 +348,7 @@ namespace vgl
 				return;
 			}
 
-			VkCommandBuffer cmd = CommandBuffer::beginSingleTimeCmds().vkHandle();
+			VkCommandBuffer cmd = m_ContextPtr->beginSingleTimeCmds();
 
 			VkImageMemoryBarrier barrier = {};
 			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -414,7 +412,7 @@ namespace vgl
 
 			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-			CommandBuffer::endSingleTimeCmds(cmd);
+			m_ContextPtr->endSingleTimeCmds(cmd);
 		}
 
 		ImageCube::ImageCube()
@@ -446,12 +444,89 @@ namespace vgl
 		}
 		void ImageCube::createImage()
 		{
+			if (m_CurrentChannels != Channels::None){
+				VkDeviceSize imageSize = 0;
+				VkDeviceSize imageLayerSize = 0;
+
+				for (auto& channels : m_Channels){
+					if (m_CurrentChannels == channels.first){
+						imageSize = static_cast<size_t>(m_Size[0].x * m_Size[0].y * channels.second * 6); // 6 faces to the cubemap
+						imageLayerSize = imageSize/6; // 6 faces to the cubemap
+						break;
+					}
+				}
+
+				VkFormat format = (VkFormat)m_CurrentChannels;
+
+				auto alloc = m_ContextPtr->createBuffer(
+					imageSize,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_MEMORY_USAGE_CPU_ONLY,
+					m_StagingBuffer
+				).p_Alloc;
+
+				m_Mapped = m_ContextPtr->mapMemory(alloc);
+				for(uint8_t i = 0; i < 6; i++)
+					memcpy(m_Mapped + imageLayerSize * i, m_ImageData[i], static_cast<size_t>(imageSize));
+				m_ContextPtr->unmapMemory(alloc);
+
+
+				m_ImageAllocation = m_ContextPtr->createImage(
+					m_Size[0].x, m_Size[0].y,
+					format,
+					VK_IMAGE_TILING_OPTIMAL,
+					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+					VMA_MEMORY_USAGE_GPU_ONLY,
+					m_VkImageHandle, m_MipLevels, 6
+				).p_Alloc;
+
+				m_ContextPtr->transitionLayoutImage(
+					m_VkImageHandle,
+					format,
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_MipLevels, 6
+				);
+				m_ContextPtr->copyBufferToImage(
+					m_StagingBuffer,
+					m_VkImageHandle,
+					static_cast<uint32_t>(m_Size[0].x),
+					static_cast<uint32_t>(m_Size[0].y), 6
+				);
+
+				m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
+			}
 		}
 		void ImageCube::createImageView()
 		{
+			m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, (VkFormat)m_CurrentChannels, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels, VK_IMAGE_VIEW_TYPE_CUBE);
 		}
 		void ImageCube::createSampler(SamplerMode p_SamplerMode)
 		{
+			m_SamplerMode = p_SamplerMode;
+
+			VkSamplerCreateInfo samplerInfo = {};
+			samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			samplerInfo.magFilter = (VkFilter)m_MagFilter;
+			samplerInfo.minFilter = (VkFilter)m_MinFilter;
+			samplerInfo.addressModeU = (VkSamplerAddressMode)p_SamplerMode;
+			samplerInfo.addressModeV = (VkSamplerAddressMode)p_SamplerMode;
+			samplerInfo.addressModeW = (VkSamplerAddressMode)p_SamplerMode;
+			samplerInfo.anisotropyEnable = VK_TRUE;
+			samplerInfo.maxAnisotropy = 16;
+			samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+			samplerInfo.unnormalizedCoordinates = VK_FALSE;
+			samplerInfo.compareEnable = VK_FALSE;
+			samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			samplerInfo.mipLodBias = 0.0f;
+			samplerInfo.minLod = 0.0f;
+			samplerInfo.maxLod = static_cast<float>(m_MipLevels);
+
+			if (vkCreateSampler(m_ContextPtr->m_Device, &samplerInfo, nullptr, &m_Sampler) != VK_SUCCESS) {
+#ifdef USE_LOGGING
+				Utils::Logger::logMSG("Failed to create image sampler", "VkImage->Sampler", Utils::Severity::Error);
+#endif
+			}
 		}
 
 		bool ImageLoader::getImageFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)

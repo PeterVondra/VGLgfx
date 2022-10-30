@@ -233,7 +233,7 @@ namespace vgl
 			vkCmdExecuteCommands(m_CommandBuffer, 1, &p_CommandBuffer.m_CommandBuffer);
 		}
 		// Execute secondary command buffers, if this command buffer level is set to primary
-		void CommandBuffer::cmdExecuteCommands(std::vector<CommandBuffer>& p_CommandBuffers, size_t p_Size)
+		void CommandBuffer::cmdExecuteCommands(std::vector<CommandBuffer>& p_CommandBuffers, uint32_t p_Size)
 		{
 			if (p_Size > 0)
 			{

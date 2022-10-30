@@ -3,6 +3,7 @@
 #include "VkWindow.h"
 #include "VkFramebufferAttachment.h"
 #include "VkImGui.h"
+#include "VkCommandBuffer.h"
 
 #include "../../VGL-3D/Mesh/Mesh.h"
 #include "../../Math/Camera.h"
@@ -104,6 +105,7 @@ namespace vgl
 
 				void setCmdDefaultViewport(CommandBuffer& p_CommandBuffer);
 
+				// p_Ptr is arbitrary data set beforehand 
 				void blitImageFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
 				void primaryRecFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
 				void primaryShadowRecFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
