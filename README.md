@@ -42,7 +42,7 @@ ___(Currently not running, still needs refactoring)___
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(183).png?raw=true)
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(185).png?raw=true)
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(84).png?raw=true)
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
+
+
+
