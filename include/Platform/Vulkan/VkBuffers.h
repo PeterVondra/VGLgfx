@@ -1,77 +1,17 @@
 #pragma once
 
 #include<iostream>
-#define GLFW_INCLUDE_VULKAN
-#include<GLFW/glfw3.h>
 
 #include <vector>
 
 #include "VkContext.h"
 #include "../../BufferLayout.h"
+#include "VkDefinitions.h"
 
 namespace vgl
 {
 	namespace vk
 	{
-		class IndexBuffer;
-		class VertexBuffer;
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// VERTEX ARRAY
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		// Container for both vertex buffers and index buffer
-		class VertexArray
-		{
-		public:
-
-			VertexArray();
-			VertexArray(VertexBuffer& p_VertexBuffer);
-			VertexArray(std::vector<VertexBuffer*>& p_VertexBuffers);
-			VertexArray(const std::initializer_list<VertexBuffer*>& p_VertexBuffers);
-
-			VertexArray(std::vector<VertexBuffer*>& p_VertexBuffers, IndexBuffer& p_IndexBuffer);
-			VertexArray(const std::initializer_list<VertexBuffer*>& p_VertexBuffers, IndexBuffer& p_IndexBuffer);
-			VertexArray(VertexBuffer& p_VertexBuffer, IndexBuffer& p_IndexBuffer);
-
-			~VertexArray();
-
-			//Fill the vertex array with buffers
-			void fill(VertexBuffer& p_VertexBuffer);
-			void fill(std::vector<VertexBuffer*>& p_VertexBuffers);
-			void fill(const std::initializer_list<VertexBuffer*>& p_VertexBuffers);
-
-			void fill(std::vector<VertexBuffer*>& p_VertexBuffers, IndexBuffer& p_IndexBuffer);
-			void fill(const std::initializer_list<VertexBuffer*>& p_VertexBuffers, IndexBuffer& p_IndexBuffer);
-			void fill(VertexBuffer& p_VertexBuffer, IndexBuffer& p_IndexBuffer);
-
-			void update(const uint32_t p_Index);
-
-			size_t getIndexCount() { return indexBuffer->m_Count; }
-			
-			bool isValid() { return m_IsValid; }
-		protected:
-		private:
-			friend class Renderer;
-			friend class BaseRenderer;
-			friend class ForwardRenderer;
-			friend class DeferredRenderer;
-			friend class CommandBuffer;
-
-			bool m_IsValid = false;
-
-			std::vector<VkVertexInputBindingDescription>	m_BindingDescriptions;
-			std::vector<std::vector<VkVertexInputAttributeDescription>>	m_AttributeDescriptions;
-
-			//Binding descriptions for memory layout
-			std::vector<VkVertexInputBindingDescription>	getBindingDescription();
-			std::vector<std::vector<VkVertexInputAttributeDescription>>	getAttributeDescriptions();
-
-			std::vector<VkBuffer> buffers;
-			std::vector<VertexBuffer*> m_VertexBuffers;
-			IndexBuffer* indexBuffer;
-		};
-
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// INDEX BUFFER
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -107,10 +47,8 @@ namespace vgl
 		private:
 			friend class VertexArray;
 			friend class Renderer;
-			friend class BaseRenderer;
-			friend class ForwardRenderer;
-			friend class DeferredRenderer;
 			friend class CommandBuffer;
+			friend class FramebufferAttachment;
 
 			Context* m_ContextPtr;
 
@@ -127,110 +65,6 @@ namespace vgl
 			bool m_AlreadyDestroyed = false;
 			bool m_IsValid = false;
 		};
-
-		template<typename T>
-		inline void IndexBuffer::update(std::vector<T>& p_BufferData)
-		{
-			if (!p_BufferData.empty())
-			{
-				destroy();
-
-				m_BufferSize = sizeof(p_BufferData[0]) * p_BufferData.size();
-
-				auto alloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer);
-
-				auto data = m_ContextPtr->mapMemory(alloc);
-				memcpy(data, p_BufferData.data(), m_BufferSize);
-				m_ContextPtr->unmapMemory(alloc);
-
-				m_AllocInfo = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_Buffer);
-
-				m_ContextPtr->copyBuffer(m_StagingBuffer, m_Buffer, m_BufferSize);
-
-				m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
-			}
-		}
-		inline void IndexBuffer::update(void* p_BufferData, const uint32_t p_Size)
-		{
-			if (!p_BufferData)
-			{
-				destroy();
-
-				m_BufferSize = p_Size;
-
-				m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer).p_Alloc;
-
-				auto data = m_ContextPtr->mapMemory(m_StagingBufferAlloc);
-				memcpy(data, p_BufferData, m_BufferSize);
-				m_ContextPtr->unmapMemory(m_StagingBufferAlloc);
-
-				m_AllocInfo = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_Buffer);
-
-				m_ContextPtr->copyBuffer(m_StagingBuffer, m_Buffer, m_BufferSize);
-
-				m_ContextPtr->destroyBuffer(m_StagingBuffer, m_StagingBufferAlloc);
-			}
-		}
-
-		inline void IndexBuffer::allocate(const uint32_t p_Size)
-		{
-			if (m_IsValid)
-				destroy();
-			m_BufferSize = p_Size;
-
-			m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer).p_Alloc;
-
-			m_ContextPtr->mapMemory(m_StagingBufferAlloc);
-		}
-		inline void IndexBuffer::allocateHV(const uint32_t p_Size)
-		{
-			if (m_IsValid)
-				destroy();
-			m_BufferSize = p_Size;
-
-			m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, m_StagingBuffer).p_Alloc;
-
-			m_ContextPtr->mapMemory(m_StagingBufferAlloc);
-
-			m_IsValid = true;
-		}
-		inline void IndexBuffer::copy(void* p_BufferData, uint32_t p_Offset, const uint32_t p_Size)
-		{
-			if (m_Data)
-				memcpy((char*)m_Data + p_Offset, p_BufferData, p_Size);
-		}
-		template<typename T>inline void IndexBuffer::copy(T* p_BufferData, uint32_t p_Offset, const uint32_t p_Size)
-		{
-			if (m_Data)
-				memcpy((T*)m_Data + p_Offset, p_BufferData, p_Size);
-		}
-		inline void IndexBuffer::flush()
-		{
-			//VkMappedMemoryRange mappedRange = {};
-			//mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-			//mappedRange.memory = m_IndexBufferMemory;
-			//mappedRange.offset = 0;
-			//mappedRange.size = VK_WHOLE_SIZE;
-			//vkFlushMappedMemoryRanges(m_ContextPtr->m_Device, 1, &mappedRange);
-			vmaFlushAllocation(m_ContextPtr->m_VmaAllocator, m_AllocInfo.p_Alloc, 0, VK_WHOLE_SIZE);
-		}
-		inline void IndexBuffer::create()
-		{
-			if (m_Data)
-			{
-				m_ContextPtr->unmapMemory(m_StagingBufferAlloc);
-
-				m_AllocInfo = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_Buffer);
-
-				m_ContextPtr->copyBuffer(m_StagingBuffer, m_Buffer, m_BufferSize);
-
-				m_ContextPtr->destroyBuffer(m_StagingBuffer, m_StagingBufferAlloc);
-
-				m_IsValid = true;
-
-				flush();
-			}
-		}
 
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// VERTEX BUFFER
@@ -286,16 +120,14 @@ namespace vgl
 				return m_Buffer == p_VertexBuffer.m_Buffer && m_Data == p_VertexBuffer.m_Data;
 			}
 
-			bool isValid() { return isValid; }
+			bool isValid() { return m_IsValid; }
 
 		protected:
 		private:
 			friend class VertexArray;
 			friend class Renderer;
-			friend class BaseRenderer;
-			friend class ForwardRenderer;
-			friend class DeferredRenderer;
 			friend class CommandBuffer;
+			friend class FramebufferAttachment;
 
 			InputRate m_InputRate;
 
@@ -338,6 +170,169 @@ namespace vgl
 
 			bool m_IsValid = false;
 		};
+
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// VERTEX ARRAY
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		// Container for both vertex buffers and index buffer
+		class VertexArray
+		{
+		public:
+
+			VertexArray();
+			VertexArray(VertexBuffer& p_VertexBuffer);
+			VertexArray(std::vector<VertexBuffer*>& p_VertexBuffers);
+			VertexArray(const std::initializer_list<VertexBuffer*>& p_VertexBuffers);
+
+			VertexArray(std::vector<VertexBuffer*>& p_VertexBuffers, IndexBuffer& p_IndexBuffer);
+			VertexArray(const std::initializer_list<VertexBuffer*>& p_VertexBuffers, IndexBuffer& p_IndexBuffer);
+			VertexArray(VertexBuffer& p_VertexBuffer, IndexBuffer& p_IndexBuffer);
+
+			~VertexArray();
+
+			//Fill the vertex array with buffers
+			void fill(VertexBuffer& p_VertexBuffer);
+			void fill(std::vector<VertexBuffer*>& p_VertexBuffers);
+			void fill(const std::initializer_list<VertexBuffer*>& p_VertexBuffers);
+
+			void fill(std::vector<VertexBuffer*>& p_VertexBuffers, IndexBuffer& p_IndexBuffer);
+			void fill(const std::initializer_list<VertexBuffer*>& p_VertexBuffers, IndexBuffer& p_IndexBuffer);
+			void fill(VertexBuffer& p_VertexBuffer, IndexBuffer& p_IndexBuffer);
+
+			void update(const uint32_t p_Index);
+
+			size_t getIndexCount() { return indexBuffer->m_Count; }
+			
+			bool isValid() { return m_IsValid; }
+		protected:
+		private:
+			friend class Renderer;
+			friend class CommandBuffer;
+			friend class FramebufferAttachment;
+
+			bool m_IsValid = false;
+
+			std::vector<VkVertexInputBindingDescription>	m_BindingDescriptions;
+			std::vector<std::vector<VkVertexInputAttributeDescription>>	m_AttributeDescriptions;
+
+			//Binding descriptions for memory layout
+			std::vector<VkVertexInputBindingDescription>	getBindingDescription();
+			std::vector<std::vector<VkVertexInputAttributeDescription>>	getAttributeDescriptions();
+
+			std::vector<VkBuffer> buffers;
+			std::vector<VertexBuffer*> m_VertexBuffers;
+			IndexBuffer* indexBuffer;
+		};
+
+		template<typename T>
+		inline void IndexBuffer::update(std::vector<T>& p_BufferData)
+		{
+			if (!p_BufferData.empty())
+			{
+				destroy();
+
+				m_BufferSize = sizeof(p_BufferData[0]) * p_BufferData.size();
+
+				auto alloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer);
+
+				auto data = m_ContextPtr->mapMemory(alloc.p_Alloc);
+				memcpy(data, p_BufferData.data(), m_BufferSize);
+				m_ContextPtr->unmapMemory(alloc.p_Alloc);
+
+				m_AllocInfo = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_Buffer);
+
+				m_ContextPtr->copyBuffer(m_StagingBuffer, m_Buffer, m_BufferSize);
+
+				m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc.p_Alloc);
+			}
+		}
+		inline void IndexBuffer::update(void* p_BufferData, const uint32_t p_Size)
+		{
+			if (!p_BufferData)
+			{
+				destroy();
+
+				m_BufferSize = p_Size;
+
+				m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer).p_Alloc;
+
+				auto data = m_ContextPtr->mapMemory(m_StagingBufferAlloc);
+				memcpy(data, p_BufferData, m_BufferSize);
+				m_ContextPtr->unmapMemory(m_StagingBufferAlloc);
+
+				m_AllocInfo = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_Buffer);
+
+				m_ContextPtr->copyBuffer(m_StagingBuffer, m_Buffer, m_BufferSize);
+
+				m_ContextPtr->destroyBuffer(m_StagingBuffer, m_StagingBufferAlloc);
+			}
+		}
+
+		inline void IndexBuffer::allocate(const uint32_t p_Size)
+		{
+			if (m_IsValid)
+				destroy();
+			m_BufferSize = p_Size;
+
+			m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer).p_Alloc;
+
+			m_ContextPtr->mapMemory(m_StagingBufferAlloc);
+
+			m_IsValid = true;
+		}
+		inline void IndexBuffer::allocateHV(const uint32_t p_Size)
+		{
+			if (m_IsValid)
+				destroy();
+			m_BufferSize = p_Size;
+
+			m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, m_StagingBuffer).p_Alloc;
+
+			m_ContextPtr->mapMemory(m_StagingBufferAlloc);
+
+			m_IsValid = true;
+		}
+		inline void IndexBuffer::copy(void* p_BufferData, uint32_t p_Offset, const uint32_t p_Size)
+		{
+			if (m_Data)
+				memcpy((char*)m_Data + p_Offset, p_BufferData, p_Size);
+		}
+		template<typename T>inline void IndexBuffer::copy(T* p_BufferData, uint32_t p_Offset, const uint32_t p_Size)
+		{
+			if (m_Data)
+				memcpy((T*)m_Data + p_Offset, p_BufferData, p_Size);
+		}
+		inline void IndexBuffer::flush()
+		{
+			//VkMappedMemoryRange mappedRange = {};
+			//mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			//mappedRange.memory = m_IndexBufferMemory;
+			//mappedRange.offset = 0;
+			//mappedRange.size = VK_WHOLE_SIZE;
+			//vkFlushMappedMemoryRanges(m_ContextPtr->m_Device, 1, &mappedRange);
+			vmaFlushAllocation(m_ContextPtr->m_VmaAllocator, m_AllocInfo.p_Alloc, 0, VK_WHOLE_SIZE);
+		}
+		inline void IndexBuffer::create()
+		{
+			if (m_IsValid)
+				destroy();
+
+			if (m_Data)
+			{
+				m_ContextPtr->unmapMemory(m_StagingBufferAlloc);
+
+				m_AllocInfo = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_Buffer);
+
+				m_ContextPtr->copyBuffer(m_StagingBuffer, m_Buffer, m_BufferSize);
+
+				m_ContextPtr->destroyBuffer(m_StagingBuffer, m_StagingBufferAlloc);
+
+				m_IsValid = true;
+
+				flush();
+			}
+		}
 
 		inline VertexBuffer::VertexBuffer()
 		{
@@ -410,7 +405,7 @@ namespace vgl
 				destroy();
 
 				//size of bytes to allocate into the buffer
-				m_BufferSize = sizeof(p_BufferData->operator[](0)) * p_BufferData-size();
+				m_BufferSize = sizeof(p_BufferData->operator[](0)) * p_BufferData->size();
 
 				m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer).p_Alloc;
 
@@ -431,23 +426,49 @@ namespace vgl
 		}
 		template<typename T>
 		inline void VertexBuffer::update(std::vector<T>& p_BufferData)
-		{
-			fill(&p_BufferData);
+		{	
+			if (!p_BufferData.empty())
+			{
+				destroy();
+
+				//size of bytes to allocate into the buffer
+				m_BufferSize = sizeof(p_BufferData.operator[](0)) * p_BufferData.size();
+
+				m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer).p_Alloc;
+
+				// Copy data to a staging buffer
+				m_Data = m_ContextPtr->mapMemory(m_StagingBufferAlloc);
+				memcpy(m_Data, p_BufferData.data(), m_BufferSize);
+				m_ContextPtr->unmapMemory(m_StagingBufferAlloc);
+
+				m_AllocInfo = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_Buffer);
+
+				// Copy content of staging buffer(CPU) to vertex buffer(GPU)
+				m_ContextPtr->copyBuffer(m_StagingBuffer, m_Buffer, m_BufferSize);
+
+				m_ContextPtr->destroyBuffer(m_StagingBuffer, m_StagingBufferAlloc);
+
+				flush();
+			}
+
+
 		}
 
 		inline void VertexBuffer::allocate(const uint32_t p_Size)
 		{
-			if (isValid)
+			if (m_IsValid)
 				destroy();
 			m_BufferSize = p_Size;
 
 			m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer).p_Alloc;
 
 			m_Data = m_ContextPtr->mapMemory(m_StagingBufferAlloc);
+
+			m_IsValid = true;
 		}
 		inline void VertexBuffer::allocateHV(const uint32_t p_Size)
 		{
-			if (isValid)
+			if (m_IsValid)
 				destroy();
 			m_BufferSize = p_Size;
 
@@ -473,6 +494,9 @@ namespace vgl
 		}
 		inline void VertexBuffer::create()
 		{
+			if (m_IsValid)
+				destroy();
+
 			if (m_Data){
 				m_ContextPtr->unmapMemory(m_StagingBufferAlloc);
 
@@ -700,10 +724,11 @@ namespace vgl
 				return;
 			if (!p_BufferData->empty())
 			{
-				destroy();
+				if(m_IsValid)
+					destroy();
 
 				//size of bytes to allocate into the buffer
-				m_BufferSize = sizeof(p_BufferData->operator[](0)) * p_BufferData - size();
+				m_BufferSize = sizeof(p_BufferData->operator[](0)) * p_BufferData->size();
 
 				m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer).p_Alloc;
 
@@ -720,6 +745,8 @@ namespace vgl
 				m_ContextPtr->destroyBuffer(m_StagingBuffer, m_StagingBufferAlloc);
 
 				flush();
+
+				m_IsValid = true;
 			}
 		}
 	}

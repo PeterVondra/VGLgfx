@@ -189,7 +189,7 @@ namespace vgl
 		static std::vector<std::string> gbuffer_shader;
 		int binding = 2;
 
-		gbuffer_shader = loadShader("resources/Shaders/GBuffer.vert.glsl", "resources/Shaders/GBuffer.frag.glsl");
+		gbuffer_shader = loadShader("data/Shaders/GBuffer.vert.glsl", "data/Shaders/GBuffer.frag.glsl");
 
 		shader.resize(gbuffer_shader.size());
 
@@ -197,7 +197,7 @@ namespace vgl
 		{
 			shader[i] += "#version 450\n";
 			shader[i] += "#extension GL_ARB_separate_shader_objects : enable\n";
-			shader[i] += "#extension GL_ARB_shading_language_include : enable\n";
+			//shader[i] += "#extension GL_ARB_shading_language_include : enable\n";
 			shader[i] += "#extension GL_GOOGLE_include_directive : enable\n";
 		}
 
@@ -314,7 +314,7 @@ namespace vgl
 		{
 			shader[i] += "#version 450\n";
 			shader[i] += "#extension GL_ARB_separate_shader_objects : enable\n";
-			shader[i] += "#extension GL_ARB_shading_language_include : enable\n";
+			//shader[i] += "#extension GL_ARB_shading_language_include : enable\n";
 			shader[i] += "#extension GL_GOOGLE_include_directive : enable\n";
 		}
 
@@ -369,8 +369,8 @@ namespace vgl
 		// Using Image Based Lighting
 		if (p_ShaderInfo.p_Effects & (uint32_t)Effects::IBL)
 		{
-			shader[0] += "#define Bloom\n";
-			shader[1] += "#define Bloom\n";
+			shader[0] += "#define BLOOM\n";
+			shader[1] += "#define BLOOM\n";
 			binding++;
 		}
 

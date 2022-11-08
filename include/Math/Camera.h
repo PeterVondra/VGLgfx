@@ -46,7 +46,10 @@ namespace vgl
 			Matrix4f& getViewMatrix();
 			Matrix4f& getPerspectiveMatrix();
 			Matrix4f& getOrthographicMatrix();
-			Vector3f getPosition();
+			Vector3f& getPosition();
+
+      void setPerspectiveMatrix(const Matrix4f& p_Perspective) { m_PerspectiveMatrix = p_Perspective; }
+      void setOrthographicMatrix(const Matrix4f& p_Orthographic) { m_OrthographicMatrix = p_Orthographic; }  
 
 			const Matrix4f& setPerspectiveMatrix(const float p_AspectRatio);
 			const Matrix4f& setOrthographicMatrix(
@@ -59,6 +62,9 @@ namespace vgl
 			void setYaw(const float p_Yaw);
 			void setPitch(const float p_Pitch);
 			void setRoll(const float p_Roll);
+      void setFOV(const float p_FOV){ m_FieldOfView = p_FOV; }
+      void setAspectRatio(const float p_AspectRatio) { m_AspectRatio = p_AspectRatio; }
+      void setViewMatrix(const Matrix4f p_ViewMatrix) { m_ViewMatrix = p_ViewMatrix; }
 
 			void moveFromCameraView(const Vector3f p_Offset)
 			{  
@@ -73,7 +79,8 @@ namespace vgl
 			void setView(const View p_View);
 			const float& getFieldOfView();
 			void lookAt(const Vector3f p_LookAtPoint);
-
+      
+      float getViewModifier() { return m_ViewZModifier; }
 			void setViewModifier(const float p_Modifier) { m_ViewZModifier = p_Modifier; }
 			View getView() { return m_View; }
 
@@ -227,18 +234,30 @@ namespace vgl
 			bool isEnabled() { return m_Enabled; }
 			void enable(const bool p_Enabled) { m_Enabled = p_Enabled; }
 			void constrainPitch(const bool p_ConstrainPitch) { m_ConstrainPitch = p_ConstrainPitch; }
+			bool  isPitchConstrained(){ return m_ConstrainPitch; }
+
+			float getSensitivity() { return m_Sensitivity; }
+			float getZoom() { return m_Zoom; }
+			float getYaw() { return m_Yaw; }
+			float getPitch() { return m_Pitch; }
+
+			void setYaw(const float p_Yaw) { m_Yaw = p_Yaw; }
+			void setPitch(const float p_Pitch) { m_Pitch = p_Pitch; }
 
 			void setMovementSpeed(const float p_MovementSpeed) { m_MovementSpeed = p_MovementSpeed; }
 			void setSensitivity(const float p_Sensitivity) { m_Sensitivity = p_Sensitivity; }
-			
+
+
+			float m_MovementSpeed;
 		private:
+			friend class Scene;
+
 			Camera* m_CameraPtr;
 			double* m_DeltaTimePtr;
 
 			bool m_Enabled;
 			bool m_ConstrainPitch;
 			float m_Sensitivity;
-			float m_MovementSpeed;
 			float m_Zoom;
 
 			float m_Yaw;

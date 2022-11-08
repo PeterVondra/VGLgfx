@@ -1,6 +1,9 @@
 #include "VkFramebuffer.h"
 #include "../../Utils/Logger.h"
 
+#undef max
+#undef min
+
 namespace vgl
 {
 	namespace vk
@@ -33,18 +36,20 @@ namespace vgl
 
 			m_RenderPassPtr = p_FramebufferInfo.p_RenderPass;
 
-			VkFramebufferAttachmentsCreateInfo attachmentCreateInfo = {};
-			attachmentCreateInfo.attachmentImageInfoCount = m_ImageViews.size();
-			attachmentCreateInfo.pAttachmentImageInfos = m_AttachmentImageInfos.data();
-			attachmentCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO;
-
 			m_FrameBufferCreateInfo = {};
-			m_FrameBufferCreateInfo.pNext = &attachmentCreateInfo;
+			if (p_FramebufferInfo.p_AllowMipMapping) {
+				VkFramebufferAttachmentsCreateInfo attachmentCreateInfo = {};
+				attachmentCreateInfo.attachmentImageInfoCount = m_ImageViews.size();
+				attachmentCreateInfo.pAttachmentImageInfos = m_AttachmentImageInfos.data();
+				attachmentCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO;
+
+				m_FrameBufferCreateInfo.pNext = &attachmentCreateInfo;
+			}
 			m_FrameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			m_FrameBufferCreateInfo.renderPass = m_RenderPassPtr->m_RenderPass;
 
+			m_FrameBufferCreateInfo.attachmentCount = m_ImageViews.size();
 			if(!p_FramebufferInfo.p_AllowMipMapping){
-				m_FrameBufferCreateInfo.attachmentCount = m_ImageViews.size();
 				m_FrameBufferCreateInfo.pAttachments = m_ImageViews.data();
 			}else{
 				m_FrameBufferCreateInfo.flags = VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT;
@@ -120,6 +125,8 @@ namespace vgl
 
 			if (p_ImageAttachmentInfo.p_CreateSampler)
 				usageFlag |= VK_IMAGE_USAGE_SAMPLED_BIT;
+			if (p_ImageAttachmentInfo.p_AllowMipMapping)
+				usageFlag |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 			m_ImageAllocation = m_ContextPtr->createImage
 			(
@@ -128,7 +135,7 @@ namespace vgl
 				VK_IMAGE_TILING_OPTIMAL,
 				usageFlag,
 				VMA_MEMORY_USAGE_GPU_ONLY,
-				m_VkImageHandle, m_MipLevels
+				m_VkImageHandle, m_MipLevels, 1, (VkSampleCountFlagBits)p_ImageAttachmentInfo.p_AttachmentInfo->p_SampleCount
 			).p_Alloc;
 
 			if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Depth)
@@ -137,7 +144,8 @@ namespace vgl
 					 p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Resolve)
 				m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, p_ImageAttachmentInfo.p_AttachmentInfo->p_Format, VK_IMAGE_ASPECT_COLOR_BIT);
 
-			if (p_ImageAttachmentInfo.p_TransitionLayoutImage)
+			m_ImageObj.m_CurrentLayout = (VkImageLayout)info.p_AttachmentInfo->p_InitialLayout;
+			if (p_ImageAttachmentInfo.p_TransitionLayoutImage && p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType != AttachmentType::Depth)
 			{
 				m_ContextPtr->transitionLayoutImage
 				(
@@ -145,12 +153,15 @@ namespace vgl
 					(VkImageLayout)p_ImageAttachmentInfo.p_AttachmentInfo->p_InitialLayout,
 					(VkImageLayout)p_ImageAttachmentInfo.p_AttachmentInfo->p_FinalLayout
 				);
+				m_ImageObj.m_CurrentLayout = (VkImageLayout)info.p_AttachmentInfo->p_FinalLayout;
 			}
 
 			m_ImageObj.m_VkImageHandle = m_VkImageHandle;
 			m_ImageObj.m_ImageAllocation = m_ImageAllocation;
 			m_ImageObj.m_ImageView = m_ImageView;
-			m_ImageObj.m_CurrentLayout = (VkImageLayout)info.p_AttachmentInfo->p_FinalLayout;
+			m_ImageObj.m_FinalLayout = (VkImageLayout)info.p_AttachmentInfo->p_FinalLayout;
+			m_ImageObj.m_Size = p_ImageAttachmentInfo.p_Size;
+			m_ImageObj.m_MipLevels = m_MipLevels;
 
 			if (p_ImageAttachmentInfo.p_CreateSampler)
 			{
@@ -183,7 +194,7 @@ namespace vgl
 
 			m_AttachmentImageInfo = {};
 			m_AttachmentImageInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO;
-			m_AttachmentImageInfo.layerCount = m_MipLevels;
+			m_AttachmentImageInfo.layerCount = 1;
 			m_AttachmentImageInfo.usage = usageFlag;
 			m_AttachmentImageInfo.pViewFormats = &p_ImageAttachmentInfo.p_AttachmentInfo->p_Format;
 			m_AttachmentImageInfo.viewFormatCount = 1;
@@ -197,7 +208,8 @@ namespace vgl
 
 			m_ContextPtr->destroyImage(m_VkImageHandle, m_ImageAllocation);
 			
-			vkDestroySampler(m_ContextPtr->m_Device, m_Sampler, nullptr);
+			if(info.p_CreateSampler)
+				vkDestroySampler(m_ContextPtr->m_Device, m_Sampler, nullptr);
 			vkDestroyImageView(m_ContextPtr->m_Device, m_ImageView, nullptr);
 		}
 	}

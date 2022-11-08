@@ -4,7 +4,7 @@ namespace vgl
 {
 	Application::Application(AppConfig& p_AppConfig)
 		: m_AppConfig(&p_AppConfig),
-		m_Window(p_AppConfig.DefaultWindowSize, p_AppConfig.Title.c_str(), p_AppConfig.MSAASamples, false),
+		m_Window(p_AppConfig.DefaultWindowSize, p_AppConfig.Title.c_str(), p_AppConfig.MSAASamples),
 		m_Renderer(m_Window, p_AppConfig.RenderResolution)
 	{
 		vgl::InputManager::setWindow(m_Window);
@@ -31,8 +31,11 @@ namespace vgl
 		m_Running = true;
 		while (!m_Window.closed())
 		{
-			m_Renderer.beginScene();
+			m_Renderer.begin();
 
+#ifdef IMGUI_VK_IMPL
+			ImGui_ImplVulkan_NewFrame();
+#endif
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 			ImGuizmo::BeginFrame();
@@ -50,11 +53,9 @@ namespace vgl
 				}
 			}
 			ImGui::EndFrame();
-			ImGui::UpdatePlatformWindows();
 			ImGui::Render();
 
-			m_Renderer.updateImGuiDrawData();
-			m_Renderer.endScene();
+			m_Renderer.end();
 
 			m_Window.update();
 		}

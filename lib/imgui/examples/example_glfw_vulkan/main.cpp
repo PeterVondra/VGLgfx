@@ -1,11 +1,12 @@
-// dear imgui: standalone example application for Glfw + Vulkan
-// If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
+// Dear ImGui: standalone example application for Glfw + Vulkan
+// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
+// Read online: https://github.com/ocornut/imgui/tree/master/docs
 
 // Important note to the reader who wish to integrate imgui_impl_vulkan.cpp/.h in their own engine/app.
 // - Common ImGui_ImplVulkan_XXX functions and structures are used to interface with imgui_impl_vulkan.cpp/.h.
-//   You will use those if you want to use this rendering back-end in your engine/app.
+//   You will use those if you want to use this rendering backend in your engine/app.
 // - Helper ImGui_ImplVulkanH_XXX functions and structures are only used by this example (main.cpp) and by
-//   the back-end itself (imgui_impl_vulkan.cpp), but should PROBABLY NOT be used by your own engine/app code.
+//   the backend itself (imgui_impl_vulkan.cpp), but should PROBABLY NOT be used by your own engine/app code.
 // Read comments in imgui_impl_vulkan.h.
 
 #include "imgui.h"
@@ -43,8 +44,6 @@ static VkDescriptorPool         g_DescriptorPool = VK_NULL_HANDLE;
 static ImGui_ImplVulkanH_Window g_MainWindowData;
 static int                      g_MinImageCount = 2;
 static bool                     g_SwapChainRebuild = false;
-static int                      g_SwapChainResizeWidth = 0;
-static int                      g_SwapChainResizeHeight = 0;
 
 static void check_vk_result(VkResult err)
 {
@@ -74,10 +73,9 @@ static void SetupVulkan(const char** extensions, uint32_t extensions_count)
         create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         create_info.enabledExtensionCount = extensions_count;
         create_info.ppEnabledExtensionNames = extensions;
-
 #ifdef IMGUI_VULKAN_DEBUG_REPORT
-        // Enabling multiple validation layers grouped as LunarG standard validation
-        const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
+        // Enabling validation layers
+        const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
         create_info.enabledLayerCount = 1;
         create_info.ppEnabledLayerNames = layers;
 
@@ -124,10 +122,22 @@ static void SetupVulkan(const char** extensions, uint32_t extensions_count)
         err = vkEnumeratePhysicalDevices(g_Instance, &gpu_count, gpus);
         check_vk_result(err);
 
-        // If a number >1 of GPUs got reported, you should find the best fit GPU for your purpose
-        // e.g. VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU if available, or with the greatest memory available, etc.
-        // for sake of simplicity we'll just take the first one, assuming it has a graphics queue family.
-        g_PhysicalDevice = gpus[0];
+        // If a number >1 of GPUs got reported, find discrete GPU if present, or use first one available. This covers
+        // most common cases (multi-gpu/integrated+dedicated graphics). Handling more complicated setups (multiple
+        // dedicated GPUs) is out of scope of this sample.
+        int use_gpu = 0;
+        for (int i = 0; i < (int)gpu_count; i++)
+        {
+            VkPhysicalDeviceProperties properties;
+            vkGetPhysicalDeviceProperties(gpus[i], &properties);
+            if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            {
+                use_gpu = i;
+                break;
+            }
+        }
+
+        g_PhysicalDevice = gpus[use_gpu];
         free(gpus);
     }
 
@@ -255,6 +265,11 @@ static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
     VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
     VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
     err = vkAcquireNextImageKHR(g_Device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
+    if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
+    {
+        g_SwapChainRebuild = true;
+        return;
+    }
     check_vk_result(err);
 
     ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
@@ -312,6 +327,8 @@ static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
 
 static void FramePresent(ImGui_ImplVulkanH_Window* wd)
 {
+    if (g_SwapChainRebuild)
+        return;
     VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
     VkPresentInfoKHR info = {};
     info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -321,6 +338,11 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
     info.pSwapchains = &wd->Swapchain;
     info.pImageIndices = &wd->FrameIndex;
     VkResult err = vkQueuePresentKHR(g_Queue, &info);
+    if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
+    {
+        g_SwapChainRebuild = true;
+        return;
+    }
     check_vk_result(err);
     wd->SemaphoreIndex = (wd->SemaphoreIndex + 1) % wd->ImageCount; // Now we can use the next set of semaphores
 }
@@ -328,13 +350,6 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
-}
-
-static void glfw_resize_callback(GLFWwindow*, int w, int h)
-{
-    g_SwapChainRebuild = true;
-    g_SwapChainResizeWidth = w;
-    g_SwapChainResizeHeight = h;
 }
 
 int main(int, char**)
@@ -365,7 +380,6 @@ int main(int, char**)
     // Create Framebuffers
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
-    glfwSetFramebufferSizeCallback(window, glfw_resize_callback);
     ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
     SetupVulkanWindow(wd, surface, w, h);
 
@@ -382,7 +396,7 @@ int main(int, char**)
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    //ImGui::StyleColorsClassic();
+    //ImGui::StyleColorsLight();
 
     // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
     ImGuiStyle& style = ImGui::GetStyle();
@@ -392,7 +406,7 @@ int main(int, char**)
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
 
-    // Setup Platform/Renderer bindings
+    // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForVulkan(window, true);
     ImGui_ImplVulkan_InitInfo init_info = {};
     init_info.Instance = g_Instance;
@@ -402,9 +416,11 @@ int main(int, char**)
     init_info.Queue = g_Queue;
     init_info.PipelineCache = g_PipelineCache;
     init_info.DescriptorPool = g_DescriptorPool;
-    init_info.Allocator = g_Allocator;
+    init_info.Subpass = 0;
     init_info.MinImageCount = g_MinImageCount;
     init_info.ImageCount = wd->ImageCount;
+    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    init_info.Allocator = g_Allocator;
     init_info.CheckVkResultFn = check_vk_result;
     ImGui_ImplVulkan_Init(&init_info, wd->RenderPass);
 
@@ -413,13 +429,14 @@ int main(int, char**)
     // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
     // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
     // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Read 'docs/FONTS.txt' for more instructions and details.
+    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
+    // - Read 'docs/FONTS.md' for more instructions and details.
     // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
     //io.Fonts->AddFontDefault();
+    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
 
@@ -463,18 +480,23 @@ int main(int, char**)
     {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
-        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
+        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
+        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
         glfwPollEvents();
 
         // Resize swap chain?
-        if (g_SwapChainRebuild && g_SwapChainResizeWidth > 0 && g_SwapChainResizeHeight > 0)
+        if (g_SwapChainRebuild)
         {
-            g_SwapChainRebuild = false;
-            ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
-            ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_Allocator, g_SwapChainResizeWidth, g_SwapChainResizeHeight, g_MinImageCount);
-            g_MainWindowData.FrameIndex = 0;
+            int width, height;
+            glfwGetFramebufferSize(window, &width, &height);
+            if (width > 0 && height > 0)
+            {
+                ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
+                ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
+                g_MainWindowData.FrameIndex = 0;
+                g_SwapChainRebuild = false;
+            }
         }
 
         // Start the Dear ImGui frame
@@ -486,7 +508,7 @@ int main(int, char**)
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
             static float f = 0.0f;
             static int counter = 0;
@@ -523,7 +545,10 @@ int main(int, char**)
         ImGui::Render();
         ImDrawData* main_draw_data = ImGui::GetDrawData();
         const bool main_is_minimized = (main_draw_data->DisplaySize.x <= 0.0f || main_draw_data->DisplaySize.y <= 0.0f);
-        memcpy(&wd->ClearValue.color.float32[0], &clear_color, 4 * sizeof(float));
+        wd->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
+        wd->ClearValue.color.float32[1] = clear_color.y * clear_color.w;
+        wd->ClearValue.color.float32[2] = clear_color.z * clear_color.w;
+        wd->ClearValue.color.float32[3] = clear_color.w;
         if (!main_is_minimized)
             FrameRender(wd, main_draw_data);
 

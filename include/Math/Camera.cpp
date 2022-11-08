@@ -16,6 +16,8 @@ namespace vgl
 			#ifdef VGL_USING_OPENGL
 				m_ViewMatrix = Matrix4f::lookAtLH(m_ViewZ + m_LookAtPoint, m_LookAtPoint, m_UpDirection);
 			#endif
+
+			position = m_ViewZ * m_ViewZModifier;
 		}
 		else if (m_View == View::First_Person) {
 			#ifdef VGL_USING_VULKAN
@@ -40,12 +42,8 @@ namespace vgl
 		return m_OrthographicMatrix;
 	}
 
-	Vector3f Camera::getPosition()
+	Vector3f& Camera::getPosition()
 	{
-		if (m_View == View::Third_Person)
-			return m_ViewZ * m_ViewZModifier;
-		else if (m_View == View::First_Person)
-			return position;
 		return position;
 	}
 
@@ -53,10 +51,10 @@ namespace vgl
 	{
 		m_AspectRatio = p_AspectRatio;
 
-		#ifdef EXZ_USING_VULKAN
+		#ifdef VGL_USING_VULKAN
 			m_PerspectiveMatrix = Matrix4f::perspectiveRH_ZO(m_FieldOfView, m_AspectRatio, m_NearPlane, m_FarPlane);
 		#endif
-		#ifdef EXZ_USING_OPENGL
+		#ifdef VGL_USING_OPENGL
 			m_PerspectiveMatrix = Matrix4f::perspective(m_FieldOfView, m_AspectRatio, m_NearPlane, m_FarPlane);
 		#endif
 

@@ -36,7 +36,7 @@ namespace vgl
 				bool create();
 				void destroy();
 
-				const bool& isValid() { m_IsValid; }
+				const bool& isValid() { return m_IsValid; }
 
 				std::vector<VkSubpassDependency> m_Dependencies;
 
@@ -52,22 +52,22 @@ namespace vgl
 				friend class BaseRenderer;
 				friend class ForwardRenderer;
 				friend class DeferredRenderer;
+				friend class GraphicsContext;
 				friend class ImGuiContext;
 
 				Context* m_ContextPtr;
 
 				RenderPassType m_Type;
 				bool m_IsValid = false;
-				unsigned int clearCount = 0;
+				uint32_t m_ClearCount = 0;
 
 				VkRenderPass m_RenderPass;
 				VkSubpassDescription m_Subpass;
 
-				std::vector<AttachmentInfo> m_AttachmentInfo;
 
 				std::vector<VkAttachmentDescription>	m_Attachments;
 				std::vector<VkAttachmentReference>		m_AttachmentRefs;
-				std::vector<AttachmentInfo>				m_AttachmentInfos;
+				std::vector<AttachmentInfo>				m_AttachmentInfo;
 
 				std::vector<VkAttachmentReference> m_ColorAttachments;
 				std::vector<VkAttachmentReference> m_ResolveAttachments;
@@ -148,6 +148,7 @@ namespace vgl
 			friend class ForwardRenderer;
 			friend class DeferredRenderer;
 			friend class FramebufferAttachment;
+			friend class GraphicsContext;
 			friend class ImGuiContext;
 
 			Context* m_ContextPtr;

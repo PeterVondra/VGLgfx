@@ -28,15 +28,16 @@ namespace vgl
 			public:
 				CommandBuffer() : CommandBuffer(Level::Primary) {}
 				CommandBuffer(Level p_Level);
+		  		CommandBuffer(const uint8_t p_FrameIndex, Level p_Level) 
+					: CommandBuffer(p_Level) { m_FrameIndex = p_FrameIndex; }	
 				~CommandBuffer();
 
 				void cmdBegin();
 				void cmdBegin(VkCommandBufferInheritanceInfo& p_InheritanceInfo);
 				void cmdEnd();
 
-				void cmdBeginRenderPass(RenderPass& p_RenderPass, SubpassContents p_SubPassContents, Framebuffer& p_Framebuffer);
 				void cmdBeginRenderPass(RenderPass& p_RenderPass, SubpassContents p_SubPassContents, Framebuffer& p_Framebuffer, 
-					VkRenderPassAttachmentBeginInfo* p_Next);
+					VkRenderPassAttachmentBeginInfo* p_Next = nullptr);
 				void cmdBeginRenderPass(RenderPass& p_RenderPass, SubpassContents p_SubPassContents, VkFramebuffer& p_Framebuffer, Vector2i p_Size);
 				void cmdEndRenderPass();
 
@@ -79,11 +80,13 @@ namespace vgl
 				friend class ForwardRenderer;
 				friend class DeferredRenderer;
 				friend class FramebufferAttachment;
+				friend class GraphicsContext;
 				friend class ImGuiContext;
 
 				Context* m_ContextPtr;
 				VkCommandBuffer m_CommandBuffer;	
 
+				uint8_t m_FrameIndex = 0;
 				const Level m_Level;
 				bool m_Allocated;
 				bool m_Recording;

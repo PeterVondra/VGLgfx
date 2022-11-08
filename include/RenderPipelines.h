@@ -1,8 +1,11 @@
+#pragma once
+
 #include "VGL_Internal.h"
 #include "Scene.h"
 #include "DefaultECSComponents.h"
 //#include "../VGL-3D/Particles.h"
 #include "Platform/Definitions.h"
+#include "GDefinitions.h"
 #include "Scene.h"
 
 namespace vgl
@@ -17,7 +20,7 @@ namespace vgl
 			void render(RenderInfo& p_RenderInfo);
 
 			float volumetric_light_mie_scattering = 1;
-			//DOFInfo m_DOFInfo; // Depth of Field
+			DOFInfo m_DOFInfo = {}; // Depth of Field
 
 			// Geometry and material data / G-Buffer
 			FramebufferAttachment m_GBuffer;
@@ -26,7 +29,7 @@ namespace vgl
 			// Post-Process framebuffer
 			FramebufferAttachment m_HDRFramebuffer;
 
-			//HDRFXAAInfo m_HDRInfo; // HDR effects
+			HDRFXAAInfo m_HDRInfo; // HDR effects
 			Shader m_HDRShader;
 			Shader m_GBufferLightPassShader;
 			Shader m_SSAOShader;

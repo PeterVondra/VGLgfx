@@ -1,13 +1,17 @@
 #include "VkImage.h"
 #include "../../Utils/Logger.h"
+#include <cstring>
 
 #include <SOIL/SOIL.h>
+
+#undef max
+#undef min
 
 namespace vgl
 {
 	namespace vk
 	{
-		Image::Image()
+		Image::Image() : m_ContextPtr(&ContextSingleton::getInstance())
 		{
 			m_Channels.resize(4);
 			m_Channels[0].first = Channels::R; m_Channels[0].second = 1;
@@ -17,6 +21,7 @@ namespace vgl
 		}
 
 		Image::Image(Vector2i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
+			: m_ContextPtr(&ContextSingleton::getInstance())
 		{
 			m_Channels.resize(4);
 			m_Channels[0].first = Channels::R; m_Channels[0].second = 1;
@@ -27,6 +32,7 @@ namespace vgl
 		}
 
 		Image::Image(Vector3i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
+			: m_ContextPtr(&ContextSingleton::getInstance())
 		{
 			m_Channels.resize(4);
 			m_Channels[0].first = Channels::R; m_Channels[0].second = 1;
@@ -41,7 +47,7 @@ namespace vgl
 			m_IsValid = false;
 
 			m_MipLevels = p_CalcMipLevels ? static_cast<uint32_t>(std::floor(std::log2(std::max(p_Size.x, p_Size.y)))) + 1 : 1;
-			m_Size.xy = p_Size;
+			m_Size = p_Size;
 			m_ImageData = p_ImageData;
 
 			m_MagFilter = p_MagFilter;
@@ -49,11 +55,12 @@ namespace vgl
 
 			if (!m_ImageData)
 			{
-				Utils::Logger::logMSG("p_Image was nullptr", "Texture", Utils::Severity::Warning);
+				Utils::Logger::logMSG("p_Image was nullptr", "VkImage", Utils::Severity::Warning);
 				m_IsValid = false;
 			}
 
 			m_CurrentChannels = p_Channels;
+
 
 			createImage();
 			createImageView();
@@ -63,7 +70,7 @@ namespace vgl
 			m_IsValid = true;
 		}
 
-		void Image::create(Vector3i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, bool p_CalcMipLevels, Filter p_MagFilter, Filter p_MinFilter)
+		/*void Image::create(Vector3i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, bool p_CalcMipLevels, Filter p_MagFilter, Filter p_MinFilter)
 		{
 			m_IsValid = false;
 
@@ -88,13 +95,13 @@ namespace vgl
 			createDescriptors();
 
 			m_IsValid = true;
-		}
+		}*/
 
 		void Image::create(Vector2i p_Size, std::vector<std::pair<unsigned char*, unsigned int>>& p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
 		{
 			m_IsValid = false;
 			m_MipLevels = 1;
-			m_Size.xy = p_Size;
+			m_Size = p_Size;
 
 			m_MagFilter = p_MagFilter;
 			m_MinFilter = p_MinFilter;
@@ -112,6 +119,21 @@ namespace vgl
 			createDescriptors();
 
 			m_IsValid = true;
+		}
+
+		void Image::init()
+		{
+			createImage();
+			createImageView();
+			createSampler(m_SamplerMode);
+			createDescriptors();
+			m_IsValid = true;
+		}
+
+		void Image::freeImageData()
+		{
+			if(m_ImageData)
+				SOIL_free_image_data(m_ImageData);
 		}
 
 		bool Image::isValid()
@@ -137,42 +159,42 @@ namespace vgl
 		// Use for imgui texture id
 		void Image::createDescriptors()
 		{
-			VkDescriptorSetLayoutBinding binding = {};
-			binding.binding = 0;
-			binding.descriptorCount = 1;
-			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-			VkDescriptorSetLayoutCreateInfo info = {};
-			info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			info.bindingCount = 1;
-			info.pBindings = &binding;
-
-			vkCreateDescriptorSetLayout(m_ContextPtr->m_Device, &info, nullptr, &m_DescriptorSetLayout);
-
-			// Create Descriptor Set:
-			VkDescriptorSetAllocateInfo alloc_info = {};
-			alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			alloc_info.descriptorPool = m_ContextPtr->m_DefaultDescriptorPool;
-			alloc_info.descriptorSetCount = 1;
-			alloc_info.pSetLayouts = &m_DescriptorSetLayout;
-
-			VkResult result = vkAllocateDescriptorSets(m_ContextPtr->m_Device, &alloc_info, &m_DescriptorSet);
-
-			// Update the Descriptor Set:
-			VkDescriptorImageInfo desc_image = {};
-			desc_image.sampler = m_Sampler;
-			desc_image.imageView = m_ImageView;
-			desc_image.imageLayout = m_CurrentLayout;
-
-			VkWriteDescriptorSet write_desc = {};
-			write_desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			write_desc.dstSet = m_DescriptorSet;
-			write_desc.descriptorCount = 1;
-			write_desc.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			write_desc.pImageInfo = &desc_image;
-
-			vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &write_desc, 0, NULL);
+			//VkDescriptorSetLayoutBinding binding = {};
+			////binding.binding = 0;
+			//binding.descriptorCount = 1;
+			//binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			//binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			//
+			//VkDescriptorSetLayoutCreateInfo info = {};
+			//info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			//info.bindingCount = 1;
+			//info.pBindings = &binding;
+			//
+			//vkCreateDescriptorSetLayout(m_ContextPtr->m_Device, &info, nullptr, &m_DescriptorSetLayout);
+			//
+			//// Create Descriptor Set:
+			//VkDescriptorSetAllocateInfo alloc_info = {};
+			//alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			//alloc_info.descriptorPool = m_ContextPtr->m_DefaultDescriptorPool;
+			//alloc_info.descriptorSetCount = 1;
+			//alloc_info.pSetLayouts = &m_DescriptorSetLayout;
+			//
+			//VkResult result = vkAllocateDescriptorSets(m_ContextPtr->m_Device, &alloc_info, &m_DescriptorSet);
+			//
+			//// Update the Descriptor Set:
+			//VkDescriptorImageInfo desc_image = {};
+			//desc_image.sampler = m_Sampler;
+			//desc_image.imageView = m_ImageView;
+			//desc_image.imageLayout = m_FinalLayout;
+			//
+			//VkWriteDescriptorSet write_desc = {};
+			//write_desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			//write_desc.dstSet = m_DescriptorSet;
+			//write_desc.descriptorCount = 1;
+			//write_desc.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			//write_desc.pImageInfo = &desc_image;
+			//
+			//vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &write_desc, 0, NULL);
 		}
 
 		void Image::createImage()
@@ -229,7 +251,10 @@ namespace vgl
 					static_cast<uint32_t>(m_Size.y)
 				);
 
-				generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size.xy, m_MipLevels);
+				generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size, m_MipLevels);
+
+				m_CurrentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				m_FinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 				m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
 			}
@@ -289,8 +314,10 @@ namespace vgl
 					static_cast<uint32_t>(m_Size.y)
 				);
 
+				generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size, m_MipLevels);
 
-				generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size.xy, m_MipLevels);
+				m_CurrentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				m_FinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 				m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
 			}
@@ -416,6 +443,7 @@ namespace vgl
 		}
 
 		ImageCube::ImageCube()
+			: m_ContextPtr(&ContextSingleton::getInstance())
 		{
 		}
 		ImageCube::~ImageCube()
@@ -467,7 +495,7 @@ namespace vgl
 
 				m_Mapped = m_ContextPtr->mapMemory(alloc);
 				for(uint8_t i = 0; i < 6; i++)
-					memcpy(m_Mapped + imageLayerSize * i, m_ImageData[i], static_cast<size_t>(imageSize));
+					memcpy((void*)((int64_t)m_Mapped + imageLayerSize * i), m_ImageData[i], static_cast<size_t>(imageSize));
 				m_ContextPtr->unmapMemory(alloc);
 
 
@@ -492,6 +520,14 @@ namespace vgl
 					static_cast<uint32_t>(m_Size[0].x),
 					static_cast<uint32_t>(m_Size[0].y), 6
 				);
+				m_ContextPtr->transitionLayoutImage(
+					m_VkImageHandle,
+					format,
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_MipLevels
+				);
+
+				m_Layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 				m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
 			}
@@ -548,6 +584,7 @@ namespace vgl
 			// Calculate mip levels
 			p_Image.m_MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(p_Image.m_Size.x, p_Image.m_Size.y)))) + 1;
 			p_Image.m_IsValid = true;
+			p_Image.m_SamplerMode = p_SamplerMode;
 
 			p_Image.createImage();
 			p_Image.createImageView();
@@ -573,6 +610,7 @@ namespace vgl
 			p_Image.m_CurrentChannels = Channels::RGBA;
 			p_Image.m_MipLevels = p_MipLevels;
 			p_Image.m_IsValid = true;
+			p_Image.m_SamplerMode = p_SamplerMode;
 
 			p_Image.createImage();
 			p_Image.createImageView();
@@ -582,6 +620,28 @@ namespace vgl
 			SOIL_free_image_data(p_Image.m_ImageData);
 
 			return true;
+		}
+		unsigned char* ImageLoader::getImageDataFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
+		{
+			int channels;
+
+			p_Image.m_MagFilter = p_MagFilter;
+			p_Image.m_MinFilter = p_MinFilter;
+			p_Image.m_ImageData = (unsigned char*)SOIL_load_image(p_Path, &p_Image.m_Size.x, &p_Image.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_Image.m_IsValid = false;
+
+			if (!p_Image.m_ImageData) {
+				Utils::Logger::logMSG("Failed to load image " + std::string(p_Path) + "", " Image Loader", Utils::Severity::Warning);
+				return false;
+			}
+
+			p_Image.m_CurrentChannels = Channels::RGBA;
+
+			// Calculate mip levels
+			p_Image.m_MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(p_Image.m_Size.x, p_Image.m_Size.y)))) + 1;
+			p_Image.m_SamplerMode = p_SamplerMode;
+
+			return p_Image.m_ImageData;
 		}
 		bool ImageLoader::getImageFromPath(ImageCube& p_ImageCube, std::initializer_list<std::pair<const char*, Vector3f>> p_Path, SamplerMode p_SamplerMode)
 		{
@@ -601,7 +661,7 @@ namespace vgl
 
 			// Calculate mip levels
 			p_ImageCube.m_MipLevels = 1;
-
+			p_ImageCube.m_SamplerMode = p_SamplerMode;
 			p_ImageCube.m_IsValid = true;
 
 			p_ImageCube.createImage();
@@ -634,6 +694,7 @@ namespace vgl
 
 			// Calculate mip levels
 			p_ImageCube.m_MipLevels = 1;
+			p_ImageCube.m_SamplerMode = p_SamplerMode;
 
 			p_ImageCube.m_IsValid = true;
 			p_ImageCube.createImage();

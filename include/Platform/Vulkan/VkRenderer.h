@@ -17,6 +17,54 @@ namespace vgl
 		#define MAX_FRAMES_IN_FLIGHT 2
 		#define GET_CURRENT_IMAGE_INDEX(imgidx) (imgidx + 1) % 2;
 
+		struct D_ShadowMap
+		{
+			D_ShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_CommandBufferIdx(0) {
+				for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+					for (uint32_t j = 0; j < 500; j++) {
+						m_CommandBuffers[i].emplace_back(i, Level::Secondary);
+						m_Descriptors.emplace_back();
+					}
+				}
+
+				m_DescriptorAlbedoInfo.resize(1000);
+			}
+			~D_ShadowMap() {}
+
+			FramebufferAttachment m_Attachment;
+
+			Matrix4f m_View;
+			Matrix4f m_Projection;
+			Vector2i m_Resolution;
+			Vector3f m_Direction;
+
+			float m_DepthBiasConstant;
+			float m_DepthBiasSlope;
+
+			void destroy() {
+				m_Attachment.destroy();
+
+				for (auto& dsc : m_Descriptors)
+					if (dsc.isValid())
+						dsc.destroy();
+				m_DescriptorAlbedoInfo.clear();
+				for (auto& cmds : m_CommandBuffers)
+					for (auto& cmd : cmds)
+						cmd.destroy();
+			}
+
+		private:
+			friend class Renderer;
+
+			Context* m_ContextPtr;
+
+			uint32_t m_CommandBufferIdx;
+			std::vector<DescriptorSetManager> m_Descriptors;
+			std::vector<DescriptorSetInfo> m_DescriptorAlbedoInfo;
+			std::vector<Image*> m_AlbedoPtrs;
+			std::vector<std::vector<CommandBuffer>> m_CommandBuffers; // Per swapchain image
+		};
+
 		// Submits data to gpu for graphical rendering
 		class Renderer
 		{
@@ -26,6 +74,10 @@ namespace vgl
 				Renderer(Window& p_Window);
 				Renderer(Window& p_Window, float p_RenderResolutionScale);
 
+				void begin(){}
+				void end() {
+					GPUSubmit();
+				}
 				void beginRenderPass(RenderInfo& p_RenderInfo);
 				// If not called, will use default frambuffer/swapchain
 				void beginRenderPass(RenderInfo& p_RenderInfo, FramebufferAttachment& p_FramebufferAttachment);
@@ -110,7 +162,6 @@ namespace vgl
 				void primaryRecFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
 				void primaryShadowRecFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
 
-				void updateImGuiDrawData();
 			private:
 				friend class vgl::Application;
 
@@ -169,6 +220,7 @@ namespace vgl
 				void	createSyncObjects();
 
 				void	createDefaultRenderPass(); // Default renderpass, mainly used when presenting to the screen buffer
+				void	createPostSwapchainRenderPass(); // Used when presenting to the screen buffer after swapchain has already been rendered to
 				void	createDepthImageAttachment();
 
 				void 	waitForFences(); // Stall to wait for the fences to sync with the gpu
@@ -178,6 +230,7 @@ namespace vgl
 
 				ImageAttachment m_DepthImageAttachment;
 
+				RenderPass m_PostSwapchainRenderPass;
 				RenderPass m_DefaultRenderPass;
 				VkCommandBufferInheritanceInfo m_DefaultInheritanceInfo;
 

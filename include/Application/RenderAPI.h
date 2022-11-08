@@ -17,6 +17,7 @@ namespace vgl
 		class Image;
 		class ImageCube;
 		class ImageLoader;
+		class ImGuiContext;
 	}
 
 	typedef vk::Window Window;
@@ -35,7 +36,9 @@ namespace vgl
 	typedef vk::Image Image;
 	typedef vk::ImageCube ImageCube;
 	typedef vk::ImageLoader ImageLoader;
+	typedef vk::ImGuiContext ImGuiContext;
 }
+
 #elif defined VGL_USING_OPENGL
 #include "../Platform/OpenGL/GlWindow.h"
 #include "../Platform/OpenGL/GlRenderer.h"

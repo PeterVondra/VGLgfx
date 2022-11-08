@@ -5,23 +5,26 @@
 #define HORIZONTAL 1
 #define VERTICAL 2
 #define PI 3.141592
+#define EPSILON 0.0000001
 
 layout(binding = 0) uniform sampler2D imageHDR;
-layout(binding = 1) uniform sampler2D imageBloom;
+//layout(binding = 1) uniform sampler2D imageBloom;
 
 layout(location = 0) in vec2 UV;
 layout(location = 0) out vec4 outColor;
 
 layout (push_constant) uniform PushConstants {
+	float deltaTime;
 	float gamma; // 1.7
 	float exposure; // 0.7
 	float exposure_adapt_rate; // 0.001
     float FXAA_Span_Max;// = 16.0f;
     float FXAA_REDUCTION_MIN;// = 1.0f/128.0f;
     float FXAA_REDUCTION_BIAS;// = 1.0f/8.0f;
+	float filmicScale;
+	float filmicStrength;
 } pushConstants;
 
-<<<<<<< HEAD
 layout(binding = 1) uniform UniformBufferObject
 {
 	int autofocus;
@@ -62,45 +65,18 @@ vec3 filmicgrain(vec4 color)
 	return vec3(mod((mod(x, 13) + 1) * (mod(x, 123) + 1), 0.01) - 0.005) * pushConstants.filmicStrength;
 }
 
-=======
->>>>>>> parent of e6feae2 (Rendering available)
 vec2 screenWH = textureSize(imageHDR, 0);
 float near = 1.0f;
 float far = 10.0f;
 
-bool autofocus = true;
-float focalDepth = 1.5;
-float focalLength = 1.0f;
-float fstop = 6.0f;
-float maxblur = 2.3f;
-vec2 focus = vec2(0.5, 0.5); // Focus point
-bool showFocus = false; //show debug focus point and focal range (red = focal point, green = focal range)
-
 bool manualdof = false;
 
-bool vignetting = true; //use optical lens vignetting?
-float vignout = 0.5; //vignetting outer border
-float vignin = 0.0; //vignetting inner border
-float vignfade = 22.0; //f-stops till vignete fades
-
-int samples = 4;
-int rings = 4;
 float ndofstart = 1.0; //near dof blur start
 float ndofdist = 10.0; //near dof blur falloff distance
 float fdofstart = 1.0; //far dof blur start
 float fdofdist = 10.0; //far dof blur falloff distance
 
-float CoC = 0.03;//circle of confusion size in mm (35mm film = 0.03mm)
-float threshold = 0.8; //highlight threshold;
-float gain = 0.1f; //highlight gain;
-
-float bias = 0.5; //bokeh edge bias
-float fringe = 0.7; //bokeh chromatic aberration/fringing
-
-bool noise = true; //use noise instead of pattern for sample dithering
-float namount = 0.0001; //dither amount
-
-bool depthblur = false ; //blur the depth buffer?
+bool depthblur = true ; //blur the depth buffer?
 float dbsize = 1.25; //depthblursize
 
 vec2 texel = vec2(1.0f, 1.0f) / screenWH;
@@ -143,13 +119,13 @@ vec3 colorDOF(vec2 coords,float blur) //processing the sample
 {
 	vec3 col = vec3(0.0);
 	
-	col.r = texture(imageHDR,coords + vec2(0.0,1.0)*texel*fringe*blur).r;
-	col.g = texture(imageHDR,coords + vec2(-0.866,-0.5)*texel*fringe*blur).g;
-	col.b = texture(imageHDR,coords + vec2(0.866,-0.5)*texel*fringe*blur).b;
+	col.r = texture(imageHDR,coords + vec2(0.0,1.0)*texel*ubo.fringe*blur).r;
+	col.g = texture(imageHDR,coords + vec2(-0.866,-0.5)*texel*ubo.fringe*blur).g;
+	col.b = texture(imageHDR,coords + vec2(0.866,-0.5)*texel*ubo.fringe*blur).b;
 	
 	vec3 lumcoeff = vec3(0.299,0.587,0.114);
 	float lum = dot(col.rgb, lumcoeff);
-	float thresh = max((lum-threshold)*gain, 0.0);
+	float thresh = max((lum-ubo.threshold)*ubo.gain, 0.0);
 	return col+mix(vec3(0.0),col,thresh*blur);
 }
 
@@ -171,7 +147,7 @@ vec2 rand(vec2 coord) //generating noise/pattern texture for dithering
 	float noiseX = ((fract(1.0-coord.s*(screenWH.x/2.0))*0.25)+(fract(coord.t*(screenWH.y/2.0))*0.75))*2.0-1.0;
 	float noiseY = ((fract(1.0-coord.s*(screenWH.x/2.0))*0.75)+(fract(coord.t*(screenWH.y/2.0))*0.25))*2.0-1.0;
 	
-	if (noise)
+	if (ubo.noise > 0)
 	{
 		noiseX = clamp(fract(sin(dot(coord ,vec2(12.9898,78.233))) * 43758.5453),0.0,1.0)*2.0-1.0;
 		noiseY = clamp(fract(sin(dot(coord ,vec2(12.9898,78.233)*2.0)) * 43758.5453),0.0,1.0)*2.0-1.0;
@@ -196,7 +172,7 @@ float vignette()
     //vig = pow(vig, 0.5); // change pow for modifying the extend of the  vignette
 	//return vig;
 	float dist = distance(UV.xy, vec2(0.5,0.5));
-	dist = smoothstep(vignout+(fstop/vignfade), vignin+(fstop/vignfade), dist);
+	dist = smoothstep(ubo.vignout+(ubo.fstop/ubo.vignfade), ubo.vignin+(ubo.fstop/ubo.vignfade), dist);
 	return clamp(dist,0.0,1.0);
 }
 
@@ -206,26 +182,17 @@ void main()
 
     //scene depth calculation
 	
-    float depth = linearize(texture(imageHDR,UV.xy).w);
-
-	//float depth = 1.0 - texture2DRect(bgl_DepthTexture,gl_TexCoord[0].xy).r;
+    float depth = texture(imageHDR,UV.xy).w;
 	
 	if (depthblur)
 		depth = linearize(bdepth(UV.xy));
-	
+
 	//focal plane calculation
 	
-	float fDepth = focalDepth;
+	float fDepth = ubo.focalDepth;
 	
-<<<<<<< HEAD
 	if (ubo.autofocus > 0)
 		fDepth = linearize(texture(imageHDR,ubo.focus).w);
-=======
-	if (autofocus)
-	{
-		fDepth = linearize(texture(imageHDR,focus).w);
-	}
->>>>>>> parent of e6feae2 (Rendering available)
 	
 	//dof blur factor calculation
 	
@@ -241,13 +208,13 @@ void main()
 	
 	else
 	{
-		float f = focalLength; //focal length in mm
+		float f = ubo.focalLength; //focal length in mm
 		float d = fDepth*1000.0; //focal plane in mm
 		float o = depth*1000.0; //depth in mm
 		
 		float a = (o*f)/(o-f);
 		float b = (d*f)/(d-f);
-		float c = (d-f)/(d*fstop*CoC);
+		float c = (d-f)/(d*ubo.fstop*ubo.CoC);
 		
 		blur = abs(a-b)*c;
 	}
@@ -255,12 +222,12 @@ void main()
 	blur = clamp(blur,0.0,1.0);
 	
 	// calculation of pattern for ditering
-	vec2 noise = rand(UV.xy)*namount*blur;
+	vec2 noise = rand(UV.xy)*ubo.namount*blur;
 	
 	// getting blur x and y step factor
 	
-	float w = (1.0f/screenWH.x)*blur*maxblur+noise.x;
-	float h = (1.0f/screenWH.y)*blur*maxblur+noise.y;
+	float w = (1.0f/screenWH.x)*blur*ubo.maxblur+noise.x;
+	float h = (1.0f/screenWH.y)*blur*ubo.maxblur+noise.y;
 	
 	// calculation of final color
 	
@@ -272,9 +239,9 @@ void main()
 		float s = 1.0;
 		int ringsamples;
 		
-		for (int i = 1; i <= rings; i += 1)
+		for (int i = 1; i <= ubo.rings; i += 1)
 		{
-			ringsamples = i * samples;
+			ringsamples = i * ubo.samples;
 			
 			for (int j = 0 ; j < ringsamples ; j += 1)
 			{
@@ -282,22 +249,22 @@ void main()
 				float pw = (cos(float(j)*step)*float(i));
 				float ph = (sin(float(j)*step)*float(i));
 				float p = 1.0;
-				col += colorDOF(UV.xy + vec2(pw*w,ph*h),blur)*mix(1.0,(float(i))/(float(rings)),bias)*p;
-				s += 1.0*mix(1.0,(float(i))/(float(rings)),bias)*p;
+				col += colorDOF(UV.xy + vec2(pw*w,ph*h),blur)*mix(1.0,(float(i))/(float(ubo.rings)),ubo.bias)*p;
+				s += 1.0*mix(1.0,(float(i))/(float(ubo.rings)),ubo.bias)*p;
 				
 			}
 		}
 		col /= s; //divide by sample count
 	}
 	
-	if (showFocus)
+	if (ubo.showFocus > 0)
 		col = debugFocus(col, blur, depth);
 		
     vec3 color = col;
 
 	const float gamma = pushConstants.gamma;
-	const float exposure = pushConstants.exposure;
-    vec3 bloomColor = texture(imageBloom, UV).rgb;
+	float exposure = pushConstants.exposure;
+    //vec3 bloomColor = texture(imageBloom, UV).rgb;
     
 	if(blur < 0.05){
 		// FXAA
@@ -337,12 +304,11 @@ void main()
 		    color = result1;//64;
     }
 	
-    color += bloomColor;
+   // color += bloomColor;
 	//if (vignetting)
 	//	color *= vignette();
     
     // tone mapping
-<<<<<<< HEAD
 	vec3 avgColor = textureLod(imageHDR, vec2(0.5f, 0.5f), 1000.0).rgb + textureLod(imageHDR, vec2(0.5f, 0.5f), 9.0).rgb/2;
 	float avgLuma = dot(avgColor/1.5, vec3(0.2125, 0.7154, 0.0721));
 
@@ -363,18 +329,13 @@ void main()
 	
 	sbo.prevExposure = exposure;
 
-=======
->>>>>>> parent of e6feae2 (Rendering available)
     vec3 result = vec3(1.0) - exp(-color * exposure);
-
+	
     // also gamma correct while we're at it       
     result = pow(result, vec3(1.0 / gamma));
-    outColor = vec4(result, 1.0);// * ditherPattern;
-	if(vignetting)
+    outColor = vec4(col, 1.0);// * ditherPattern;
+	if(ubo.vignetting > 0)
 		outColor = vec4(result * vignette(), 1.0);
 
-<<<<<<< HEAD
 	outColor += vec4(filmicgrain(outColor), 1.0f);
-=======
->>>>>>> parent of e6feae2 (Rendering available)
 }

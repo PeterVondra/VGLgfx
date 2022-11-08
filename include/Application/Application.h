@@ -10,7 +10,7 @@ namespace vgl
 		AppConfig() {};
 		std::string Title;
 		Vector2i DefaultWindowSize;
-		Vector2i RenderResolution;
+		float RenderResolution;
 		unsigned int MSAASamples;
 	};
 

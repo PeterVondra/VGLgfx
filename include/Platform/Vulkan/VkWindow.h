@@ -10,9 +10,10 @@ namespace vgl
 	{
 		struct Swapchain
 		{
-			Swapchain(VkSurfaceKHR* p_Surface) : m_Surface(p_Surface), m_ContextPtr(&ContextSingleton::getInstance()) 
-				{ m_SwapchainSupport = querySwapchainSupport(*m_Surface, m_ContextPtr->m_PhysicalDevice.m_VkHandle); };
+			Swapchain(VkSurfaceKHR* p_Surface) : m_Surface(p_Surface), m_ContextPtr(&ContextSingleton::getInstance()) {};
 			~Swapchain() {};
+
+			void querySwapchainSupport() { m_SwapchainSupport = m_ContextPtr->querySwapchainSupport(*m_Surface, m_ContextPtr->m_PhysicalDevice.m_VkHandle); }
 
 			Context* m_ContextPtr;
 			VkSurfaceKHR* m_Surface;
@@ -34,8 +35,6 @@ namespace vgl
 
 			void initImageViews();
 
-			static SwapchainSupportDetails querySwapchainSupport(VkSurfaceKHR& p_Surface, VkPhysicalDevice p_Device);
-
 			VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& p_AvailableFormats);
 			VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> p_AvailablePresentModes);
 			VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& p_Capabilites, const Vector2i p_Extent);
@@ -53,6 +52,7 @@ namespace vgl
 		protected:
 		private:
 			friend class Renderer;
+			friend class ImGuiContext;
 
 			VkSampleCountFlagBits getMaxUsableSampleCount();
 			void createColorResources();
@@ -66,7 +66,7 @@ namespace vgl
 			Swapchain m_Swapchain;
 
 			VkImage m_ColorImage;
-			VkDeviceMemory m_ColorImageMemory;
+			AllocationInfo m_AllocInfo;
 			VkImageView m_ColorImageView;
 
 			bool m_IsValid = false;

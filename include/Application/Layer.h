@@ -14,7 +14,6 @@
 
 namespace vgl
 {
-	namespace vk { class Application; }
 	class Layer
 	{
 		public:

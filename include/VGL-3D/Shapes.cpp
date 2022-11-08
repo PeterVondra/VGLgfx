@@ -136,7 +136,7 @@ namespace vgl
 		uint32_t index;
 
 		const float H_Angle = Math::PI / 180 * 72;
-		const float V_Angle = std::atanf(1.0f / 2);
+		const float V_Angle = std::atan(1.0f / 2);
 		int32_t i1 = 0, i2 = 0;
 		float z, xy;
 		float hAngle1 = -Math::PI / 2 - H_Angle / 2;
@@ -151,11 +151,11 @@ namespace vgl
 			i1 = i;
 			i2 = (i + 5);
 
-			z = std::sinf(V_Angle);
-			xy = std::cosf(V_Angle);
+			z = std::sin(V_Angle);
+			xy = std::cos(V_Angle);
 
-			vertices[i1].position = { xy * cosf(hAngle1), xy * sinf(hAngle1), z };
-			vertices[i2].position = { xy * cosf(hAngle2), xy * sinf(hAngle2), -z };
+			vertices[i1].position = { xy * cos(hAngle1), xy * sin(hAngle1), z };
+			vertices[i2].position = { xy * cos(hAngle2), xy * sin(hAngle2), -z };
 
 			hAngle1 += H_Angle;
 			hAngle2 += H_Angle;
@@ -572,35 +572,35 @@ namespace vgl
 
 		MeshData::indexVertexData(vertices, p_MeshData);
 
-		for (auto& v : p_MeshData.vertices5T) {
+		for (auto& v : p_MeshData.vertices) {
 			v.position.y = Math::getRandomNumberND(0.0f, 300);
 		}
 		
-		for (int i = 0; i < p_MeshData.vertices5T.size(); i += 6) {
-			if (i >= p_MeshData.vertices5T.size())
+		for (int i = 0; i < p_MeshData.vertices.size(); i += 6) {
+			if (i >= p_MeshData.vertices.size())
 				break;
 
-			Vector3f normal0 = Math::normalize(Math::cross(p_MeshData.vertices5T[i+1].position - p_MeshData.vertices5T[i].position, p_MeshData.vertices5T[i + 2].position - p_MeshData.vertices5T[i].position));
-			Vector3f normal = Math::normalize(Math::cross(p_MeshData.vertices5T[i+4].position - p_MeshData.vertices5T[i+3].position, p_MeshData.vertices5T[i + 5].position - p_MeshData.vertices5T[i+3].position));
+			Vector3f normal0 = Math::normalize(Math::cross(p_MeshData.vertices[i+1].position - p_MeshData.vertices[i].position, p_MeshData.vertices[i + 2].position - p_MeshData.vertices[i].position));
+			Vector3f normal = Math::normalize(Math::cross(p_MeshData.vertices[i+4].position - p_MeshData.vertices[i+3].position, p_MeshData.vertices[i + 5].position - p_MeshData.vertices[i+3].position));
 
-			p_MeshData.vertices5T[i].normal = normal0;
-			p_MeshData.vertices5T[i+1].normal = normal0;
-			p_MeshData.vertices5T[i+2].normal = normal0;
+			p_MeshData.vertices[i].normal = normal0;
+			p_MeshData.vertices[i+1].normal = normal0;
+			p_MeshData.vertices[i+2].normal = normal0;
 
-			p_MeshData.vertices5T[i].uv = Vector2f(1.0f, 0.0f);
-			p_MeshData.vertices5T[i + 1].uv = Vector2f(1.0f, 1.0f);
-			p_MeshData.vertices5T[i + 2].uv = Vector2f(0.0f, 0.0f);
+			p_MeshData.vertices[i].uv = Vector2f(1.0f, 0.0f);
+			p_MeshData.vertices[i + 1].uv = Vector2f(1.0f, 1.0f);
+			p_MeshData.vertices[i + 2].uv = Vector2f(0.0f, 0.0f);
 
-			p_MeshData.vertices5T[i+3].uv = Vector2f(0.0f, 1.0f);
-			p_MeshData.vertices5T[i+4].uv = Vector2f(0.0f, 0.0f);
-			p_MeshData.vertices5T[i+5].uv = Vector2f(1.0f, 1.0f);
+			p_MeshData.vertices[i+3].uv = Vector2f(0.0f, 1.0f);
+			p_MeshData.vertices[i+4].uv = Vector2f(0.0f, 0.0f);
+			p_MeshData.vertices[i+5].uv = Vector2f(1.0f, 1.0f);
 
-			p_MeshData.vertices5T[i + 3].normal = normal;
-			p_MeshData.vertices5T[i + 4].normal = normal;
-			p_MeshData.vertices5T[i + 5].normal = normal;
+			p_MeshData.vertices[i + 3].normal = normal;
+			p_MeshData.vertices[i + 4].normal = normal;
+			p_MeshData.vertices[i + 5].normal = normal;
 		}
 
-		calcTBN(p_MeshData.vertices5T);
+		calcTBN(p_MeshData.vertices);
 
 		p_MeshData.init();
 	}

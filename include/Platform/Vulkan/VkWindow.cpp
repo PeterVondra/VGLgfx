@@ -33,7 +33,7 @@ namespace vgl
 				Utils::Logger::logMSG("Succesfully created window surface", "Window", Utils::Severity::Trace);
 			#endif
 
-			if (m_ContextPtr->m_Initialized) {
+			if (!m_ContextPtr->m_Initialized) {
 				m_ContextPtr->setPhysicalDevice(m_ContextPtr->getSuitablePhysicalDevice(m_ContextPtr->getPhysicalDevices(m_Surface, m_Swapchain.m_SwapchainSupport)));
 				m_ContextPtr->initLogicalDevice();
 				m_ContextPtr->m_Initialized = true;
@@ -58,26 +58,24 @@ namespace vgl
 		{
 			VkFormat colorFormat = m_Swapchain.m_SwapchainImageFormat;
 
-			//m_ContextPtr->createImage
-			//(
-			//	m_WindowSize.x, m_WindowSize.y,
-			//	colorFormat,
-			//	VK_IMAGE_TILING_OPTIMAL,
-			//	VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			//	VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			//	m_ColorImage,
-			//	m_ColorImageMemory,
-			//	(VkSampleCountFlagBits)m_MSAASamples
-			//);
+			m_AllocInfo = m_ContextPtr->createImageS
+			(
+				m_WindowSize.x, m_WindowSize.y,
+				colorFormat,
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+				VMA_MEMORY_USAGE_GPU_ONLY,
+				m_ColorImage,
+				(VkSampleCountFlagBits)m_MSAASamples
+			);
 
-			//m_ColorImageView = m_ContextPtr->createImageView(m_ColorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+			m_ColorImageView = m_ContextPtr->createImageView(m_ColorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 		}
 
 		void Window::destroyMSAAColorImage()
 		{
+			vmaDestroyImage(m_ContextPtr->m_VmaAllocator, m_ColorImage, m_AllocInfo.p_Alloc);
 			vkDestroyImageView(m_ContextPtr->m_Device, m_ColorImageView, nullptr);
-			vkDestroyImage(m_ContextPtr->m_Device, m_ColorImage, nullptr);
-			vkFreeMemory(m_ContextPtr->m_Device, m_ColorImageMemory, nullptr);
 		}
 
 		VkSampleCountFlagBits Window::getMaxUsableSampleCount()
@@ -131,7 +129,7 @@ namespace vgl
 
 		void Swapchain::initSwapchain(const Vector2i p_Extent)
 		{
-			SwapchainSupportDetails SwapchainSupport = querySwapchainSupport(*m_Surface, m_ContextPtr->m_PhysicalDevice.m_VkHandle);
+			SwapchainSupportDetails SwapchainSupport = m_ContextPtr->querySwapchainSupport(*m_Surface, m_ContextPtr->m_PhysicalDevice.m_VkHandle);
 			VkSurfaceFormatKHR		surfaceFormat = chooseSwapSurfaceFormat(SwapchainSupport.formats);
 			VkPresentModeKHR		presentMode = chooseSwapPresentMode(SwapchainSupport.presentModes);
 			VkExtent2D				extent = chooseSwapExtent(SwapchainSupport.capabilities, p_Extent);
@@ -225,34 +223,6 @@ namespace vgl
 				Utils::Logger::logMSG("Succesfully created image views for swap chain", "Swap Chain", Utils::Severity::Trace);
 		}
 
-		SwapchainSupportDetails Swapchain::querySwapchainSupport(VkSurfaceKHR& p_Surface, VkPhysicalDevice p_Device)
-		{
-			SwapchainSupportDetails details;
-
-			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(p_Device, p_Surface, &details.capabilities);
-
-			uint32_t formatCount;
-			vkGetPhysicalDeviceSurfaceFormatsKHR(p_Device, p_Surface, &formatCount, nullptr);
-
-			if (formatCount != 0)
-			{
-				details.formats.resize(formatCount);
-				vkGetPhysicalDeviceSurfaceFormatsKHR(p_Device, p_Surface, &formatCount, details.formats.data());
-			}
-
-			uint32_t presentModeCount;
-
-			vkGetPhysicalDeviceSurfacePresentModesKHR(p_Device, p_Surface, &presentModeCount, nullptr);
-
-			if (presentModeCount != 0)
-			{
-				details.presentModes.resize(presentModeCount);
-				vkGetPhysicalDeviceSurfacePresentModesKHR(p_Device, p_Surface, &presentModeCount, details.presentModes.data());
-			}
-
-			return details;
-		}
-
 		VkSurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& p_AvailableFormats)
 		{
 			if (p_AvailableFormats.size() == 1 && p_AvailableFormats[0].format == VK_FORMAT_UNDEFINED)
@@ -266,12 +236,12 @@ namespace vgl
 		}
 		VkPresentModeKHR Swapchain::chooseSwapPresentMode(const std::vector<VkPresentModeKHR> p_AvailablePresentModes)
 		{
-			for (const auto& availablePresentMode : p_AvailablePresentModes)
-				if (availablePresentMode == VK_PRESENT_MODE_FIFO_KHR)
-					return availablePresentMode;
 			//for (const auto& availablePresentMode : p_AvailablePresentModes)
-			//	if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+			//	if (availablePresentMode == VK_PRESENT_MODE_FIFO_KHR)
 			//		return availablePresentMode;
+			for (const auto& availablePresentMode : p_AvailablePresentModes)
+				if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+					return availablePresentMode;
 			//for (const auto& availablePresentMode : p_AvailablePresentModes)
 			//	if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
 			//		return availablePresentMode;

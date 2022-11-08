@@ -1,6 +1,6 @@
 #pragma once
 
-#include <GL/glew.h>
+#include "../../lib/glew-cmake/include/GL/glew.h"
 #include "../BaseWindow.h"
 
 namespace vgl 

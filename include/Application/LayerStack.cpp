@@ -29,7 +29,7 @@ namespace vgl
 		auto it = std::find(begin(), end(), p_Layer);
 		if (it != end())
 		{
-			(*it._Ptr)->onDetach();
+			(*it)->onDetach();
 			m_Layers.erase(it);
 			m_LayerInsert--;
 		}
@@ -38,7 +38,7 @@ namespace vgl
 	{
 		auto it = std::find(begin(), end(), p_Overlay);
 		if (it != end()) {
-			(*it._Ptr)->onDetach();
+			(*it)->onDetach();
 			m_Layers.erase(it);
 		}
 	}

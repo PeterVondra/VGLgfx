@@ -5,11 +5,6 @@
 /////////////////////////////////////////////////////////////////////////////////
 //Vector2D
 /////////////////////////////////////////////////////////////////////////////////
-Vector2f::Vector2f()
-{
-    //constructor
-}
-
 void Vector2f::set(float x, float y)
 {
     this->x = x;
@@ -91,11 +86,6 @@ std::ostream& operator<< (std::ostream& output, const Vector2f& vec)
 }
 
 //Vector2 int32_t
-Vector2i::Vector2i()
-{
-    //constructor
-}
-
 void Vector2i::set(int32_t x, int32_t y)
 {
     this->x = x;
@@ -162,11 +152,6 @@ std::ostream& operator<< (std::ostream& output, const Vector2i& vec)
 /////////////////////////////////////////////////////////////////////////////////
 //Vector3f
 /////////////////////////////////////////////////////////////////////////////////
-Vector3f::Vector3f()
-{
-    //constructor
-}
-
 void Vector3f::set(float x, float y, float z)
 {
     this->x = x;

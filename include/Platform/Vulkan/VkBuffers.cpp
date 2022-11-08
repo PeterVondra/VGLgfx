@@ -42,6 +42,7 @@ namespace vgl
 
 		void IndexBuffer::fill(std::vector<uint32_t>& p_BufferData)
 		{
+			m_Count = p_BufferData.size();
 			fill(&p_BufferData);
 		}
 
@@ -53,6 +54,8 @@ namespace vgl
 #endif
 				return;
 			}
+
+			m_Count = p_BufferData->size();
 
 			m_BufferSize = sizeof(p_BufferData->operator[](0)) * p_BufferData->size();
 
@@ -80,6 +83,8 @@ namespace vgl
 #endif
 				return;
 			}
+
+			m_Count = p_Size/sizeof(uint32_t);
 
 			m_StagingBufferAlloc = m_ContextPtr->createBuffer(m_BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_StagingBuffer).p_Alloc;
 

@@ -6,7 +6,7 @@ namespace Utils
 {
 	struct Node
 	{
-		T data;
+		float data;
 		Node* children[8];
 	};
 	template<typename T>class Octree

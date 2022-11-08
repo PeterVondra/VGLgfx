@@ -17,9 +17,11 @@ namespace vgl
 			Vector2i p_Size;
 			bool p_CreateSampler = false;
 			bool p_TransitionLayoutImage = true;
+
 			private:
 				friend class ImageAttachment;
 				friend class FramebufferAttachment;
+
 				bool p_AllowMipMapping = false;
 		};
 
@@ -41,11 +43,9 @@ namespace vgl
 		protected:
 		private:
 			friend class Renderer;
-			friend class BaseRenderer;
-			friend class ForwardRenderer;
-			friend class DeferredRenderer;
 			friend class Framebuffer;
 			friend class FramebufferAttachment;
+			friend class GraphicsContext;
 
 			// Attachment binding
 			uint32_t m_AttachmentId;
@@ -96,11 +96,9 @@ namespace vgl
 			protected:
 			private:
 				friend class Renderer;
-				friend class BaseRenderer;
-				friend class ForwardRenderer;
-				friend class DeferredRenderer;
 				friend class FramebufferAttachment;
 				friend class CommandBuffer;
+				friend class GraphicsContext;
 
 				Context* m_ContextPtr;
 

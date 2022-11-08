@@ -1,4 +1,4 @@
-#include "GLWindow.h"
+#include "GlWindow.h"
 
 #include "../../Utils/Logger.h"
 

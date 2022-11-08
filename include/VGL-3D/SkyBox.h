@@ -2,7 +2,8 @@
 
 #include "Mesh/Mesh.h"
 #include "Shapes.h"
-#include "../Platform/Vulkan/Buffers/VulkanImage.h"
+#include "../Application/RenderAPI.h"
+#include "../GDefinitions.h"
 
 namespace vgl
 {
@@ -10,13 +11,16 @@ namespace vgl
 	{
 		public:
 			Skybox();
-			Skybox(vk::CubeMap& p_CubeMap);
+			Skybox(ImageCube& p_CubeMap);
 			~Skybox();
 
-			void create(vk::CubeMap& p_CubeMap);
+			void create(ImageCube& p_CubeMap);
 
 		private:
-			vk::CubeMap* m_CubeMap;
+			ImageCube* m_CubeMap;
+      
+      AtmosphericScatteringInfo m_AtmosphericScatteringInfo;
+
 			friend class vk::Renderer;
 
 	};

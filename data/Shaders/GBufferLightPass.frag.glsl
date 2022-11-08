@@ -46,9 +46,9 @@ layout(binding = 0) uniform UniformBufferObject
 {
 	vec4 viewPos;
     
-    #ifdef SHADOW_MAPPING
+    //#ifdef SHADOW_MAPPING
 	mat4 lightSpaceMat;
-	#endif
+	//#endif
 
     //#ifdef LIGHT_DIR
 	DirectionalLight directional_light; // Directional Light
@@ -128,40 +128,44 @@ void main()
 
     albedo_t = texture(in_Albedo, UV);
 	albedo = albedo_t.rgb;
-
+    
     // Pixels will not be affected by any light
 	if(fragPos.a < 0){
         outColor = albedo_t;
         outColor.a = 1.0f;
 	    return;
     }
-
+    
 	normal = texture(in_Normal, UV).rgb;
-
+    
 	mraa = texture(in_MRAA, UV);
-
+    
 	metallic = mraa.r;
 	roughness = mraa.g;
 	ao = mraa.b;
-
+    
     #ifdef SHADOW_MAPPING
     lightPosFrag = bias*ubo.lightSpaceMat*fragPos;
     lightPosFrag /= lightPosFrag.w;
     #endif
-
+    
     outColor = vec4(0);
-
+    
     #ifdef LIGHT_DIR
+    #ifdef SHADOW_MAPPING
 	outColor.rgb = lightDirPBR(-ubo.directional_light.Direction.xyz, ubo.directional_light.Color.rgb)+volumetric_ligt();
+    #else
+    outColor.rgb = lightDirPBR(-ubo.directional_light.Direction.xyz, ubo.directional_light.Color.rgb);
+    #endif
 	#endif
-
-    float point_light_count = ubo.viewPos.w;
-
+    
+    //float point_light_count = ubo.viewPos.w;
+    
 	#ifdef MAX_POINT_LIGHTS
     for(int i = 0; i < int(point_light_count); i++)
 	    outColor.rgb += lightPointPBR(ubo.point_lights[i]);
 	#endif
-
+    
 	outColor.r = min(max(0.0f, outColor.x), 1000);
     outColor.g = min(max(0.0f, outColor.y), 1000);
     outColor.b = min(max(0.0f, outColor.z), 1000);

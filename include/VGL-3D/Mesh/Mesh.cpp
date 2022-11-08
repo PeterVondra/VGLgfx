@@ -15,6 +15,8 @@ namespace vgl
 			m_SubMeshIndices[0].second = indices.size();
 		}
 
+		m_MTLDescriptorInfo.resize(m_Materials.size());
+
 		BufferLayout layout = { {
 				{ ShaderDataType::Vec3f, 0, "inPosition"  },
 				{ ShaderDataType::Vec2f, 1, "inUv"		  },
@@ -28,20 +30,23 @@ namespace vgl
 		m_Vertices.fill(vertices);
 		m_Indices.fill(indices);
 		m_VertexArray.fill(m_Vertices, m_Indices);
+
+		m_MTLRecreateFlag = true;
 	}
 	void MeshData::updateVertices()
 	{
 		m_Vertices.update(vertices);
 		m_Indices.update(indices);
 	}
-	void MeshData::initMaterials(EnvData& p_EnvData)
-	{
+	void MeshData::initMaterials(/*EnvData& p_EnvData*/)
+  {
 		m_MTLValid = true;
 
 		if (m_Materials.size() == 0){
 			m_Materials.resize(1);
 			m_SubMeshIndices.resize(1);
-			m_Materials.resize(1);
+			m_MTLDescriptors.resize(1);
+			m_MTLDescriptorInfo.resize(1);
 
 			m_SubMeshIndices[0].first = 0;
 			m_SubMeshIndices[0].second = indices.size();
@@ -69,34 +74,42 @@ namespace vgl
 			info.p_LightMaps = 0;
 			info.p_Effects = 0;
 
+			uint32_t binding = 2;
+
 			if (m_Materials[i].m_AlbedoMap.isValid()){
-				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_AlbedoMap, 2);
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_AlbedoMap, binding);
 				info.p_LightMaps |= (uint32_t)LightMaps::Albedo;
+				binding++;
 			}
 
 			if (m_Materials[i].m_MetallicMap.isValid()){
-				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_MetallicMap, 3);
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_MetallicMap, binding);
 				info.p_LightMaps |= (uint32_t)LightMaps::Metallic;
+				binding++;
 			}
 
 			if (m_Materials[i].m_RoughnessMap.isValid()){
-				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_RoughnessMap, 4);
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_RoughnessMap, binding);
 				info.p_LightMaps |= (uint32_t)LightMaps::Roughness;
+				binding++;
 			}
 
 			if (m_Materials[i].m_AOMap.isValid()){
-				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_AOMap, 5);
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_AOMap, binding);
 				info.p_LightMaps |= (uint32_t)LightMaps::AO;
+				binding++;
 			}
 
 			if (m_Materials[i].m_NormalMap.isValid()){
-				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_NormalMap, 6);
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_NormalMap, binding);
 				info.p_Effects |= (uint32_t)Effects::NormalMapping;
+				binding++;
 			}
 
 			if (m_Materials[i].m_DisplacementMap.isValid()){
-				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_DisplacementMap, 7);
+				m_MTLDescriptorInfo[i].addImage(&m_Materials[i].m_DisplacementMap, binding);
 				info.p_Effects |= (uint32_t)Effects::POM;
+				binding++;
 			}
 
 			// Directional light shadow map

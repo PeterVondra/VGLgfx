@@ -25,8 +25,9 @@ namespace vgl
 			}
 		};
 
-		Renderer::Renderer() : m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_ImGuiContext(nullptr)
+		Renderer::Renderer() : m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_PostSwapchainRenderPass(RenderPassType::Graphics), m_ImGuiContext(nullptr)
 		{ 
+			m_CommandBuffers.resize(m_ContextPtr->m_SwapchainImageCount);
 			for (int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
 				for (int32_t j = 0; j < 1000; j++)
 					m_CommandBuffers[i].emplace_back(i, Level::Secondary);
@@ -43,10 +44,23 @@ namespace vgl
 			m_PresentInfo.waitSemaphoreCount = 1;
 			m_PresentInfo.swapchainCount = 1;
 			m_PresentInfo.pResults = nullptr;
+
+			m_Viewport.m_Size = m_WindowPtr->getWindowSize();
+
+			createSyncObjects();
+
+			createDefaultRenderPass();
+			createDepthImageAttachment();
+			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageView, m_WindowPtr->m_ColorImageView);
+			m_PresentInfo.pSwapchains = &m_WindowPtr->m_Swapchain.m_Swapchain;
+
+			createPostSwapchainRenderPass();
+			m_ImGuiContext.init(m_PostSwapchainRenderPass);
 		}
 		Renderer::Renderer(Window* p_Window) 
-			: m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_ImGuiContext(p_Window)
+			: m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_PostSwapchainRenderPass(RenderPassType::Graphics), m_ImGuiContext(p_Window)
 		{
+			m_CommandBuffers.resize(m_ContextPtr->m_SwapchainImageCount);
 			for (int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
 				for (int32_t j = 0; j < 1000; j++)
 					m_CommandBuffers[i].emplace_back(i, Level::Secondary);
@@ -66,11 +80,22 @@ namespace vgl
 			m_PresentInfo.swapchainCount = 1;
 			m_PresentInfo.pResults = nullptr;
 
-			m_ImGuiContext.init(m_DefaultRenderPass);
+			m_Viewport.m_Size = m_WindowPtr->getWindowSize();
+
+			createSyncObjects();
+
+			createDefaultRenderPass();
+			createDepthImageAttachment();
+			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageView, m_WindowPtr->m_ColorImageView);
+			m_PresentInfo.pSwapchains = &m_WindowPtr->m_Swapchain.m_Swapchain;
+
+			createPostSwapchainRenderPass();
+			m_ImGuiContext.init(m_PostSwapchainRenderPass);
 		}
 		Renderer::Renderer(Window& p_Window) 
-			: m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_ImGuiContext(&p_Window)
+			: m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_PostSwapchainRenderPass(RenderPassType::Graphics), m_ImGuiContext(&p_Window)
 		{
+			m_CommandBuffers.resize(m_ContextPtr->m_SwapchainImageCount);
 			for (int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
 				for (int32_t j = 0; j < 1000; j++)
 					m_CommandBuffers[i].emplace_back(i, Level::Secondary);
@@ -90,13 +115,22 @@ namespace vgl
 			m_PresentInfo.swapchainCount = 1;
 			m_PresentInfo.pResults = nullptr;
 
-			m_ImGuiContext.init(m_DefaultRenderPass);
+			m_Viewport.m_Size = m_WindowPtr->getWindowSize();
+
+			createSyncObjects();
+
+			createDefaultRenderPass();
+			createDepthImageAttachment();
+			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageView, m_WindowPtr->m_ColorImageView);
+			m_PresentInfo.pSwapchains = &m_WindowPtr->m_Swapchain.m_Swapchain;
+
+			createPostSwapchainRenderPass();
+			m_ImGuiContext.init(m_PostSwapchainRenderPass);
 		}
 		Renderer::Renderer(Window& p_Window, float p_RenderResolutionScale) 
-			: m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_ImGuiContext(&p_Window)
+			: m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_PostSwapchainRenderPass(RenderPassType::Graphics), m_ImGuiContext(&p_Window)
 		{ 
 			m_CommandBuffers.resize(m_ContextPtr->m_SwapchainImageCount);
-
 			for (int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
 				for (int32_t j = 0; j < 1000; j++)
 					m_CommandBuffers[i].emplace_back(i, Level::Secondary);
@@ -117,7 +151,17 @@ namespace vgl
 			m_PresentInfo.swapchainCount = 1;
 			m_PresentInfo.pResults = nullptr;
 
-			m_ImGuiContext.init(m_DefaultRenderPass);
+			m_Viewport.m_Size = m_WindowPtr->getWindowSize();
+
+			createSyncObjects();
+
+			createDefaultRenderPass();
+			createDepthImageAttachment();
+			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageView, m_WindowPtr->m_ColorImageView);
+			m_PresentInfo.pSwapchains = &m_WindowPtr->m_Swapchain.m_Swapchain;
+
+			createPostSwapchainRenderPass();
+			m_ImGuiContext.init(m_PostSwapchainRenderPass);
 		}
 
 		void Renderer::beginRenderPass(RenderInfo& p_RenderInfo)
@@ -194,7 +238,7 @@ namespace vgl
 		void Renderer::submit(std::vector<ImageAttachment>& p_Images, const uint32_t p_Binding)
 		{
 			for (int32_t i = 0; i < p_Images.size(); i++)
-				m_DescriptorSetInfo.p_ImageDescriptors.emplace_back(i, &p_Images[i].getImage(), 0);
+				m_DescriptorSetInfo.p_ImageDescriptors.emplace_back(&p_Images[i].getImage(), 0, i);
 		}
 		void Renderer::submit(MeshData& p_MeshData, const uint32_t p_MTLIndex, Transform3D& p_Transform)
 		{
@@ -278,12 +322,12 @@ namespace vgl
 		}
 		void Renderer::endRenderPass()
 		{
-
+			
 		}
 		void Renderer::render()
 		{
 		}
-		/*void Renderer::shadowMapRecordMeshData(MeshData& p_MeshData, Transform3D& p_Transform)
+		void Renderer::shadowMapRecordMeshData(MeshData& p_MeshData, Transform3D& p_Transform)
 		{
 			DescriptorSetManager& descriptor = m_DShadowMapPtr->m_Descriptors[m_DShadowMapPtr->m_CommandBufferIdx];
 
@@ -327,8 +371,8 @@ namespace vgl
 				for (int i = 0; i < p_MeshData.m_Materials.size(); i++) {
 					// Should material be rendered?
 					if (!p_MeshData.m_Materials[i].config.render) {
-						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_MaterialIndices[i].first);
-						prevIndex = p_MeshData.m_MaterialIndices[i].second;
+						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[i].first);
+						prevIndex = p_MeshData.m_SubMeshIndices[i].second;
 					}
 				}
 
@@ -339,7 +383,6 @@ namespace vgl
 
 			m_DShadowMapPtr->m_CommandBufferIdx++;
 		}
-		*/
 		
 		void Renderer::createPipelines(MeshData& p_MeshData, RenderInfo& p_RenderInfo, RenderPass& p_RenderPass)
 		{
@@ -399,8 +442,8 @@ namespace vgl
 						}
 				}
 
-				if (!p_MeshData.m_MTLValid || p_MeshData.m_RecreateFlag || p_MeshData.m_MTLRecreateFlag)
-					p_MeshData.initMaterials(m_EnvData);
+				if (!p_MeshData.m_RecreateFlag || p_MeshData.m_MTLRecreateFlag)
+					p_MeshData.initMaterials();
 
 				createPipelines(p_MeshData, m_RenderInfo, m_FramebufferAttachmentPtr->m_RenderPass);
 
@@ -417,12 +460,6 @@ namespace vgl
 			{
 				if (!p_MeshData.m_Materials[i].config.render)
 					continue;
-
-				//if(!m_EnvData.p_DShadowMap.empty())
-				//	if (m_EnvData.p_DShadowMap[0]->isComplete()) {
-				//		p_MeshData.m_MtlUniforms[i].copy(ShaderStage::FragmentBit, m_DShadowMapPtr->m_Direction, 8 * sizeof(float));
-				//		p_MeshData.m_MtlUniforms[i].copy(ShaderStage::VertexBit, p_Transform.model * (m_DShadowMapPtr->m_View * m_DShadowMapPtr->m_Projection), MeshUBOAlignment::viewPosition_offset);
-				//	}
 
 				//if (!(p_MeshData.m_Materials[i].m_PrevConfig == p_MeshData.m_Materials[i].config)) {
 					p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::FragmentBit, Vector4f(
@@ -445,12 +482,13 @@ namespace vgl
 						p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::FragmentBit, p_MeshData.m_Materials[k].m_ShaderInfo.p_PointLights[j], 16 * sizeof(float) + sizeof(P_Light)*j);
 
 				// MVP Matrix
-				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, p_Transform.model * m_ViewProjection, MeshUBOAlignment::mvp_offset);
+				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, p_Transform.model * m_ViewProjection, 0);
 				// Model Matrix
-				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, p_Transform.model, MeshUBOAlignment::model_offset);
-
+				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, p_Transform.model, sizeof(Matrix4f));
+				// View Matrix
+				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, m_Camera->getViewMatrix(), 2*sizeof(Matrix4f));
 				// Camera position
-				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, m_Camera->getPosition(), MeshUBOAlignment::viewPosition_offset + sizeof(Matrix4f));
+				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, m_Camera->getPosition(), 3*sizeof(Matrix4f));
 
 				p_MeshData.m_Materials[i].m_PrevConfig = p_MeshData.m_Materials[i].config;
 			}
@@ -467,7 +505,7 @@ namespace vgl
 			{
 				if (!p_MeshData.m_Materials[i].config.render)
 					continue;
-				
+
 				p_CommandBuffer.cmdBindPipeline(m_ShaderData[p_MeshData.m_Materials[i].m_PipelineIndex].p_Pipeline);
 				p_CommandBuffer.cmdBindDescriptorSets(p_MeshData.m_MTLDescriptors[i], p_ImageIndex);
 				p_CommandBuffer.cmdBindVertexArray(p_MeshData.m_VertexArray);
@@ -515,17 +553,17 @@ namespace vgl
 			
 			m_CommandBufferIdx++;
 		}*/
-		/*void Renderer::primaryShadowRecFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex)
+		void Renderer::primaryShadowRecFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex)
 		{
 			D_ShadowMap* shadowPtr = (D_ShadowMap*)p_Ptr;
 
 			if (shadowPtr)
 				if (!shadowPtr->m_CommandBuffers.empty()) {
-					shadowPtr->m_Attachment.cmdBeginRenderPass(p_PrimaryCommandBuffer, SubpassContents::Secondary);
+					shadowPtr->m_Attachment.cmdBeginRenderPass(p_PrimaryCommandBuffer, SubpassContents::Secondary, p_ImageIndex);
 					p_PrimaryCommandBuffer.cmdExecuteCommands(shadowPtr->m_CommandBuffers[p_ImageIndex], shadowPtr->m_CommandBufferIdx);
 					shadowPtr->m_Attachment.cmdEndRenderPass();
 				}
-		}*/
+		}
 		
 		void Renderer::setCmdDefaultViewport(CommandBuffer& p_CommandBuffer)
 		{
@@ -560,6 +598,8 @@ namespace vgl
 			int mipWidth = p_Image->m_Size.x;
 			int mipHeight = p_Image->m_Size.y;
 
+			VkImageLayout layout = p_Image->m_CurrentLayout;
+
 			m_ContextPtr->setImageLayout(
 				p_PrimaryCommandBuffer.m_CommandBuffer,
 				p_Image->m_VkImageHandle,
@@ -568,11 +608,11 @@ namespace vgl
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 			);
 			
-			p_Image->m_CurrentLayout = p_Image->m_FinalLayout;
 
 			for (int i = 1; i < p_Image->m_MipLevels; i++)
 			{
-				//m_ContextPtr->setImageLayout(p_PrimaryCommandBuffer.m_CommandBuffer, p_Image->m_Image, VK_IMAGE_ASPECT_COLOR_BIT, p_Image->m_InitialLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+				barrier.subresourceRange.baseMipLevel = i;
+				m_ContextPtr->setImageLayout(p_PrimaryCommandBuffer.m_CommandBuffer, p_Image->m_VkImageHandle, p_Image->m_CurrentLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, barrier.subresourceRange);
 
 				barrier.subresourceRange.baseMipLevel = i - 1;
 				barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -629,6 +669,8 @@ namespace vgl
 
 				if (mipHeight > 1) mipHeight /= 2;
 			}
+			
+			p_Image->m_CurrentLayout = p_Image->m_FinalLayout;
 
 			barrier.subresourceRange.baseMipLevel = p_Image->m_MipLevels - 1;
 			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -647,11 +689,8 @@ namespace vgl
 		
 		void Renderer::recordPrimaryCommandBuffers(uint32_t p_ImageIndex)
 		{
+			waitForFences();
 			m_PrimaryCommandBuffers[p_ImageIndex].cmdBegin();
-
-			//if(!m_DescriptorSetManager.isComplete())
-			//	m_DescriptorSetManager.create(m_DescriptorSetInfo);
-			//m_DescriptorSetInfo.clearDescriptors();
 
 			// Record all submitted renderpasses
 			for (auto& cmdFun : m_RecordPrimaryCmdBuffersFunPtrs)
@@ -674,57 +713,49 @@ namespace vgl
 #ifdef IMGUI_VK_IMPL
 			m_PrimaryCommandBuffers[p_ImageIndex].cmdBeginRenderPass(
 				*m_ImGuiContext.m_RenderPass, 
-				SubpassContents::Secondary, 
-				m_WindowPtr->m_Swapchain.m_SwapchainFramebuffers[p_ImageIndex], 
+				SubpassContents::Inline, 
+				m_ImGuiContext.m_Framebuffers[p_ImageIndex], 
 				m_WindowPtr->getWindowSize()
 			);
 			//m_PrimaryCommandBuffers[p_ImageIndex].cmdExecuteCommands(m_ImGuiContext.m_CommandBuffer);
-			// Record Imgui Draw Data and draw funcs into command buffer
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_PrimaryCommandBuffers[p_ImageIndex].vkHandle());
-
 			m_PrimaryCommandBuffers[p_ImageIndex].cmdEndRenderPass();
 #endif
 			m_PrimaryCommandBuffers[p_ImageIndex].cmdEnd();
 		}
+
 		void Renderer::primaryRecFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex)
 		{
 			FramebufferAttachment* framebufferPtr = (FramebufferAttachment*)p_Ptr;
 
-			m_ContextPtr->m_ImageIndex = p_ImageIndex;
-
 			if (framebufferPtr) {
+				//m_ContextPtr->m_ImageIndex = p_ImageIndex;
 				if (framebufferPtr->m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_CreateGraphicsPipeline)
 					framebufferPtr->recordCmdBuffer(p_PrimaryCommandBuffer, p_ImageIndex);
-				else if (!m_CommandBuffers.empty()) {
+				else{
+
 					framebufferPtr->cmdBeginRenderPass(p_PrimaryCommandBuffer, SubpassContents::Secondary, p_ImageIndex);
-					p_PrimaryCommandBuffer.cmdExecuteCommands(m_CommandBuffers[m_ImageIndex], m_CommandBufferIdx);
+					p_PrimaryCommandBuffer.cmdExecuteCommands(m_CommandBuffers[p_ImageIndex], m_CommandBufferIdx);
 					framebufferPtr->cmdEndRenderPass();
 				}
 			}
 		}
 
-		void Renderer::updateImGuiDrawData()
-		{
-			//#ifdef IMGUI_VK_IMPL
-			//	m_ImGuiContext.genCmdBuffers();
-			//#elif undefined IMGUI_VK_IMPL
-			//	m_ImGuiContext.updateBuffers();
-			//	m_ImGuiContext.genCmdBuffers(m_DefaultInheritanceInfo);
-			//#endif
-		}
-
 		void Renderer::GPUSubmit()
 		{
-			//m_ThreadPool.wait();
-
 			//float start = Utils::Logger::getTimePoint();
-			
-			//updateImGuiDrawData();
+#ifndef IMGUI_VK_IMPL
+			m_ImGuiContext.updateBuffers();
+			m_ImGuiContext.genCmdBuffers();
+#endif
+#ifdef IMGUI_VK_IMPL
+			//m_ImGuiContext.genCmdBuffers();
+			m_ImGuiContext.updateViewports();
+#endif
 
 			for (size_t i = 0; i < m_PrimaryCommandBuffers.size(); i++) recordPrimaryCommandBuffers(i);
 
 			waitForFences();
-
 			VkResult result = vkAcquireNextImageKHR(m_ContextPtr->m_Device, m_WindowPtr->m_Swapchain.m_Swapchain, UINT64_MAX,
 				m_ImageAvailableSemaphore[m_CurrentFrame], VK_NULL_HANDLE, &m_ImageIndex);
 
@@ -770,8 +801,6 @@ namespace vgl
 			m_ContextPtr->m_ImageIndex = m_ImageIndex;
 
 			vkWaitForFences(m_ContextPtr->m_Device, 1, &m_ImagesInFlight[m_ImageIndex], VK_TRUE, UINT64_MAX);
-			for (size_t i = 0; i < m_PrimaryCommandBuffers.size(); i++)
-				vkResetCommandPool(m_ContextPtr->m_Device, m_ContextPtr->m_DefaultCommandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
 		}
 
 		void Renderer::createDefaultRenderPass()
@@ -848,12 +877,41 @@ namespace vgl
 			m_DefaultInheritanceInfo.subpass = 0;
 		}
 
+		void Renderer::createPostSwapchainRenderPass()
+		{
+			AttachmentInfo colorAttachment;
+			colorAttachment.p_AttachmentType = AttachmentType::Color;
+			colorAttachment.p_Format = m_WindowPtr->m_Swapchain.m_SwapchainImageFormat;
+			colorAttachment.p_SampleCount = VK_SAMPLE_COUNT_1_BIT;// m_WindowPtr->m_MSAASamples;
+			colorAttachment.p_LoadOp = LoadOp::Load;
+			colorAttachment.p_StoreOp = StoreOp::Store;
+			colorAttachment.p_StencilLoadOp = LoadOp::Null;
+			colorAttachment.p_StencilStoreOp = StoreOp::Null;
+			colorAttachment.p_InitialLayout = Layout::Color;
+			colorAttachment.p_FinalLayout = Layout::Present;
+
+			m_PostSwapchainRenderPass.addAttachment(colorAttachment);
+
+			VkSubpassDependency dependency = {};
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.srcAccessMask = 0;// VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+			m_PostSwapchainRenderPass.m_Dependencies.push_back(dependency);
+
+			m_PostSwapchainRenderPass.create();
+		}
+
 		// For screen buffer
 		void Renderer::createDepthImageAttachment()
 		{
 			ImageAttachmentInfo info;
 			info.p_Size = m_WindowPtr->m_WindowSize;
-			info.p_AttachmentInfo = &m_DefaultRenderPass.m_AttachmentInfos[1];
+			info.p_AttachmentInfo = &m_DefaultRenderPass.m_AttachmentInfo[1];
+			info.p_CreateSampler = false;
 
 			m_DepthImageAttachment.create(info);
 		}
@@ -861,8 +919,6 @@ namespace vgl
 		void Renderer::destroySwapChain()
 		{
 			m_WindowPtr->m_Swapchain.destroy();
-
-			m_DefaultRenderPass.destroy();
 
 			m_WindowPtr->destroyMSAAColorImage();
 
@@ -883,15 +939,17 @@ namespace vgl
 				m_WindowPtr->setWindowSize(m_WindowPtr->getWindowSize().x, 2);
 			}
 
+			m_Viewport.m_Size = m_WindowPtr->getWindowSize();
+
 			destroySwapChain();
 
 			m_WindowPtr->m_Swapchain.initSwapchain(m_WindowPtr->getWindowSize());
 
-			createDefaultRenderPass();
 			m_WindowPtr->createColorResources();
 			createDepthImageAttachment();
 
 			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.m_ImageView, m_WindowPtr->m_ColorImageView);
+			m_PresentInfo.pSwapchains = &m_WindowPtr->m_Swapchain.m_Swapchain;
 
 			m_WindowPtr->m_DeltaTime = 0;
 			m_WindowPtr->m_PreviousTime = Utils::Logger::getTimePoint();

@@ -12,21 +12,12 @@ class Vector2f
 {
     public:
         union {
-            struct {
-                float x;
-                float y;
-            };
-            struct {
-                float r;
-                float g;
-            };
-            struct {
-                float s;
-                float t;
-            };
+            struct { float x, y; };
+            struct { float r, g; };
+            struct { float s, t; };
         };
 
-        Vector2f();
+        Vector2f() {};
 
         Vector2f(float x, float y) : x(x), y(y) {};
         Vector2f(float xy) : x(xy), y(xy) {};
@@ -58,21 +49,12 @@ class Vector2i
 {
     public:
         union {
-            struct {
-                int32_t x;
-                int32_t y;
-            };
-            struct {
-                int32_t r;
-                int32_t g;
-            };
-            struct {
-                int32_t s;
-                int32_t t;
-            };
+            struct { int32_t x, y; };
+            struct { int32_t r, g; };
+            struct { int32_t s, t; };
         };
 
-        Vector2i();
+        Vector2i() {};
 
         Vector2i(int32_t x, int32_t y) : x(x), y(y) {};
         Vector2i(int32_t xy) : x(xy), y(xy) {};
@@ -105,27 +87,11 @@ class Vector3f
 {
     public:
         union {
-            struct {
-                float x;
-                float y;
-                float z;
-            };
-            struct {
-                float r;
-                float g;
-                float b;
-            };
-            struct {
-                Vector2f xy;
-                float z;
-            };
-            struct {
-                Vector2f rg;
-                float b;
-            };
+            struct { float x, y, z; };
+            struct { float r, g, b; };
         };
 
-        Vector3f();
+        Vector3f() {};
         Vector3f(float xyz) : x(xyz), y(xyz), z(xyz) {};
 
         Vector3f(float x, float y, float z) : x(x), y(y), z(z) {};
@@ -162,24 +128,8 @@ class Vector3i
 {
     public:
         union {
-            struct {
-                int32_t x;
-                int32_t y;
-                int32_t z;
-            };
-            struct {
-                int32_t r;
-                int32_t g;
-                int32_t b;
-            };
-            struct {
-                Vector2i xy;
-                int32_t z;
-            };
-            struct {
-                Vector2i rg;
-                int32_t b;
-            };
+            struct { int32_t x, y, z; };
+            struct { int32_t r, g, b; };
         };
 
         Vector3i();
@@ -218,20 +168,8 @@ class Vector4f
 {
     public:
         union {
-            struct {
-                float x;
-                float y;
-                float z;
-                float w;
-            };
-            struct {
-                Vector2f xy;
-                Vector2f zw;
-            };
-            struct {
-                Vector3f xyz;
-                float w;
-            };
+            struct { float x, y, z, w; };
+            struct { float r, g, b, a; };
         };
 
         Vector4f() : x(0), y(0), z(0), w(0) {};
@@ -260,20 +198,8 @@ class Vector4i
 {
     public:
         union{
-            struct {
-                int32_t x;
-                int32_t y;
-                int32_t z;
-                int32_t w;
-            };
-            struct {
-                Vector2i xy;
-                Vector2i zw;
-            };
-            struct {
-                Vector3i xyz;
-                int32_t w;
-            };
+            struct { int32_t x, y, z, w; };
+            struct { float r, g, b, a; };
         };
 
         Vector4i() : x(0), y(0), z(0), w(0) {};

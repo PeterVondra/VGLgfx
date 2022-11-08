@@ -1,11 +1,5 @@
 #pragma once
 
-#include "VkRenderPass.h"
-#include "VkFramebufferAttachment.h"
-#include "VkShader.h"
-#include "VkCommandBuffer.h"
-#include "VkWindow.h"
-
 namespace vgl
 {
 	// For HDR and FXAA
@@ -65,15 +59,4 @@ namespace vgl
 		float gain = 0.1f; //highlight gain;
 		bool noise = true; //use noise instead of pattern for sample dithering
 	};
-
-	namespace vk
-	{
-		struct RenderInfo
-		{
-			bool p_AlphaBlending = false;
-			CullMode p_CullMode = CullMode::BackBit;
-			PolygonMode p_PolygonMode = PolygonMode::Fill;
-			IATopoogy p_IATopology = IATopoogy::TriList;
-		};
-	}
 }

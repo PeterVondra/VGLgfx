@@ -2,13 +2,12 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_ARB_shading_language_420pack : enable
 
-<<<<<<< HEAD
 layout(location = 0) out vec4 out_Position;
 layout(location = 1) out vec4 out_Normal;
 layout(location = 2) out vec4 out_Albedo;
 // R = Metallic, G = Roughness, B = Ambient Occlusion
 layout(location = 3) out vec4 out_MRAA; // A = Depth
-=======
+
 layout(location = 0) in vec3    localPos;
 layout(location = 1) in vec3	_RayOrigin;
 layout(location = 2) in vec3	_SunPos;
@@ -26,7 +25,6 @@ layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outColorDiscarded;
 
 
->>>>>>> parent of e6feae2 (Rendering available)
 #define PI 3.141592
 #define iSteps 16
 #define jSteps 8
@@ -138,7 +136,6 @@ vec3 atmosphere(vec3 r, vec3 r0, vec3 pSun, float iSun, float rPlanet, float rAt
 
 void main()
 {
-<<<<<<< HEAD
     out_Normal = vec4(0.0f);
     out_Albedo = vec4(atmosphere(
 	    localPos,
@@ -153,20 +150,4 @@ void main()
         psc.p_MieSHeight,
         psc.p_MieDir), 1.0f);
     out_Position.a = -1.0f;
-=======
-    outColor = vec4(atmosphere(
-	    localPos,
-        _RayOrigin,
-	    _SunPos,
-        _SunIntensity,
-        _PlanetRadius,
-        _AtmosphereRadius,
-        _RayleighSC,
-        _MieSC,
-        _RayleighSHeight,
-        _MieSHeight,
-        _MieDir), 1.0f);
-
-    outColorDiscarded = vec4(0.0f, 0.0f, 0.0f, 1.0f);
->>>>>>> parent of e6feae2 (Rendering available)
 }

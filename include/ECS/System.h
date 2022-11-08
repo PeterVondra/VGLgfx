@@ -49,7 +49,7 @@ namespace vgl
 
 				inline BaseSystem* operator[](const uint32_t p_Index) { return systems[p_Index]; }
 
-				bool SystemList::removeSystem(BaseSystem& p_System);
+				bool removeSystem(BaseSystem& p_System);
 			private:
 				std::vector<BaseSystem*> systems;
 

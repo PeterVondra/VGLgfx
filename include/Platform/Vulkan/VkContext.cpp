@@ -1,3 +1,4 @@
+#define VMA_IMPLEMENTATION
 #include "VkContext.h"
 
 #include "../../Utils/Logger.h"
@@ -14,11 +15,16 @@ namespace vgl
 			Utils::Logger::setStartTimePoint(std::chrono::steady_clock::now());
 
 			#ifdef USE_VK_VALIDATION_LAYERS
+			m_ValidationLayerExtensions.push_back("VK_LAYER_KHRONOS_validation");
 			m_DeviceExtensions.push_back(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
 			#endif
-
+			
 			m_DeviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-			m_DeviceExtensions.push_back(VK_NV_FRAMEBUFFER_MIXED_SAMPLES_EXTENSION_NAME);
+			m_DeviceExtensions.push_back("VK_KHR_imageless_framebuffer");
+			m_DeviceExtensions.push_back("VK_KHR_maintenance2");
+			m_DeviceExtensions.push_back("VK_KHR_image_format_list");
+			//m_DeviceExtensions.push_back(VK_NV_FRAMEBUFFER_MIXED_SAMPLES_EXTENSION_NAME);
+			m_DeviceExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
 			
 			initInstance();
 
@@ -77,6 +83,7 @@ namespace vgl
 			#endif
 
 			auto extensions = getRequiredExtensions();
+			extensions.push_back("VK_KHR_get_physical_device_properties2");
 			m_InstanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 			m_InstanceCreateInfo.ppEnabledExtensionNames = extensions.data();
 
@@ -141,8 +148,8 @@ namespace vgl
 			createInfo.pQueueCreateInfos = queueCreateInfos.data();
 			createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 			//createInfo.pEnabledFeatures = &m_PhysicalDevice.m_DeviceFeatures;
-			createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-			createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+			createInfo.enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size());
+			createInfo.ppEnabledExtensionNames = m_DeviceExtensions.data();
 
 			createInfo.enabledLayerCount = 0;
 			
@@ -195,6 +202,9 @@ namespace vgl
 			else
 				Utils::Logger::logMSG("success!, created descriptor pool\n", "Uniform Buffer", Utils::Severity::Debug);
 			#endif
+
+			m_DescriptorSetLayoutCache.m_Device = m_Device;
+			m_DescriptorAllocator.m_Device = m_Device;
 		}
 
 		std::vector<PhysicalDevice> Context::getPhysicalDevices(VkSurfaceKHR& p_Surface, SwapchainSupportDetails& p_SwapchainSupport)
@@ -224,15 +234,44 @@ namespace vgl
 				physicalDevice.m_DeviceProperties = getDeviceProperties(physicalDevice);
 				physicalDevice.m_DeviceFeatures = getDeviceFeatures(physicalDevice);
 
-				physicalDevice.m_Score = rateDeviceSuitability(p_Surface, p_SwapchainSupport, physicalDevice);
+				physicalDevice.m_Score = rateDeviceSuitability(p_Surface, p_SwapchainSupport, physicalDevice, physicalDevice.m_QueueFamily);
 				candidates.push_back(physicalDevice);
 			}
 
 			return candidates;
 		}
-		void Context::setPhysicalDevice(PhysicalDevice p_PhysicalDevice)
+
+		SwapchainSupportDetails Context::querySwapchainSupport(VkSurfaceKHR& p_Surface, VkPhysicalDevice& p_Device)
+		{
+			SwapchainSupportDetails details;
+
+			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(p_Device, p_Surface, &details.capabilities);
+
+			uint32_t formatCount;
+			vkGetPhysicalDeviceSurfaceFormatsKHR(p_Device, p_Surface, &formatCount, nullptr);
+
+			if (formatCount != 0)
+			{
+				details.formats.resize(formatCount);
+				vkGetPhysicalDeviceSurfaceFormatsKHR(p_Device, p_Surface, &formatCount, details.formats.data());
+			}
+
+			uint32_t presentModeCount;
+
+			vkGetPhysicalDeviceSurfacePresentModesKHR(p_Device, p_Surface, &presentModeCount, nullptr);
+
+			if (presentModeCount != 0)
+			{
+				details.presentModes.resize(presentModeCount);
+				vkGetPhysicalDeviceSurfacePresentModesKHR(p_Device, p_Surface, &presentModeCount, details.presentModes.data());
+			}
+
+			return details;
+		}
+		void Context::setPhysicalDevice(PhysicalDevice& p_PhysicalDevice)
 		{
 			m_PhysicalDevice = p_PhysicalDevice;
+			m_PhysicalDevice.m_QueueFamily = p_PhysicalDevice.m_QueueFamily;
 			m_PhysicalDevice.m_DeviceFeatures.multiViewport = VK_TRUE;
 			m_PhysicalDevice.m_DeviceFeatures.samplerAnisotropy = VK_TRUE;
 			m_PhysicalDevice.m_DeviceFeatures.sampleRateShading = VK_TRUE;
@@ -246,11 +285,16 @@ namespace vgl
 			m_PhysicalDevice.m_DeviceFeatures2.features = m_PhysicalDevice.m_DeviceFeatures;
 			m_PhysicalDevice.m_DeviceFeatures2.pNext = &m_PhysicalDevice.m_DeviceBufferAdressFeatures;
 			getDeviceFeatures2(m_PhysicalDevice);
+			m_PhysicalDevice.m_ImagelessFramebufferFeatures = {};
+			m_PhysicalDevice.m_ImagelessFramebufferFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES;
+			m_PhysicalDevice.m_DeviceFeatures2.pNext = &m_PhysicalDevice.m_ImagelessFramebufferFeatures;
+			getDeviceFeatures2(m_PhysicalDevice);
 			m_PhysicalDevice.m_DeviceBufferAdressFeatures.bufferDeviceAddressCaptureReplay = VK_TRUE;
 
 			#ifdef USE_LOGGING
 			Utils::Logger::logMSG("Using " + m_PhysicalDevice.getDeviceType() + " graphics " + "[" + m_PhysicalDevice.m_DeviceProperties.deviceName + "]", "GPU", Utils::Severity::Info);
 			#endif
+			Utils::Logger::setLogFile("debug/log.txt");
 		}
 
 		VkResult Context::setupDebugMessenger()
@@ -307,6 +351,7 @@ namespace vgl
 					break;
 				case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
 					Utils::Logger::logMSG(m_DebugMessage, "Vk Validation", Utils::Severity::Warning);
+					Utils::Logger::setLogFile("debug/log.txt");
 					break;
 				case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
 					Utils::Logger::logMSG(m_DebugMessage, "Vk Validation", Utils::Severity::Info);
@@ -316,7 +361,7 @@ namespace vgl
 						VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 						VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
 					{
-						Utils::Logger::logMSG(m_DebugMessage, "Vk Validation", Utils::Severity::Debug);
+						//Utils::Logger::logMSG(m_DebugMessage, "Vk Validation", Utils::Severity::Debug);
 						break;
 					}
 					Utils::Logger::logMSG(m_DebugMessage, "Vk Validation", Utils::Severity::Info);
@@ -358,19 +403,22 @@ namespace vgl
 		}
 
 		// Get suitable physical m_Device, rates the physical devices and returns the one with best suitability/score
-		PhysicalDevice Context::getSuitablePhysicalDevice(std::vector<PhysicalDevice> p_PhysicalDevices)
+		PhysicalDevice Context::getSuitablePhysicalDevice(std::vector<PhysicalDevice>& p_PhysicalDevices)
 		{
 			PhysicalDevice suitableDevice;
-			uint32_t SCORE = -1;
-			for (int i = 0; i < p_PhysicalDevices.size(); i++)
-				if (p_PhysicalDevices[i].m_Score > SCORE)
+			uint32_t SCORE = 0;
+			for (int i = 0; i < p_PhysicalDevices.size(); i++) {
+				if (p_PhysicalDevices[i].m_Score > SCORE) {
+					SCORE = p_PhysicalDevices[i].m_Score;
 					suitableDevice = p_PhysicalDevices[i];
+				}
+			}
 
 			return suitableDevice;
 		}
 
 		// Get the queue family indices 
-		QueueFamilyIndices Context::getQueueFamilyIndices(VkSurfaceKHR& p_Surface, VkPhysicalDevice p_PhysicalDevice)
+		QueueFamilyIndices Context::getQueueFamilyIndices(VkSurfaceKHR& p_Surface, VkPhysicalDevice& p_PhysicalDevice)
 		{
 			QueueFamilyIndices indices;
 
@@ -400,13 +448,15 @@ namespace vgl
 			}
 
 			return indices;
+
 		}
 
 		// Rates the physical m_Device for suitability
-		uint32_t Context::rateDeviceSuitability(VkSurfaceKHR& p_Surface, SwapchainSupportDetails& p_SwapchainSupport, PhysicalDevice p_PhysicalDevice, QueueFamilyIndices p_QueueFamilyIndices)
+		uint32_t Context::rateDeviceSuitability(VkSurfaceKHR& p_Surface, SwapchainSupportDetails& p_SwapchainSupport, PhysicalDevice& p_PhysicalDevice, QueueFamilyIndices& p_QueueFamilyIndices)
 		{
 			VkPhysicalDeviceProperties deviceProperties = getDeviceProperties(p_PhysicalDevice);
 			VkPhysicalDeviceFeatures deviceFeatures = getDeviceFeatures(p_PhysicalDevice);
+			p_SwapchainSupport = querySwapchainSupport(p_Surface, p_PhysicalDevice.m_VkHandle);
 
 			int score = 0;
 			if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
@@ -426,8 +476,7 @@ namespace vgl
 			if (!deviceFeatures.geometryShader)
 				return 0;
 
-			QueueFamilyIndices indices = getQueueFamilyIndices(p_Surface, p_PhysicalDevice.m_VkHandle);
-			p_QueueFamilyIndices = indices;
+			p_QueueFamilyIndices = getQueueFamilyIndices(p_Surface, p_PhysicalDevice.m_VkHandle);
 
 			VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
 			vkGetPhysicalDeviceMemoryProperties(p_PhysicalDevice.m_VkHandle, &deviceMemoryProperties);
@@ -447,7 +496,7 @@ namespace vgl
 			if (extensionSupported)
 				SwapchainAdequate = !p_SwapchainSupport.formats.empty() && !p_SwapchainSupport.presentModes.empty();
 
-			return indices.isComplete() && extensionSupported && SwapchainAdequate && deviceFeatures.samplerAnisotropy ? score : -1;
+			return (p_QueueFamilyIndices.isValid() && extensionSupported && SwapchainAdequate && deviceFeatures.samplerAnisotropy) ? score : 0;
 		}
 
 		// Get the physical m_Device properties
@@ -781,60 +830,140 @@ namespace vgl
 			VkPipelineStageFlags srcStage;
 			VkPipelineStageFlags dstStage;
 
-			VkImageMemoryBarrier imageBarrier = {};
-			imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			imageBarrier.oldLayout = p_OldLayout;
-			imageBarrier.newLayout = p_NewLayout;
-			imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageBarrier.image = p_Image;
-			imageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageBarrier.subresourceRange.baseMipLevel = 0;
-			imageBarrier.subresourceRange.levelCount = p_MipLevels;
-			imageBarrier.subresourceRange.baseArrayLayer = 0;
-			imageBarrier.subresourceRange.layerCount = p_ArrayLayers;
-			imageBarrier.dstAccessMask = 0;
-			imageBarrier.srcAccessMask = 0;
+			VkImageMemoryBarrier imageMemoryBarrier = {};
+			imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			imageMemoryBarrier.oldLayout = p_OldLayout;
+			imageMemoryBarrier.newLayout = p_NewLayout;
+			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier.image = p_Image;
+			imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
+			imageMemoryBarrier.subresourceRange.levelCount = p_MipLevels;
+			imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
+			imageMemoryBarrier.subresourceRange.layerCount = p_ArrayLayers;
+			imageMemoryBarrier.dstAccessMask = 0;
+			imageMemoryBarrier.srcAccessMask = 0;
 
-			if (p_OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && p_NewLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+			srcStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+			dstStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+			switch (p_OldLayout)
 			{
-				imageBarrier.srcAccessMask = 0;
-				imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			case VK_IMAGE_LAYOUT_UNDEFINED:
+				// Image layout is undefined (or does not matter)
+				// Only valid as initial layout
+				// No flags required, listed only for completeness
+				srcStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+				imageMemoryBarrier.srcAccessMask = 0;
+				break;
 
-				srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-				dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			}
-			else if (p_OldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && p_NewLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-			{
-				imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-				imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			case VK_IMAGE_LAYOUT_PREINITIALIZED:
+				// Image is preinitialized
+				// Only valid as initial layout for linear images, preserves memory contents
+				// Make sure host writes have been finished
+				srcStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+				break;
 
+			case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+				// Image is a color attachment
+				// Make sure any writes to the color buffer have been finished
+				srcStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+				// Image is a depth/stencil attachment
+				// Make sure any writes to the depth/stencil buffer have been finished
+				srcStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+				// Image is a transfer source
+				// Make sure any reads from the image have been finished
+				srcStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+				// Image is a transfer destination
+				// Make sure any writes to the image have been finished
 				srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-				dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+				// Image is read by a shader
+				// Make sure any shader reads from the image have been finished
+				srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				break;
+			default:
+				// Other source layouts aren't handled (yet)
+				break;
 			}
 
-			else if (p_OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && p_NewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+			// Target layouts (new)
+			// Destination access mask controls the dependency for the new image layout
+			switch (p_NewLayout)
 			{
-				imageBarrier.srcAccessMask = 0;
-				imageBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+				// Image will be used as a transfer destination
+				// Make sure any writes to the image have been finished
+				dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				break;
 
-				srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+				// Image will be used as a transfer source
+				// Make sure any reads from the image have been finished
+				dstStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+				// Image will be used as a color attachment
+				// Make sure any writes to the color buffer have been finished
+				dstStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+				// Image layout will be used as a depth/stencil attachment
+				// Make sure any writes to depth/stencil buffer have been finished
 				dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-			}
-			else
+				imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				break;
+
+			case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+				// Image will be read in a shader (sampler, input attachment)
+				// Make sure any writes to the image have been finished
+				dstStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+				if (imageMemoryBarrier.srcAccessMask == 0)
+				{
+					imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+				}
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				break;
+			default:
+				// Other source layouts aren't handled (yet)
 				Utils::Logger::logMSG("unsupported layout transition", "Image Layout Transition", Utils::Severity::Error);
+				break;
+			}
 
 			if (p_NewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 			{
-				imageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+				imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
 				if (hasStencilComponent(p_Format))
-					imageBarrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+					imageMemoryBarrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
 			}
 			else
-				imageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
-			vkCmdPipelineBarrier(cmdBuffer, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+			vkCmdPipelineBarrier(cmdBuffer, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
 			endSingleTimeCmds(cmdBuffer);
 		}
@@ -864,7 +993,7 @@ namespace vgl
 			VkImageTiling p_Tiling, VkImageUsageFlags p_UsageFlags,
 			VmaMemoryUsage p_MemoryUsage,
 			VkImage& p_Image, uint32_t p_MipLevels,
-			uint32_t p_ArrayLayers
+			uint32_t p_ArrayLayers, VkSampleCountFlagBits p_Samples
 		)
 		{
 			VkImageCreateInfo imageInfo = {};
@@ -879,7 +1008,7 @@ namespace vgl
 			imageInfo.tiling = p_Tiling;
 			imageInfo.usage = p_UsageFlags;
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+			imageInfo.samples = p_Samples;
 
 			VmaAllocationCreateInfo allocCreateInfo = {};
 			allocCreateInfo.usage = p_MemoryUsage;
@@ -895,7 +1024,7 @@ namespace vgl
 			return { alloc, allocInfo };
 		}
 
-		AllocationInfo Context::createImage(
+		AllocationInfo Context::createImageS(
 			uint32_t p_Width, uint32_t p_Height,
 			VkFormat p_Format,
 			VkImageTiling p_Tiling, VkImageUsageFlags p_UsageFlags,
@@ -963,6 +1092,7 @@ namespace vgl
 		{
 			void* mapped_data = nullptr;
 			vmaMapMemory(m_VmaAllocator, p_BufferAlloc, &mapped_data);
+			return mapped_data;
 		}
 
 		void Context::unmapMemory(VmaAllocation& p_BufferAlloc)

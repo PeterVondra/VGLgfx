@@ -26,7 +26,7 @@ namespace vgl
 				else
 				{
 #ifdef USE_LOGGING
-						Utils::Logger::logMSG("Allocated PRIMARY command buffer", "VulkanCommandBuffer", Utils::Severity::Trace);
+						//Utils::Logger::logMSG("Allocated PRIMARY command buffer", "VulkanCommandBuffer", Utils::Severity::Trace);
 #endif
 					m_Allocated = true;
 				}
@@ -43,7 +43,7 @@ namespace vgl
 			else
 			{
 #ifdef USE_LOGGING
-					Utils::Logger::logMSG("Allocated SECONDARY command buffer", "VulkanCommandBuffer", Utils::Severity::Trace);
+					//Utils::Logger::logMSG("Allocated SECONDARY command buffer", "VulkanCommandBuffer", Utils::Severity::Trace);
 #endif
 				m_Allocated = true;
 			}
@@ -109,33 +109,6 @@ namespace vgl
 				m_Recording = false;
 		}
 
-		void CommandBuffer::cmdBeginRenderPass(RenderPass& p_RenderPass, SubpassContents p_SubPassContents, Framebuffer& p_Framebuffer)
-		{
-			if (m_Level == Level::Primary)
-			{
-				VkRenderPassBeginInfo renderPassInfo = {};
-				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-				renderPassInfo.renderPass = p_RenderPass.m_RenderPass;
-				renderPassInfo.framebuffer = p_Framebuffer.m_Framebuffer;
-				renderPassInfo.renderArea.offset = { 0, 0 };
-				renderPassInfo.renderArea.extent.width = p_Framebuffer.m_Size.x;
-				renderPassInfo.renderArea.extent.height = p_Framebuffer.m_Size.y;
-
-				VkClearValue clearValue;
-				clearValue.color = { 1, 1, 1, 1 };
-				clearValue.depthStencil = { 1, 0 };
-				std::vector<VkClearValue> clearValues(p_RenderPass.clearCount, clearValue);
-
-				renderPassInfo.clearValueCount = clearValues.size();
-				renderPassInfo.pClearValues = clearValues.data();
-
-				vkCmdBeginRenderPass(m_CommandBuffer, &renderPassInfo, (VkSubpassContents)p_SubPassContents);
-			}
-#ifdef USE_LOGGING
-			else
-				Utils::Logger::logMSG("Renderpass can't begin, command buffer level is SECONDARY", "VulkanCommandBuffer", Utils::Severity::Error);
-#endif
-		}
 		void CommandBuffer::cmdBeginRenderPass(RenderPass& p_RenderPass, SubpassContents p_SubPassContents, Framebuffer& p_Framebuffer, VkRenderPassAttachmentBeginInfo* p_Next)
 		{
 			if (m_Level == Level::Primary)
@@ -150,9 +123,9 @@ namespace vgl
 				renderPassInfo.renderArea.extent.height = p_Framebuffer.m_Size.y;
 
 				VkClearValue clearValue;
-				clearValue.color = { 1, 1, 1, 1 };
+				clearValue.color = { 1, 0, 1, 1 };
 				clearValue.depthStencil = { 1, 0 };
-				std::vector<VkClearValue> clearValues(p_RenderPass.clearCount, clearValue);
+				std::vector<VkClearValue> clearValues(p_RenderPass.m_ClearCount, clearValue);
 
 				renderPassInfo.clearValueCount = clearValues.size();
 				renderPassInfo.pClearValues = clearValues.data();
@@ -177,9 +150,9 @@ namespace vgl
 				renderPassInfo.renderArea.extent.height = p_Size.y;
 
 				VkClearValue clearValue;
-				clearValue.color = { 1, 1, 1, 1 };
+				clearValue.color = { 1, 0, 1, 1 };
 				clearValue.depthStencil = { 1, 0 };
-				std::vector<VkClearValue> clearValues(p_RenderPass.clearCount, clearValue);
+				std::vector<VkClearValue> clearValues(p_RenderPass.m_ClearCount, clearValue);
 
 				renderPassInfo.clearValueCount = clearValues.size();
 				renderPassInfo.pClearValues = clearValues.data();
@@ -472,6 +445,14 @@ namespace vgl
 		void CommandBuffer::endSingleTimeCmds(CommandBuffer& p_CommandBuffer)
 		{
 			p_CommandBuffer.cmdEnd();
+			VkSubmitInfo submitInfo = {};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers = &p_CommandBuffer.vkHandle();
+
+			Context* context_ptr = &ContextSingleton::getInstance();
+			vkQueueSubmit(context_ptr->m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+			vkQueueWaitIdle(context_ptr->m_GraphicsQueue);
 			p_CommandBuffer.destroy();
 		}
 		VkCommandBuffer& CommandBuffer::vkHandle()

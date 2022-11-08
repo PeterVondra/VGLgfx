@@ -25,8 +25,13 @@ namespace vgl
 			void create(Vector2i p_Size, std::vector<std::pair<unsigned char*, uint32_t>>& p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode,
 				Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
 
+			void init();
+			void freeImageData();
+
 			bool isValid();
 			void destroy();
+
+			//VkDescriptorSet& getImGuiID() { return m_DescriptorSet; }
 		private:
 			void createDescriptors();
 
@@ -47,14 +52,17 @@ namespace vgl
 			friend class ImageAttachment;
 			friend class Framebuffer;
 			friend class Renderer;
+			friend class GraphicsContext;
+			friend class ImGuiContext;
 
 			Context* m_ContextPtr;
 
 			bool m_IsValid = false;
+			bool m_IsDescriptorSetValid = false;
 
 			unsigned char* m_ImageData;
 
-			Vector3i m_Size = { 0, 0, 0 };
+			Vector2i m_Size = { 0, 0 };
 			uint32_t m_MipLevels;
 
 			SamplerMode m_SamplerMode;
@@ -105,6 +113,7 @@ namespace vgl
 			template<typename ImageType> friend class SamplerDescriptorData;
 			friend class DescriptorSetManager;
 			friend class Framebuffer;
+			friend class GraphicsContext;
 
 			Context* m_ContextPtr;
 
@@ -135,11 +144,12 @@ namespace vgl
 		{
 		public:
 
-			static bool getImageFromPath(Image& p_Texture, const char* p_Path, SamplerMode p_SamplerMode, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
-			static bool getImageFromPath(Image& p_Texture, const char* p_Path, SamplerMode p_SamplerMode, const uint32_t p_MipLevels);
+			static bool getImageFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode = SamplerMode::Repeat, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
+			static bool getImageFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode, const uint32_t p_MipLevels);
+			static unsigned char* getImageDataFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode = SamplerMode::Repeat, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
 
-			static bool getImageFromPath(ImageCube& p_Texture, std::initializer_list<std::pair<const char*, Vector3f>> p_Path, SamplerMode p_SamplerMode);
-			static bool getImageFromPath(ImageCube& p_Texture, std::vector<std::pair<const char*, Vector3f>> p_Path, SamplerMode p_SamplerMode);
+			static bool getImageFromPath(ImageCube& p_Image, std::initializer_list<std::pair<const char*, Vector3f>> p_Path, SamplerMode p_SamplerMode);
+			static bool getImageFromPath(ImageCube& p_Image, std::vector<std::pair<const char*, Vector3f>> p_Path, SamplerMode p_SamplerMode);
 
 		private:
 

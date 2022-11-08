@@ -10,7 +10,7 @@ namespace Utils
 
 	//Define the text attributes
 #ifdef __unix__
-	const TextAttrib Attribute::Default = TextAttrib("\e[0m");
+	const TextAttrib Attribute::Default = TextAttrib("\u001b[0m");
 	const TextAttrib Attribute::Bold = TextAttrib("\e[1m");
 	const TextAttrib Attribute::Dim = TextAttrib("\e[2m");
 	const TextAttrib Attribute::Underlined = TextAttrib("\e[4m");

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "VkContext.h"
 #include "VkImage.h"
 #include "../../Utils/Logger.h"
@@ -15,8 +17,8 @@ namespace vgl
 		struct UniformBuffer
 		{
 			UniformBuffer() : m_ContextPtr(&ContextSingleton::getInstance()) {};
-			UniformBuffer(const uint64_t p_Size, const uint32_t p_Binding) : m_ContextPtr(&ContextSingleton::getInstance()), m_Size(p_Size), m_Binding(p_Binding) {};
-			~UniformBuffer() {};
+			UniformBuffer(const uint64_t p_Size, const uint32_t p_Binding = 0) : m_ContextPtr(&ContextSingleton::getInstance()), m_Size(p_Size), m_Binding(p_Binding) {};	
+		   ~UniformBuffer() {};
 
 			// Must be set before creation (before DescriptorSetManager::create(...);
 			uint64_t m_Size = 0;
@@ -29,7 +31,7 @@ namespace vgl
 				// Use one buffer but multiple segments for Double/Triple buffering
 				std::vector<void*> m_MappedData;
 				VkBuffer m_Buffer;
-				VkDeviceMemory m_Memory;
+				AllocationInfo m_AllocInfo;
 
 				std::vector<uint64_t> m_Offsets;
 
@@ -79,6 +81,8 @@ namespace vgl
 		{
 			SamplerDescriptorData() {}
 			SamplerDescriptorData(ImageType* p_Image_, uint32_t p_Binding_, int32_t p_FrameIndex_ = -1);
+			SamplerDescriptorData(ImageType* p_Image_, uint32_t p_Binding_, VkImageLayout p_ImageLayout_, int32_t p_FrameIndex_ = -1);  
+
 			ImageType* p_Image = nullptr;
 			uint32_t p_Binding = UINT32_MAX; // Has to be set
 			// Frame index is used when image is only used for an individual frame,
@@ -96,7 +100,29 @@ namespace vgl
 				VkDescriptorImageInfo p_ImageInfo;
 				VkImageLayout p_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Optional
 		};
-		
+
+		template<> inline SamplerDescriptorData<Image>::SamplerDescriptorData(Image* p_Image_, uint32_t p_Binding_, int32_t p_FrameIndex_)
+			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_), p_ImageLayout(p_Image->m_FinalLayout)
+		{
+			p_ImageInfo.imageLayout = p_Image->m_FinalLayout;
+			p_ImageInfo.imageView = p_Image->m_ImageView;
+			p_ImageInfo.sampler = p_Image->m_Sampler;
+		}
+		template<> inline SamplerDescriptorData<Image>::SamplerDescriptorData(Image* p_Image_, uint32_t p_Binding_, VkImageLayout p_ImageLayout_, int32_t p_FrameIndex_)
+			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_), p_ImageLayout(p_ImageLayout_)
+		{
+			p_ImageInfo.imageLayout = p_ImageLayout_;
+			p_ImageInfo.imageView = p_Image->m_ImageView;
+			p_ImageInfo.sampler = p_Image->m_Sampler;
+		}
+		template<> inline SamplerDescriptorData<ImageCube>::SamplerDescriptorData(ImageCube* p_Image_, uint32_t p_Binding_, int32_t p_FrameIndex_)
+			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_), p_ImageLayout(p_Image->m_Layout)
+		{
+			p_ImageInfo.imageLayout = p_Image->m_Layout;
+			p_ImageInfo.imageView = p_Image->m_ImageView;
+			p_ImageInfo.sampler = p_Image->m_Sampler;
+		} 
+
 		template<> struct SamplerDescriptorData<std::vector<Image>>
 		{
 			SamplerDescriptorData() {}
@@ -121,22 +147,24 @@ namespace vgl
 
 		struct DescriptorSetInfo
 		{
-			DescriptorSetInfo() {};
+			DescriptorSetInfo() 
+			: p_VertexUniformBuffer(p_UniformBuffers[0]),
+			 p_FragmentUniformBuffer(p_UniformBuffers[1]),
+			 p_GeometryUniformBuffer(p_UniformBuffers[2]) {};
 			~DescriptorSetInfo() {};
 
 			StorageBuffer p_StorageBuffer;
 
-			union{
-				struct{
-					UniformBuffer p_VertexUniformBuffer;
-					UniformBuffer p_FragmentUniformBuffer;
-					UniformBuffer p_GeometryUniformBuffer;
-				};
-				UniformBuffer p_UniformBuffers[3];
-			};
+			UniformBuffer& p_VertexUniformBuffer;
+			UniformBuffer& p_FragmentUniformBuffer;
+			UniformBuffer& p_GeometryUniformBuffer;
+			UniformBuffer p_UniformBuffers[3];
 
 			void addImage(Image* p_Image, uint32_t p_Binding, int32_t p_FrameIndex = -1){
 				p_ImageDescriptors.emplace_back(SamplerDescriptorData(p_Image, p_Binding, p_FrameIndex));
+			}
+			void addImage(Image* p_Image, uint32_t p_Binding, Layout p_Layout, int32_t p_FrameIndex = -1){
+				p_ImageDescriptors.emplace_back(SamplerDescriptorData(p_Image, p_Binding, (VkImageLayout)p_Layout, p_FrameIndex));
 			}
 			void addImageCube(ImageCube* p_Image, uint32_t p_Binding, int32_t p_FrameIndex = -1){
 				p_CubeMapDescriptors.emplace_back(SamplerDescriptorData(p_Image, p_Binding, p_FrameIndex));
@@ -229,6 +257,8 @@ namespace vgl
 			private:
 
 				friend class CommandBuffer;
+				friend class FramebufferAttachment;
+				friend class ImGuiContext;
 
 				Context* m_ContextPtr;
 
@@ -243,7 +273,6 @@ namespace vgl
 				};
 
 				//std::vector<VkDescriptorPoolSize> m_PoolSize;
-				
 				VkDescriptorSetLayout m_DescriptorSetLayout;	
 
 				// One for each swapchain image

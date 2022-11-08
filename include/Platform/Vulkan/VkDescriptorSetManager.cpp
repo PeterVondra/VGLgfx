@@ -1,27 +1,11 @@
 #include "VkDescriptorSetManager.h"
+#include <vulkan/vulkan_core.h>
+#include <cstring>
 
 namespace vgl
 {
 	namespace vk
-	{
-		SamplerDescriptorData<Image>::SamplerDescriptorData(Image* p_Image_, uint32_t p_Binding_, int32_t p_FrameIndex_)
-			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_)
-		{
-			p_ImageInfo.imageLayout = p_Image->m_FinalLayout;
-			p_ImageInfo.imageView = p_Image->m_ImageView;
-			p_ImageInfo.sampler = p_Image->m_Sampler;
-
-			p_ImageLayout = p_Image->m_FinalLayout;
-		}
-		SamplerDescriptorData<ImageCube>::SamplerDescriptorData(ImageCube* p_Image_, uint32_t p_Binding_, int32_t p_FrameIndex_)
-			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_)
-		{
-			p_ImageInfo.imageLayout = p_Image->m_Layout;
-			p_ImageInfo.imageView = p_Image->m_ImageView;
-			p_ImageInfo.sampler = p_Image->m_Sampler;
-
-			p_ImageLayout = p_Image->m_Layout;
-		}
+	{ 
 		SamplerDescriptorData<std::vector<Image>>::SamplerDescriptorData(std::vector<Image>* p_Image_, uint32_t p_Binding_)
 			: p_Image(p_Image_), p_Binding(p_Binding_)
 		{
@@ -460,40 +444,47 @@ namespace vgl
 			// Describe and create the desriptor layouts for all the descriptors
 			VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			layoutInfo.bindingCount = m_LayoutBindings.size();
+			layoutInfo.bindingCount = m_LayoutBindings[0].size();
 			layoutInfo.pBindings = m_LayoutBindings[0].data();
-
+			
 			m_DescriptorSetLayout = m_ContextPtr->m_DescriptorSetLayoutCache.create(&layoutInfo);
 		}
 		void DescriptorSetManager::createDescriptorSets()
 		{
-			m_DescriptorSets.resize(m_ContextPtr->m_SwapchainImageCount);	
-			
+			m_DescriptorSets.resize(m_ContextPtr->m_SwapchainImageCount);
+
+			m_UniformBufferCount = 
+				m_DescriptorSetInfo->p_VertexUniformBuffer.isValid() +
+				m_DescriptorSetInfo->p_FragmentUniformBuffer.isValid() +
+				m_DescriptorSetInfo->p_GeometryUniformBuffer.isValid();
+
 			for (int32_t j = 0; j < m_ContextPtr->m_SwapchainImageCount; j++){
 				// Descriptor set for each swap chain image
 				m_ContextPtr->m_DescriptorAllocators[j].allocate(&m_DescriptorSets[j].m_DescriptorSet, m_DescriptorSetLayout);
 				// Store which pool the descriptor set was stored in
 				m_DescriptorSets[j].m_CurrentDescriptorPool = m_ContextPtr->m_DescriptorAllocators[j].getPool(); // Get current pool
 
-				// Point to the uniform buffer that holds the data
-				std::vector<VkDescriptorBufferInfo> bufferInfos(m_UniformBufferCount);
-
 				// Loop through all uniform buffer which should be used
-				for (int32_t i = 0; i < m_UniformBufferCount; i++){
-					bufferInfos[i].buffer = m_DescriptorSetInfo->p_UniformBuffers[i].m_Buffer;
-					bufferInfos[i].offset = m_DescriptorSetInfo->p_UniformBuffers[i].m_Offsets[j];
-					bufferInfos[i].range = m_DescriptorSetInfo->p_UniformBuffers[i].m_Size;
+				for (int32_t i = 0; i < 3; i++){
+					if (m_DescriptorSetInfo->p_UniformBuffers[i].isValid()) {
+						// Point to the uniform buffer that holds the data
+						VkDescriptorBufferInfo bufferInfo = {};
+						bufferInfo.buffer = m_DescriptorSetInfo->p_UniformBuffers[i].m_Buffer;
+						bufferInfo.offset = m_DescriptorSetInfo->p_UniformBuffers[i].m_Offsets[j];
+						bufferInfo.range = m_DescriptorSetInfo->p_UniformBuffers[i].m_Size;
 
-					VkWriteDescriptorSet dscWrite = {};
-					dscWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-					dscWrite.dstSet = m_DescriptorSets[j].m_DescriptorSet;
-					dscWrite.dstBinding = m_DescriptorSetInfo->p_UniformBuffers[i].m_Binding;
-					dscWrite.dstArrayElement = 0;
-					dscWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-					dscWrite.descriptorCount = 1;
-					dscWrite.pBufferInfo = &bufferInfos[i];
+						VkWriteDescriptorSet dscWrite = {};
+						dscWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+						dscWrite.dstSet = m_DescriptorSets[j].m_DescriptorSet;
+						dscWrite.dstBinding = m_DescriptorSetInfo->p_UniformBuffers[i].m_Binding;
+						dscWrite.dstArrayElement = 0;
+						dscWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+						dscWrite.descriptorCount = 1;
+						dscWrite.pBufferInfo = &bufferInfo;
 
-					vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &dscWrite, 0, nullptr);
+						vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &dscWrite, 0, nullptr);
+						Utils::Logger::logMSG("Updated descriptor sets: uniform buffer[" + std::to_string(i) + "]", "DescriptorSetManager", Utils::Severity::Debug);
+					}
 				}
 				if (m_DescriptorSetInfo->p_StorageBuffer.isValid()) {
 					VkDescriptorBufferInfo bufferInfo = {};
@@ -511,9 +502,10 @@ namespace vgl
 					dscWrite.pBufferInfo = &bufferInfo;
 
 					vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &dscWrite, 0, nullptr);
+					Utils::Logger::logMSG("Updated descriptor sets: storage buffer", "DescriptorSetManager", Utils::Severity::Debug);
 				}
 
-				for (int32_t i = 0; i < m_ImageDescriptorInfo.size(); i++){
+				for (int32_t i = 0; i < m_ImageDescriptorInfo[j].size(); i++){
 					//Send image data to uniform sampler
 					VkWriteDescriptorSet imageDscWrite = {};
 					imageDscWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -524,6 +516,7 @@ namespace vgl
 					imageDscWrite.descriptorCount = 1;
 					imageDscWrite.pImageInfo = &m_ImageDescriptorInfo[j][i];
 					vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &imageDscWrite, 0, nullptr);
+					Utils::Logger::logMSG("Updated descriptor sets: image descriptor[" + std::to_string(j) + "][" + std::to_string(i) + "]", "DescriptorSetManager", Utils::Severity::Debug);
 				}
 				for(int32_t i = 0; i < m_DescriptorSetInfo->p_ImageArrayDescriptors.size(); i++){
 					//Send image data to uniform sampler
@@ -536,6 +529,7 @@ namespace vgl
 					imageDscWrite.descriptorCount = m_DescriptorSetInfo->p_ImageArrayDescriptors[i].m_ImageArrayDescriptorInfo.size();
 					imageDscWrite.pImageInfo = m_DescriptorSetInfo->p_ImageArrayDescriptors[i].m_ImageArrayDescriptorInfo.data();
 					vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &imageDscWrite, 0, nullptr);
+					Utils::Logger::logMSG("Updated descriptor sets: image array descriptor[" + std::to_string(j) + "][" + std::to_string(i) + "]", "DescriptorSetManager", Utils::Severity::Debug);
 				}
 			}
 		}
@@ -565,19 +559,15 @@ namespace vgl
 			
 			m_MappedData.resize(m_ContextPtr->m_SwapchainImageCount);
 
-			m_ContextPtr->createBuffer
-			(
-				bufferSize,
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				m_Buffer,
-				m_Memory
-			);
+			m_AllocInfo = m_ContextPtr->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_Buffer);
 
-			for (int i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
-				vkMapMemory(m_ContextPtr->m_Device, m_Memory, i * m_Size, m_ContextPtr->m_SwapchainImageCount * m_Size, 0, &m_MappedData[i]);
-				m_Offsets[i] = i * m_Size;
+			m_MappedData[0] = m_ContextPtr->mapMemory(m_AllocInfo.p_Alloc);
+
+			m_Offsets.resize(m_ContextPtr->m_SwapchainImageCount);
+			m_Offsets[0] = 0;
+			for (int i = 1; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+				m_Offsets[i] = i * m_ContextPtr->padUniformBufferSize(m_Size);
+				m_MappedData[i] = (char*)m_MappedData[0] + i * m_ContextPtr->padUniformBufferSize(m_Size);
 			}
 
 			m_IsValid = true;
@@ -586,10 +576,9 @@ namespace vgl
 		{
 			vkDeviceWaitIdle(m_ContextPtr->m_Device);
 
-			vkUnmapMemory(m_ContextPtr->m_Device, m_Memory);
+			m_ContextPtr->unmapMemory(m_AllocInfo.p_Alloc);
 
-			vkDestroyBuffer(m_ContextPtr->m_Device, m_Buffer, nullptr);
-			vkFreeMemory(m_ContextPtr->m_Device, m_Memory, nullptr);
+			m_ContextPtr->destroyBuffer(m_Buffer, m_AllocInfo.p_Alloc);
 
 			m_MappedData.clear();
 			m_Offsets.clear();
@@ -610,6 +599,7 @@ namespace vgl
 
 			m_MappedData[0] = m_ContextPtr->mapMemory(m_AllocInfo.p_Alloc);
 
+			m_Offsets.resize(m_ContextPtr->m_SwapchainImageCount);
 			m_Offsets[0] = 0;
 			for (int i = 1; i < m_ContextPtr->m_SwapchainImageCount; i++) {
 				m_Offsets[i] = i * m_ContextPtr->padUniformBufferSize(m_Size);

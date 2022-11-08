@@ -42,8 +42,6 @@
 #define _ARRAYS_INCLUDED
 
 #include <algorithm>
-#undef max
-#undef min
 
 namespace glslang {
 

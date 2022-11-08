@@ -12,7 +12,7 @@ namespace vgl
 		Viewport(Vector2i p_Size, Vector2i p_Position) : m_Size(p_Size), m_Position(p_Position) {};
 		Viewport(const Viewport& p_Viewport) { *this = p_Viewport; }
 
-		friend class Pipeline;
+		friend class g_Pipeline;
 		friend class CommandBuffer;
 
 		Vector2i m_Size;
@@ -149,5 +149,13 @@ namespace vgl
 	{
 		Graphics = VK_PIPELINE_BIND_POINT_GRAPHICS,
 		Compute = VK_PIPELINE_BIND_POINT_COMPUTE
+	};
+
+	enum class ShaderStage
+	{
+		None = -1,
+		VertexBit = VK_SHADER_STAGE_VERTEX_BIT,
+		FragmentBit = VK_SHADER_STAGE_FRAGMENT_BIT,
+		GeometryBit = VK_SHADER_STAGE_GEOMETRY_BIT
 	};
 }

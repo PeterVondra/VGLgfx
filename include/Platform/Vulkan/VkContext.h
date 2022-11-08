@@ -1,17 +1,18 @@
 #pragma once
 
+// HELLO THIS IS VGL
+
 #define GLFW_INCLUDE_VULKAN
 #include<GLFW/glfw3.h>
 #include<vulkan/vulkan.h>
-
-#define VMA_IMPLEMENTATION
-#include "../../../lib/VulkanMemoryAllocator/src/vk_mem_alloc.h"
 
 #include <vector>
 #include <set>
 #include <string>
 
-#include "VkDescriptorLayoutCache.h"
+#include "VkDescriptorLayoutCache.h"
+
+#include "../../../lib/VulkanMemoryAllocator/src/vk_mem_alloc.h"
 
 namespace vgl
 {
@@ -26,7 +27,7 @@ namespace vgl
 			int32_t graphicsFamily = -1;
 			int32_t presentFamily = -1;
 
-			bool isComplete() { return graphicsFamily >= 0 && presentFamily >= 0; }
+			bool isValid() { return graphicsFamily >= 0 && presentFamily >= 0; }
 		};
 
 		struct PhysicalDevice
@@ -39,9 +40,10 @@ namespace vgl
 			VkPhysicalDeviceFeatures m_DeviceFeatures;
 			VkPhysicalDeviceFeatures2 m_DeviceFeatures2;
 			VkPhysicalDeviceProperties m_DeviceProperties;
+			VkPhysicalDeviceImagelessFramebufferFeatures m_ImagelessFramebufferFeatures;
 			VkPhysicalDeviceBufferDeviceAddressFeaturesEXT m_DeviceBufferAdressFeatures;
 
-			std::string PhysicalDevice::getDeviceType()
+			std::string getDeviceType()
 			{
 				std::string deviceType;
 				deviceType = m_DeviceProperties.deviceType == 0 ? "unknown type" : deviceType;
@@ -92,6 +94,8 @@ namespace vgl
 
 				VkDescriptorPool getPool();
 			private:
+				friend class Context;
+
 				VkDevice m_Device;
 
 				VkDescriptorPool m_CurrentPool{ VK_NULL_HANDLE };
@@ -102,12 +106,11 @@ namespace vgl
 				VkDescriptorPool createPool(const PoolSizes& p_PoolSizes, uint32_t p_Count, VkDescriptorPoolCreateFlags p_Flags);
 		};
 
-		struct AllocationInfo
-		{
-			VmaAllocation p_Alloc;
-			VmaAllocationInfo p_Info;
-		};
-
+    struct AllocationInfo
+    {
+      VmaAllocation p_Alloc;
+      VmaAllocationInfo p_AllocInfo;
+    };
 
 		class Context
 		{
@@ -163,10 +166,10 @@ namespace vgl
 					VkImageTiling p_Tiling, VkImageUsageFlags p_UsageFlags,
 					VmaMemoryUsage p_MemoryUsage,
 					VkImage& p_Image, uint32_t p_MipLevels = 1,
-					uint32_t p_ArrayLayers = 1
+					uint32_t p_ArrayLayers = 1, VkSampleCountFlagBits p_Samples = VK_SAMPLE_COUNT_1_BIT
 				);
 
-				AllocationInfo createImage(
+				AllocationInfo createImageS(
 					uint32_t p_Width, uint32_t p_Height,
 					VkFormat p_Format,
 					VkImageTiling p_Tiling, VkImageUsageFlags p_UsageFlags,
@@ -200,8 +203,10 @@ namespace vgl
 				void initInstance();
 				void initCommandPool();
 				void initLogicalDevice();
-				void setPhysicalDevice(PhysicalDevice p_PhysicalDevice);
+				void setPhysicalDevice(PhysicalDevice& p_PhysicalDevice);
 				std::vector<PhysicalDevice> getPhysicalDevices(VkSurfaceKHR& p_Surface, SwapchainSupportDetails& p_SwapchainSupport);
+
+				SwapchainSupportDetails querySwapchainSupport(VkSurfaceKHR& p_Surface, VkPhysicalDevice& p_Device);
 
 			public:
 				VkFormat findDepthFormat();
@@ -212,7 +217,7 @@ namespace vgl
 
 			private:
 				// Setup vulkan validation layers
-				VkResult Context::setupDebugMessenger();
+				VkResult setupDebugMessenger();
 
 				static void DestroyDebugUtilsMessengerEXT(VkInstance p_Instance, VkDebugUtilsMessengerEXT p_Callback, const VkAllocationCallbacks* p_Allocator);
 
@@ -226,13 +231,13 @@ namespace vgl
 				bool d_CheckValidationLayerSupport();
 
 				// Get suitable physical device, rates the physical devices and returns the one with best suitability/score
-				PhysicalDevice getSuitablePhysicalDevice(std::vector<PhysicalDevice> p_PhysicalDevices);
+				PhysicalDevice getSuitablePhysicalDevice(std::vector<PhysicalDevice>& p_PhysicalDevices);
 
 				// Get the queue family indices 
-				QueueFamilyIndices getQueueFamilyIndices(VkSurfaceKHR& p_Surface, VkPhysicalDevice p_PhysicalDevice);
+				QueueFamilyIndices getQueueFamilyIndices(VkSurfaceKHR& p_Surface, VkPhysicalDevice& p_PhysicalDevice);
 
 				// Rates the physical device for suitability
-				uint32_t rateDeviceSuitability(VkSurfaceKHR& p_Surface, SwapchainSupportDetails& p_SwapchainSupport, PhysicalDevice p_PhysicalDevice, QueueFamilyIndices p_QueueFamilyIndices = {});
+				uint32_t rateDeviceSuitability(VkSurfaceKHR& p_Surface, SwapchainSupportDetails& p_SwapchainSupport, PhysicalDevice& p_PhysicalDevice, QueueFamilyIndices& p_QueueFamilyIndices);
 
 				// Get the physical device properties
 				VkPhysicalDeviceProperties getDeviceProperties(PhysicalDevice& p_PhysicalDevice);
@@ -240,8 +245,6 @@ namespace vgl
 				VkPhysicalDeviceFeatures getDeviceFeatures(PhysicalDevice& p_PhysicalDevice);
 				void getDeviceFeatures2(PhysicalDevice& p_PhysicalDevice);
 			private:
-				// The extensions from the vulkan context
-				std::vector<const char*> deviceExtensions;
 
 				// Check if device supports extensions
 				static bool checkDeviceExtensionSupport(std::vector<const char*>& p_DeviceExtensions, VkPhysicalDevice& p_Device);
@@ -256,6 +259,7 @@ namespace vgl
 				VkApplicationInfo m_AppInfo;
 				VkInstanceCreateInfo m_InstanceCreateInfo;
 
+				// The extensions from the vulkan context
 				std::vector<const char*> m_DeviceExtensions;
 				std::vector<VmaAllocatorCreateFlagBits> m_VmaDeviceExtensions;
 		};

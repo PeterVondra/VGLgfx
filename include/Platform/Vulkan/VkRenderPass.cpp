@@ -6,7 +6,7 @@ namespace vgl
 {
 	namespace vk
 	{
-		RenderPass::RenderPass(RenderPassType p_Type) : m_ContextPtr(&ContextSingleton::getInstance()), m_Type(p_Type), m_IsValid(false)
+		RenderPass::RenderPass(RenderPassType p_Type) : m_ContextPtr(&ContextSingleton::getInstance()), m_Type(p_Type), m_IsValid(false)//, m_ClearCount(m_ContextPtr->m_SwapchainImageCount)
 		{
 		
 		}
@@ -17,8 +17,6 @@ namespace vgl
 
 		void RenderPass::addAttachment(AttachmentInfo& p_AttachmentInfo)
 		{
-			m_AttachmentInfo.push_back(p_AttachmentInfo);
-
 			VkAttachmentDescription attachment = {};
 			attachment.format				= p_AttachmentInfo.p_Format;
 			attachment.samples				= (VkSampleCountFlagBits)p_AttachmentInfo.p_SampleCount;
@@ -29,8 +27,8 @@ namespace vgl
 			attachment.initialLayout		= (VkImageLayout)p_AttachmentInfo.p_InitialLayout;
 			attachment.finalLayout			= (VkImageLayout)p_AttachmentInfo.p_FinalLayout;
 
-			if (p_AttachmentInfo.p_LoadOp == LoadOp::Clear || p_AttachmentInfo.p_StencilLoadOp == LoadOp::Clear)
-				clearCount++;
+			//if (p_AttachmentInfo.p_LoadOp == LoadOp::Clear || p_AttachmentInfo.p_StencilLoadOp == LoadOp::Clear)
+				m_ClearCount++;
 
 			VkAttachmentReference attachmentRef = {};
 			attachmentRef.attachment = m_Attachments.size(); //  addAttachment() Size 0... addAttachment() Size 1... addAttachment() Size 2
@@ -42,7 +40,7 @@ namespace vgl
 			// Size += 1
 			m_Attachments.push_back(attachment);
 			m_AttachmentRefs.push_back(attachmentRef);
-			m_AttachmentInfos.push_back(p_AttachmentInfo);
+			m_AttachmentInfo.push_back(p_AttachmentInfo);
 		}
 
 		bool RenderPass::create()
@@ -59,20 +57,20 @@ namespace vgl
 
 			for (int i = 0; i < m_Attachments.size(); i++)
 			{
-				if (m_AttachmentInfos[i].p_AttachmentType == AttachmentType::Color)
+				if (m_AttachmentInfo[i].p_AttachmentType == AttachmentType::Color)
 				{
 					m_ColorAttachments.push_back(m_AttachmentRefs[i]);
 					m_Subpass.colorAttachmentCount++;
 				}
-				else if (m_AttachmentInfos[i].p_AttachmentType == AttachmentType::Input)
+				else if (m_AttachmentInfo[i].p_AttachmentType == AttachmentType::Input)
 				{
 					m_InputAttachments.push_back(m_AttachmentRefs[i]);
 					m_Subpass.inputAttachmentCount++;
 				}
-				else if (m_AttachmentInfos[i].p_AttachmentType == AttachmentType::Depth)
+				else if (m_AttachmentInfo[i].p_AttachmentType == AttachmentType::Depth)
 					m_Subpass.pDepthStencilAttachment = &m_AttachmentRefs[i];
 
-				else if (m_AttachmentInfos[i].p_AttachmentType == AttachmentType::Resolve)
+				else if (m_AttachmentInfo[i].p_AttachmentType == AttachmentType::Resolve)
 					m_ResolveAttachments.push_back(m_AttachmentRefs[i]);
 			}
 
@@ -112,7 +110,6 @@ namespace vgl
 
 			m_Attachments.clear();
 			m_AttachmentRefs.clear();
-			m_AttachmentInfos.clear();
 
 			m_ColorAttachments.clear();
 			m_ResolveAttachments.clear();
@@ -163,7 +160,7 @@ namespace vgl
 
 			VkPipelineShaderStageCreateInfo shaderStages[] = {
 				p_PipelineInfo.p_Shader->m_VertShaderStageInfo,
-				p_PipelineInfo.p_Shader->m_VertShaderStageInfo
+				p_PipelineInfo.p_Shader->m_FragShaderStageInfo
 			};
 
 			VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
@@ -228,9 +225,8 @@ namespace vgl
 			m_MultiSampling = {};
 			m_MultiSampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 			m_MultiSampling.sampleShadingEnable = VK_FALSE;
-			m_MultiSampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-			m_MultiSampling.minSampleShading = p_PipelineInfo.p_SampleRateShading ? 0.5 : 1.0f;
 			m_MultiSampling.rasterizationSamples = (VkSampleCountFlagBits)p_PipelineInfo.p_MSAASamples;
+			m_MultiSampling.minSampleShading = p_PipelineInfo.p_SampleRateShading ? 0.5 : 1.0f;
 			m_MultiSampling.pSampleMask = nullptr;
 			m_MultiSampling.alphaToCoverageEnable = VK_FALSE;
 			m_MultiSampling.alphaToCoverageEnable = VK_FALSE;

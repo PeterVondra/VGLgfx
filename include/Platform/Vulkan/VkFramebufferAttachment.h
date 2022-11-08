@@ -26,60 +26,37 @@ namespace vgl
 			// AttachmentInfo from RenderPass 
 			AttachmentInfo p_AttachmentInfo; 
 
-			BorderColor p_BorderColor;
-			SamplerMode p_SamplerMode;
+			BorderColor p_BorderColor = BorderColor::OpaqueBlack;
+			SamplerMode p_SamplerMode = SamplerMode::ClampToBorder;
 
 			// p_ClearFrame = false, image will not be cleared after image write.
 			AttachmentDescriptor(
 				Vector2i p_Size,
 				ImageFormat p_ImageFormat,
 				Layout p_Layout,
-				BorderColor p_BorderColor = BorderColor::OpaqueBlack,
-				SamplerMode p_SamplerMode = SamplerMode::ClampToBorder,
 				bool p_ClearFrame = true,
-				bool p_AllowMipMapping = false
+				bool p_AllowMipMapping = false,
+				BorderColor p_BorderColor = BorderColor::OpaqueBlack,
+				SamplerMode p_SamplerMode = SamplerMode::ClampToBorder
 			){
 				m_CreateSampler = p_Layout == Layout::ShaderR || p_Layout == Layout::DepthR;
 				
 				p_AttachmentInfo.p_Format = (VkFormat)p_ImageFormat;
 				p_AttachmentInfo.p_SampleCount = 1;
-				p_AttachmentInfo.p_LoadOp = p_ImageFormat == ImageFormat::D16UN || p_ImageFormat == ImageFormat::D32SF ? LoadOp::Clear : LoadOp::Load;
+				p_AttachmentInfo.p_LoadOp = p_ClearFrame ? LoadOp::Clear : LoadOp::Load;
 				p_AttachmentInfo.p_StoreOp = StoreOp::Store;
 				p_AttachmentInfo.p_StencilLoadOp = LoadOp::Null;
 				p_AttachmentInfo.p_StencilStoreOp = StoreOp::Null;
 				p_AttachmentInfo.p_InitialLayout = Layout::Undefined;
 				p_AttachmentInfo.p_FinalLayout = p_Layout;
 				p_AttachmentInfo.p_AttachmentType = 
-					p_ImageFormat == ImageFormat::D16UN || p_ImageFormat == ImageFormat::D32SF ? AttachmentType::Depth : AttachmentType::Color;
-
-				m_IsValid = true;
-			}
-			// p_ClearFrame = false, image will not be cleared after image write.
-			AttachmentDescriptor(
-				Vector2i p_Size,
-				ImageFormat p_ImageFormat,
-				Layout p_Layout,
-				bool p_ClearFrame = true,
-				bool p_AllowMipMapping = false
-			){
-				m_CreateSampler = p_Layout == Layout::ShaderR || p_Layout == Layout::DepthR;
-
-				p_AttachmentInfo.p_AttachmentType = 
-					p_ImageFormat == ImageFormat::D16UN ||
-					p_ImageFormat == ImageFormat::D32SF ? AttachmentType::Depth : AttachmentType::Color;
-				p_AttachmentInfo.p_Format = (VkFormat)p_ImageFormat;
-				p_AttachmentInfo.p_SampleCount = 1;
-				p_AttachmentInfo.p_LoadOp = p_ClearFrame ? LoadOp::Clear : LoadOp::Load;
-				p_AttachmentInfo.p_StoreOp = p_Layout != Layout::DepthR && p_Layout != Layout::ShaderR ? StoreOp::Store : StoreOp::Null;
-				p_AttachmentInfo.p_StencilLoadOp = LoadOp::Null;
-				p_AttachmentInfo.p_StencilStoreOp = StoreOp::Null;
-				p_AttachmentInfo.p_InitialLayout = Layout::Undefined;
-				p_AttachmentInfo.p_FinalLayout = p_Layout;
+					(p_ImageFormat == ImageFormat::D16UN || p_ImageFormat == ImageFormat::D32SF ? AttachmentType::Depth : AttachmentType::Color);
 
 				m_IsValid = true;
 			}
 			private:
 				friend class FramebufferAttachment;
+				friend class GraphicsContext;
 
 				bool m_IsValid = false;
 				bool m_CreateSampler = false;
@@ -93,9 +70,9 @@ namespace vgl
 			Vector2i p_Size;
 			std::vector<AttachmentDescriptor> p_AttachmentDescriptors;
 
-			Shader* p_Shader;
-			RenderPipelineInfo p_RenderPipelineInfo;
-			DescriptorSetManager* p_Descriptors; 
+			Shader* p_Shader = nullptr;
+			RenderPipelineInfo p_RenderPipelineInfo = {};
+			DescriptorSetManager* p_Descriptors = nullptr;
 
 			// Only works in Vulkan
 			ShaderStage p_PushConstantShaderStage;
@@ -143,7 +120,7 @@ namespace vgl
 
 				const std::vector<VkCommandBufferInheritanceInfo>& getInheritanceInfo();
 
-				DescriptorSetManager& getDescriptors() { return m_DescriptorSets; }
+				DescriptorSetManager& getDescriptors(); 
 				void destroy();
 
 				FramebufferAttachmentInfo m_FramebufferAttachmentInfo;
@@ -151,6 +128,7 @@ namespace vgl
 			protected:
 			private:
 				friend class Renderer;
+				friend class GraphicsContext;
 
 				bool m_AllowMipMapping = false;
 
@@ -162,7 +140,6 @@ namespace vgl
 
 				std::vector<std::vector<ImageAttachment>> m_ImageAttachments;
 				std::vector<Framebuffer> m_Framebuffer;
-				DescriptorSetManager m_DescriptorSets;
 
 				RenderPass m_RenderPass;
 				VkRenderPassAttachmentBeginInfo m_AttachmentBeginInfo = {};

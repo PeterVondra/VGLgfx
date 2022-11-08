@@ -6,6 +6,8 @@
 #include "Matrix.h"
 #include "Vector.h"
 
+namespace vgl{ class Scene; }
+
 class Transform2D
 {
 	public:
@@ -41,6 +43,8 @@ class Transform2D
 		Matrix4f model = Matrix4f::getIdentity();
 
 	protected:
+    friend class vgl::Scene;
+
 		Vector2f position;
 		Vector2f scalar;
 		float rotation;
@@ -81,6 +85,8 @@ class Transform3D
 
 		Matrix4f model;
 	protected:
+    friend class vgl::Scene;
+
 		Vector3f position = 0;
 		Vector3f rotation = 0;
 		Vector3f scalar = 1;

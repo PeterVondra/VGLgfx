@@ -58,7 +58,7 @@ namespace vgl
 	struct Vertex5T
 	{
 		Vertex5T() : position(0), uv(0), normal(0), tangent(0), bitangent(0) {};
-		Vertex5T(Vector3f& p_Position, Vector2f& p_UV, Vector3f& p_Normal, Vector3f& p_Tangent, Vector3f& p_Bitangent)
+		Vertex5T(Vector3f p_Position, Vector2f p_UV, Vector3f p_Normal, Vector3f p_Tangent, Vector3f p_Bitangent)
 			: position(p_Position), uv(p_UV), normal(p_Normal), tangent(p_Tangent), bitangent(p_Bitangent) {};
 		Vertex5T(const Vertex5T& p_Vertex) {
 			position = p_Vertex.position;
@@ -140,6 +140,10 @@ namespace vgl
 
 		public:
 			std::string m_FileLocation; // File location of the 3D model file
+      std::string m_FileName;
+      std::string m_FileDirectory;
+
+      bool m_TangentSpaceCorrectedUV = true;
 
 			// GPU buffers
 			VertexBuffer m_Vertices;
@@ -172,7 +176,7 @@ namespace vgl
 			std::vector<ShaderDescriptor> m_MTLDescriptors;
 
 			// Initialize the material info needed for rendering
-			void initMaterials(EnvData& p_EnvData);
+			void initMaterials(/*EnvData& p_EnvData*/);
 
 			VertexLayout m_VertexLayout;
 	};

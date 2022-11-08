@@ -5,8 +5,8 @@
 
 #include "../../../lib/imgui/imgui.h"
 #include "../../../lib/imgui/imgui_internal.h"
-#include "../../../lib/imgui/examples/imgui_impl_glfw.h"
-#include "../../../lib/imgui/examples/imgui_impl_vulkan.h"
+#include "../../../lib/imgui/backends/imgui_impl_glfw.h"
+#include "../../../lib/imgui/backends/imgui_impl_vulkan.h"
 
 #include "VkRenderPass.h"
 #include "VkShader.h"
@@ -39,6 +39,27 @@ static uint32_t LE_HEXTOU32(std::string str)
 	return _ReverseInt(value);
 }
 
+namespace ImGui
+{
+	//bool BeginMainMenuBar_S()
+	//{
+	//	
+	//}
+	//
+	//void EndMainMenuBar_S()
+	//{
+	//	ImGui::EndMenuBar();
+	//
+	//	// When the user has left the menu layer (typically: closed menus through activation of an item), we restore focus to the previous window
+	//	// FIXME: With this strategy we won't be able to restore a NULL focus.
+	//	ImGuiContext& g = *GImGui;
+	//	if (g.CurrentWindow == g.NavWindow && g.NavLayer == ImGuiNavLayer_Main && !g.NavAnyRequest)
+	//		ImGui::FocusTopMostWindowUnderOne(g.NavWindow, NULL);
+	//
+	//	ImGui::End();
+	//}
+}
+
 namespace vgl
 {
 	inline static void DrawRowsBackground(int row_count, float line_height, float x1, float x2, float y_offset, ImU32 col_even, ImU32 col_odd)
@@ -60,7 +81,7 @@ namespace vgl
 		}
 	}
 
-	inline static void imGuiRowsBackground()
+	inline static void ImGuiRowsBackground()
 	{
 		float x1 = ImGui::GetCurrentWindow()->WorkRect.Min.x;
 		float x2 = ImGui::GetCurrentWindow()->WorkRect.Max.x;
@@ -70,7 +91,7 @@ namespace vgl
 		DrawRowsBackground(50, line_height, x1, x2, item_offset_y, 0, ImGui::GetColorU32(ImVec4(0.4f, 0.4f, 0.4f, 0.5f)));
 	}
 
-	inline static void drawVec3Control(const std::string p_Label, Vector3f& p_Vec3f, float p_ResetValue = 0.0f, float p_ColumnWith = 100.0f)
+	inline static void DrawVec3Control(const std::string p_Label, Vector3f& p_Vec3f, float p_ResetValue = 0.0f, float p_ColumnWith = 100.0f)
 	{
 		ImGui::PushID(p_Label.c_str());
 
@@ -307,10 +328,12 @@ namespace vgl
 					ImGuiIO& io = ImGui::GetIO();
 					io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 					io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-					io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       	// Not implemented yet (In official ImGui)
+					io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       	
+					io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
 					io.FontGlobalScale = 0.95;
 
-					io.Fonts->AddFontFromFileTTF("resources/Fonts/OpenSans-Regular.ttf", 20.0f, NULL, io.Fonts->GetGlyphRangesDefault());
+					io.Fonts->AddFontFromFileTTF("data/Fonts/OpenSans-Regular.ttf", 20.0f, NULL, io.Fonts->GetGlyphRangesDefault());
+					//io.Fonts->AddFontFromFileTTF("data/Fonts/airal.ttf", 20.0f, NULL, io.Fonts->GetGlyphRangesDefault());
 				}
 
 				~ImGuiContext() {};
@@ -325,6 +348,14 @@ namespace vgl
 
 				inline void init(RenderPass& p_RenderPass)
 				{
+					m_RenderPass = &p_RenderPass;
+
+					m_InheritanceInfo = {};
+					m_InheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+					m_InheritanceInfo.renderPass = m_RenderPass->m_RenderPass;
+					m_InheritanceInfo.framebuffer = VK_NULL_HANDLE;
+					m_InheritanceInfo.subpass = 0;
+
 					VkDescriptorPoolSize pool_sizes[] =
 					{
 						{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
@@ -360,30 +391,131 @@ namespace vgl
 					init_info.QueueFamily = m_ContextPtr->m_PhysicalDevice.m_QueueFamily.graphicsFamily;
 					init_info.Queue = m_ContextPtr->m_GraphicsQueue;
 					init_info.PipelineCache = VK_NULL_HANDLE;
-					init_info.DescriptorPool = m_DescriptorPool;
-					init_info.Allocator = nullptr;
-					init_info.MinImageCount = 2;
-					init_info.ImageCount = 2;
+					init_info.DescriptorPool = m_ContextPtr->m_DefaultDescriptorPool;
+					init_info.Allocator = nullptr;// m_ContextPtr->m_VmaAllocator->GetAllocationCallbacks();
+					init_info.MinImageCount = m_ContextPtr->m_SwapchainImageCount;
+					init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;// (VkSampleCountFlagBits)m_RenderPass->m_AttachmentInfo[0].p_SampleCount;
+					init_info.ImageCount = m_ContextPtr->m_SwapchainImageCount;
 					init_info.CheckVkResultFn = VK_NULL_HANDLE;
-					ImGui_ImplVulkan_Init(&init_info, p_RenderPass.m_RenderPass);
-
-					m_RenderPass = &p_RenderPass;
+					ImGui_ImplVulkan_Init(&init_info, m_RenderPass->m_RenderPass);
+					ImGui_ImplVulkan_SetMinImageCount(m_ContextPtr->m_SwapchainImageCount);
 
 					auto cmd = CommandBuffer::beginSingleTimeCmds();
 					ImGui_ImplVulkan_CreateFontsTexture(cmd.vkHandle());
 					CommandBuffer::endSingleTimeCmds(cmd);      
+					
+					ImGui_ImplVulkan_DestroyFontUploadObjects();
 
+					VkImageView attachment[1];
+					VkFramebufferCreateInfo info = {};
+					info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+					info.renderPass = m_RenderPass->m_RenderPass;
+					info.attachmentCount = 1;
+					info.pAttachments = attachment;
+					info.width = m_WindowPtr->getWindowSize().x;
+					info.height = m_WindowPtr->getWindowSize().y;
+					info.layers = 1;
+
+					m_Framebuffers.resize(m_ContextPtr->m_SwapchainImageCount);
+
+					for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+						attachment[0] = m_WindowPtr->m_Swapchain.m_SwapchainImageViews[i];
+						vkCreateFramebuffer(m_ContextPtr->m_Device, &info, nullptr, &m_Framebuffers[i]);
+					}
+				}
+
+				inline void updateBuffers()
+				{
+				}
+
+				void genCmdBuffers()
+				{
+					m_CommandBuffer.cmdBegin(m_InheritanceInfo);
+					ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_CommandBuffer.vkHandle());
+					m_CommandBuffer.cmdEnd();
 				}
 
 				void recreateSwapchain()
 				{
+					for (auto framebuffer : m_Framebuffers)
+						vkDestroyFramebuffer(m_ContextPtr->m_Device, framebuffer, nullptr);
 
+					ImGui_ImplVulkan_SetMinImageCount(m_ContextPtr->m_SwapchainImageCount);
+					VkImageView attachment[1];
+					VkFramebufferCreateInfo info = {};
+					info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+					info.renderPass = m_RenderPass->m_RenderPass;
+					info.attachmentCount = 1;
+					info.pAttachments = attachment;
+					info.width = m_WindowPtr->getWindowSize().x;
+					info.height = m_WindowPtr->getWindowSize().y;
+					info.layers = 1;
+					
+					m_Framebuffers.resize(m_ContextPtr->m_SwapchainImageCount);
+					
+					for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+						attachment[0] = m_WindowPtr->m_Swapchain.m_SwapchainImageViews[i];
+						vkCreateFramebuffer(m_ContextPtr->m_Device, &info, nullptr, &m_Framebuffers[i]);
+					}
+				}
+
+				inline static void Image(
+					vgl::vk::Image& user_texture_id,
+					const ImVec2& size,
+					const ImVec2& uv0 = ImVec2(0, 0),
+					const ImVec2& uv1 = ImVec2(1, 1),
+					const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
+					const ImVec4& border_col = ImVec4(0, 0, 0, 0)
+				) {
+					if (user_texture_id.isValid() && !user_texture_id.m_IsDescriptorSetValid) {
+						user_texture_id.m_DescriptorSet = ImGui_ImplVulkan_AddTexture(user_texture_id.m_Sampler, user_texture_id.m_ImageView, user_texture_id.m_CurrentLayout);
+						user_texture_id.m_IsDescriptorSetValid = true;
+					}
+					else if (!user_texture_id.isValid() && user_texture_id.m_IsDescriptorSetValid) {
+						ImGui_ImplVulkan_RemoveTexture(user_texture_id.m_DescriptorSet);
+						user_texture_id.m_IsDescriptorSetValid = false;
+					}
+					if(user_texture_id.m_IsDescriptorSetValid)
+						ImGui::Image(user_texture_id.m_DescriptorSet, size, uv0, uv1, tint_col, border_col);
+				}
+				inline static bool ImageButton(
+					const char* str_id,
+					vgl::vk::Image& user_texture_id,
+					const ImVec2& size,
+					const ImVec2& uv0 = ImVec2(0, 0),
+					const ImVec2& uv1 = ImVec2(1, 1),
+					const ImVec4& bg_col = ImVec4(0, 0, 0, 0),
+					const ImVec4& tint_col = ImVec4(1, 1, 1, 1)
+				) {
+					if (user_texture_id.isValid() && !user_texture_id.m_IsDescriptorSetValid) {
+						user_texture_id.m_DescriptorSet = ImGui_ImplVulkan_AddTexture(user_texture_id.m_Sampler, user_texture_id.m_ImageView, user_texture_id.m_CurrentLayout);
+						user_texture_id.m_IsDescriptorSetValid = true;
+					}
+					else if (!user_texture_id.isValid() && user_texture_id.m_IsDescriptorSetValid) {
+						ImGui_ImplVulkan_RemoveTexture(user_texture_id.m_DescriptorSet);
+						user_texture_id.m_IsDescriptorSetValid = false;
+					}
+					if(user_texture_id.m_IsDescriptorSetValid)
+						return ImGui::ImageButton(str_id, user_texture_id.m_DescriptorSet, size, uv0, uv1, bg_col, tint_col);
+					return false;
 				}
 
 			private:
 				friend class Renderer;
 
 				Window* m_WindowPtr;
+
+				std::vector<VkFramebuffer> m_Framebuffers;
+
+				VertexArray		vao;
+				IndexBuffer		indices;
+				VertexBuffer	vertices;
+				VkDeviceSize	vtxBufferSize = 0;
+				VkDeviceSize	vtxCount = 0;
+				VkDeviceSize	idxBufferSize = 0;
+				VkDeviceSize	idxCount = 0;
+
+				VkCommandBufferInheritanceInfo m_InheritanceInfo;
 
 				Context* m_ContextPtr;
 				VkDescriptorPool m_DescriptorPool;
@@ -395,12 +527,14 @@ namespace vgl
 		class ImGuiContext
 		{
 		public:
-			ImGuiContext() : commandBuffer(Level::Secondary) {}//, renderPass(RenderPassType::Graphics) {};
-			inline ImGuiContext(Window* p_CurrentWindow, VkCommandBufferInheritanceInfo* p_InheritanceInfo)
-				: commandBuffer(Level::Secondary), inheritanceInfo(p_InheritanceInfo), currentWindow(p_CurrentWindow), m_ContextPtr(&ContextSingleton::getInstance())//, renderPass(RenderPassType::Graphics)
+			ImGuiContext() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffer(m_ContextPtr->m_SwapchainImageCount, Level::Secondary) {}//, renderPass(RenderPassType::Graphics) {};
+			inline ImGuiContext(Window* p_CurrentWindow)
+				: m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffer(m_ContextPtr->m_SwapchainImageCount, Level::Secondary), currentWindow(p_CurrentWindow)//, renderPass(RenderPassType::Graphics)
 			{
 				IMGUI_CHECKVERSION();
 				ImGui::CreateContext();
+
+				currentWindow = p_CurrentWindow;
 
 				// Color scheme
 				ImGuiStyle& st = ImGui::GetStyle();
@@ -470,6 +604,12 @@ namespace vgl
 
 			inline void init(RenderPass& p_RenderPass)
 			{
+				inheritanceInfo = {};
+				inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+				inheritanceInfo.renderPass = p_RenderPass.m_RenderPass;
+				inheritanceInfo.framebuffer = VK_NULL_HANDLE;
+				inheritanceInfo.subpass = 0;
+
 				renderPass = &p_RenderPass;
 				ImGui_ImplGlfw_InitForVulkan(currentWindow->getGLFWWindow(), true);
 
@@ -477,17 +617,18 @@ namespace vgl
 				ImGuiIO& io = ImGui::GetIO();
 				io.Fonts->GetTexDataAsRGBA32(&fontData, &size.x, &size.y);
 
-				imguiImg.initImage(size, fontData, Channels::RGBA, SamplerMode::ClampToEdge);
+				imguiImg.create(size, fontData, Channels::RGBA, SamplerMode::ClampToEdge);
 
-				imguiUniforms.setUniform("font", imguiImg, 0);
-				imguiUniforms.create();
+				DescriptorSetInfo info;
+				info.addImage(&imguiImg, 0);
+				imguiUniforms.create(info);
 
 				vao.fill(vertices, indices);
 
-				PipelineInfo pipelineInfo;
+				g_PipelineInfo pipelineInfo;
 				pipelineInfo.p_CullMode = CullMode::None;
 				pipelineInfo.p_FrontFace = FrontFace::CounterClockwise;
-				pipelineInfo.p_MSAASamples = currentWindow->maxMSAASamples;
+				pipelineInfo.p_MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 				pipelineInfo.p_Viewport = Viewport(currentWindow->m_WindowSize, { 0, 0 });
 				pipelineInfo.p_Scissor = Scissor(currentWindow->m_WindowSize, { 0, 0 });
 				pipelineInfo.p_SampleRateShading = false;
@@ -512,11 +653,28 @@ namespace vgl
 
 				vertices.setLayout(_ImguiLayout);
 
-				pipelineInfo.p_DescriptorSetLayout = UniformManager::createDscSetLayout(UniformManager::createDscSetLayoutBindings(0, 0, 0, 1));
+				pipelineInfo.p_DescriptorSetLayout = imguiUniforms.m_DescriptorSetLayout;
 				pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&_ImguiLayout).first);
 				pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&_ImguiLayout).second);
 
 				imguiPipeline.create(pipelineInfo);
+
+				VkImageView attachment[1];
+				VkFramebufferCreateInfo iinfo = {};
+				iinfo .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+				iinfo .renderPass = renderPass->m_RenderPass;
+				iinfo .attachmentCount = 1;
+				iinfo .pAttachments = attachment;
+				iinfo .width = currentWindow->getWindowSize().x;
+				iinfo .height = currentWindow->getWindowSize().y;
+				iinfo .layers = 1;
+
+				m_Framebuffers.resize(m_ContextPtr->m_SwapchainImageCount);
+
+				for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+					attachment[0] = currentWindow->m_Swapchain.m_SwapchainImageViews[i];
+					vkCreateFramebuffer(m_ContextPtr->m_Device, &iinfo, nullptr, &m_Framebuffers[i]);
+				}
 			}
 
 			inline void genCmdBuffers()
@@ -534,52 +692,54 @@ namespace vgl
 				pushConstBlock.scale = Vector2f(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
 				pushConstBlock.translate = Vector2f(-1.0f);
 
-				commandBuffer.cmdBegin(*inheritanceInfo);
-				commandBuffer.cmdSetViewport(Viewport({ (int)io.DisplaySize.x, (int)io.DisplaySize.y }, { 0, 0 }));
+				for (int i = 0; i < m_CommandBuffer.size(); i++) {
+					m_CommandBuffer[i].cmdBegin(inheritanceInfo);
+					m_CommandBuffer[i].cmdSetViewport(Viewport({ (int)io.DisplaySize.x, (int)io.DisplaySize.y }, { 0, 0 }));
 
-				vkCmdPushConstants(commandBuffer.m_CommandBuffer, imguiPipeline.m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ImguiPushConstantBlock), &pushConstBlock);
+					vkCmdPushConstants(m_CommandBuffer[i].m_CommandBuffer, imguiPipeline.m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ImguiPushConstantBlock), &pushConstBlock);
 
-				if (imDrawData)
-				{
-					if (imDrawData->CmdListsCount > 0) {
-						commandBuffer.cmdBindPipeline(imguiPipeline);
-						commandBuffer.cmdBindUniformBuffer(imguiUniforms);
-						commandBuffer.cmdBindVertexArray16BitIdx(vao);
+					if (imDrawData)
+					{
+						if (imDrawData->CmdListsCount > 0) {
+							m_CommandBuffer[i].cmdBindPipeline(imguiPipeline);
+							m_CommandBuffer[i].cmdBindDescriptorSets(imguiUniforms, m_ContextPtr->m_ImageIndex);
+							m_CommandBuffer[i].cmdBindVertexArray16BitIdx(vao);
 
-						for (uint32_t i = 0; i < imDrawData->CmdListsCount; i++)
-						{
-							const ImDrawList* cmdList = imDrawData->CmdLists[i];
-							for (uint32_t j = 0; j < cmdList->CmdBuffer.Size; j++)
+							for (uint32_t i = 0; i < imDrawData->CmdListsCount; i++)
 							{
-								const ImDrawCmd* pcmd = &cmdList->CmdBuffer[j];
+								const ImDrawList* cmdList = imDrawData->CmdLists[i];
+								for (uint32_t j = 0; j < cmdList->CmdBuffer.Size; j++)
+								{
+									const ImDrawCmd* pcmd = &cmdList->CmdBuffer[j];
 
-								if (pcmd->TextureId) {
-									Image* img = (Image*)pcmd->TextureId;
-									if (img->isComplete()) {
-										VkDescriptorSet* dsc = (VkDescriptorSet*)&img->id;
-										vkCmdBindDescriptorSets(
-											commandBuffer.m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-											imguiPipeline.m_PipelineLayout, 0, 1, dsc, 0, nullptr
-										);
+									if (pcmd->TextureId) {
+										Image* img = (Image*)pcmd->TextureId;
+										if (img->isValid()) {
+											VkDescriptorSet* dsc = (VkDescriptorSet*)&img->m_DescriptorSet;
+											vkCmdBindDescriptorSets(
+												m_CommandBuffer[i].m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+												imguiPipeline.m_PipelineLayout, 0, 1, dsc, 0, nullptr
+											);
+										}
 									}
+									else
+										m_CommandBuffer[i].cmdBindDescriptorSets(imguiUniforms, m_ContextPtr->m_ImageIndex);
+
+									m_CommandBuffer[i].cmdSetScissor(Scissor(
+										{ (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y) },
+										{ std::max((int32_t)(pcmd->ClipRect.x), 0), std::max((int32_t)(pcmd->ClipRect.y), 0) }
+									));
+
+									m_CommandBuffer[i].cmdDrawIndexed(vtxOffset, idxOffset, idxOffset + pcmd->ElemCount);
+									idxOffset += pcmd->ElemCount;
 								}
-								else
-									commandBuffer.cmdBindUniformBuffer(imguiUniforms);
-
-								commandBuffer.cmdSetScissor(Scissor(
-									{ (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y) },
-									{ std::max((int32_t)(pcmd->ClipRect.x), 0), std::max((int32_t)(pcmd->ClipRect.y), 0) }
-								));
-
-								commandBuffer.cmdDrawIndexed(vtxOffset, idxOffset, idxOffset + pcmd->ElemCount);
-								idxOffset += pcmd->ElemCount;
+								vtxOffset += cmdList->VtxBuffer.Size;
 							}
-							vtxOffset += cmdList->VtxBuffer.Size;
 						}
 					}
-				}
 
-				commandBuffer.cmdEnd();
+					m_CommandBuffer[i].cmdEnd();
+				}
 
 			}
 
@@ -623,6 +783,29 @@ namespace vgl
 				indices.flush();
 			}
 
+			void recreateSwapchain()
+			{
+				for (auto framebuffer : m_Framebuffers)
+					vkDestroyFramebuffer(m_ContextPtr->m_Device, framebuffer, nullptr);
+
+				VkImageView attachment[1];
+				VkFramebufferCreateInfo info = {};
+				info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+				info.renderPass = renderPass->m_RenderPass;
+				info.attachmentCount = 1;
+				info.pAttachments = attachment;
+				info.width = currentWindow->getWindowSize().x;
+				info.height = currentWindow->getWindowSize().y;
+				info.layers = 1;
+
+				m_Framebuffers.resize(m_ContextPtr->m_SwapchainImageCount);
+
+				for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+					attachment[0] = currentWindow->m_Swapchain.m_SwapchainImageViews[i];
+					vkCreateFramebuffer(m_ContextPtr->m_Device, &info, nullptr, &m_Framebuffers[i]);
+				}
+			}
+
 		private:
 			friend class Renderer;
 			friend class BaseRenderer;
@@ -636,10 +819,10 @@ namespace vgl
 			IndexBuffer		indices;
 			VertexBuffer	vertices;
 			Image			imguiImg;
-			UniformManager	imguiUniforms;
-			struct TextureIDs { UniformManager mng; ImTextureID ID; };
+			DescriptorSetManager	imguiUniforms;
+			struct TextureIDs { DescriptorSetManager mng; ImTextureID ID; };
 			std::vector<TextureIDs>	imguiImageUniforms;
-			Pipeline		imguiPipeline;
+			g_Pipeline		imguiPipeline;
 			Shader			imguiShader;
 			VkDeviceSize	vtxBufferSize = 0;
 			VkDeviceSize	vtxCount = 0;
@@ -649,8 +832,10 @@ namespace vgl
 			BufferLayout _ImguiLayout;
 			unsigned char* fontData;
 
-			VkCommandBufferInheritanceInfo* inheritanceInfo;
-			CommandBuffer	commandBuffer;
+			std::vector<VkFramebuffer> m_Framebuffers;
+
+			VkCommandBufferInheritanceInfo inheritanceInfo;
+			std::vector<CommandBuffer>	m_CommandBuffer;
 			std::vector<ImguiPushConstantBlock> imguiPushConstants;
 			Context* m_ContextPtr;
 			VkDescriptorPool descriptorPool;

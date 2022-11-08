@@ -4,7 +4,7 @@
 #include <glslang/Public/ShaderLang.h>
 #include <SPIRV/GlslangToSpv.h>
 #include <StandAlone/DirStackFileIncluder.h>
-#include "../../Utils/Logger.h"
+#include "../../Utils/FileGUI.h"
 
 namespace vgl
 {
@@ -59,9 +59,9 @@ namespace vgl
 
 			if (vertShaderCode.empty() || fragShaderCode.empty())
 			{
-				#ifdef USE_LOGGING
+#ifdef USE_LOGGING
 				Utils::Logger::logMSG("shader code is nullptr", "Shader", Utils::Severity::Error);
-				#endif
+#endif
 				return;
 			}
 
@@ -268,7 +268,11 @@ namespace vgl
 				Utils::Logger::logMSG(std::string(shader.getInfoLog()) + "\n", "GLSLANG", Utils::Severity::Error);
 				Utils::Logger::logMSG(std::string(shader.getInfoDebugLog()) + "\n", "GLSLANG", Utils::Severity::Error);
 #endif
+				Utils::FileGUI::writeToFile("debug/compiled_shader_preprocesed.txt", vPreprocessed);
+				Utils::FileGUI::writeToFile("debug/shader_error_log.txt", std::string(shader.getInfoLog()) + std::string(shader.getInfoDebugLog()));
+				std::cin.get();
 			}
+			Utils::FileGUI::writeToFile("debug/compiled_shader_preprocesed.txt", vPreprocessed);
 
 			const char* vPreprocessedC = vPreprocessed.c_str();
 
@@ -281,8 +285,13 @@ namespace vgl
 				Utils::Logger::logMSG(std::string(shader.getInfoLog()) + "\n", "GLSLANG", Utils::Severity::Error);
 				Utils::Logger::logMSG(std::string(shader.getInfoDebugLog()) + "\n", "GLSLANG", Utils::Severity::Error);
 #endif
+				Utils::FileGUI::writeToFile("debug/compiled_shader.txt", vPreprocessed);
+				Utils::FileGUI::writeToFile("debug/shader_error_log.txt", std::string(shader.getInfoLog()) + std::string(shader.getInfoDebugLog()));
+				std::cin.get();
 			}
 
+			Utils::FileGUI::writeToFile("debug/compiled_shader.txt", vPreprocessed);
+			
 			glslang::TProgram program;
 			program.addShader(&shader);
 
@@ -293,6 +302,8 @@ namespace vgl
 				Utils::Logger::logMSG(std::string(shader.getInfoLog()) + "\n", "GLSLANG", Utils::Severity::Error);
 				Utils::Logger::logMSG(std::string(shader.getInfoDebugLog()) + "\n", "GLSLANG", Utils::Severity::Error);
 #endif
+				Utils::FileGUI::writeToFile("debug/shader_error_log.txt", std::string(shader.getInfoLog()) + std::string(shader.getInfoDebugLog()));
+				std::cin.get();
 			}
 
 			std::vector<uint32_t> spirv;

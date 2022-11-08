@@ -1,4 +1,5 @@
 #include "ECS.h"
+#include <cstring>
 
 namespace vgl
 {

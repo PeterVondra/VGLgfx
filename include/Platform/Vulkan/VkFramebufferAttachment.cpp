@@ -40,7 +40,7 @@ namespace vgl
 						dependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 						dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 						m_RenderPass.m_Dependencies.push_back(dependency);
-						break;
+						continue;
 					}
 				}
 				// Else use the default subpass dependencies
@@ -73,6 +73,11 @@ namespace vgl
 			// CREATE GRAPHICS PIPELINE
 			////////////////////////////////////////////////////////
 
+			if(FBAinfo.p_Shader == nullptr)
+				FBAinfo.p_RenderPipelineInfo.p_CreateGraphicsPipeline = false;
+			else if (FBAinfo.p_RenderPipelineInfo.p_Pipeline == nullptr)
+				FBAinfo.p_RenderPipelineInfo.p_CreateGraphicsPipeline = true;
+
 			if(FBAinfo.p_PushConstantSize > 0) {
 				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_UsePushConstants = true;
 				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_PushConstantShaderStage = getShaderStageVkH(FBAinfo.p_PushConstantShaderStage);
@@ -81,6 +86,14 @@ namespace vgl
 
 			FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_RenderPass = FBAinfo.p_RenderPipelineInfo.p_RenderPass;
 			FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_Shader = FBAinfo.p_Shader;
+			
+			if(FBAinfo.p_Descriptors)
+				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_DescriptorSetLayout = FBAinfo.p_Descriptors->m_DescriptorSetLayout;
+			else if (m_Descriptors.isValid())
+				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_DescriptorSetLayout = m_Descriptors.m_DescriptorSetLayout;
+
+			FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_AttributeDescription = m_RecVao.getAttributeDescriptions();
+			FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_BindingDescription = m_RecVao.getBindingDescription();
 
 			if(FBAinfo.p_RenderPipelineInfo.p_CreateGraphicsPipeline)
 				m_Pipeline.create(FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo);
@@ -99,8 +112,10 @@ namespace vgl
 					attachmentInfo.p_Size = FBAinfo.p_Size;
 					m_ImageAttachments[i][j].create(attachmentInfo);
 
-					if(FBAinfo.p_AttachmentDescriptors[j].p_AllowMipMapping) 
+					if (FBAinfo.p_AttachmentDescriptors[j].p_AllowMipMapping) {
 						framebufferInfo.p_AllowMipMapping = true;
+						m_AllowMipMapping = true;
+					}
 				}
 				
 				framebufferInfo.p_ImageAttachments = m_ImageAttachments[i];
@@ -183,8 +198,8 @@ namespace vgl
 			p_CommandBuffer.cmdSetScissor(Scissor({ m_FramebufferAttachmentInfo.p_Size.x, m_FramebufferAttachmentInfo.p_Size.y }, { 0, 0 }));
 			p_CommandBuffer.cmdBindPipeline(m_Pipeline);
 			p_CommandBuffer.cmdBindVertexArray(m_RecVao);
-			if(m_DescriptorSets.isValid())
-				p_CommandBuffer.cmdBindDescriptorSets(m_DescriptorSets, p_ImageIndex);
+			if(m_Descriptors.isValid())
+				p_CommandBuffer.cmdBindDescriptorSets(m_Descriptors, p_ImageIndex);
 			else if(m_FramebufferAttachmentInfo.p_Descriptors)
 				p_CommandBuffer.cmdBindDescriptorSets(*m_FramebufferAttachmentInfo.p_Descriptors, p_ImageIndex);
 

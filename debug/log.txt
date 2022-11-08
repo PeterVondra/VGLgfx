@@ -1,0 +1,464 @@
+[Validation Layers]Debug:    Validation layers available
+[Extensions]Info:    VK_KHR_surface
+[Extensions]Info:    VK_KHR_win32_surface
+[Extensions]Info:    VK_EXT_debug_utils
+[Extensions]Info:    VK_KHR_get_physical_device_properties2
+[Vulkan-Instance]Trace:    Succesfully created instance
+[Window]Trace:    Succesfully created window surface
+[GPU]Info:    Found atleast one GPU with vulkan support
+[GPU]Debug:    [NVIDIA GeForce GTX 1060]
+[GPU]Debug:    score: 82920
+[GPU]Debug:    m_Device type: discrete
+[GPU]Debug:    driver version: 2206973952
+[GPU]Debug:    vulkan version: 4206816
+[GPU]Debug:    max viewports: 16
+[GPU]Debug:    max tesselation level: 64
+[GPU]Debug:    memory heap count: 3
+[GPU]Debug:    vendor id: 4318
+[GPU]Debug:    [Intel(R) UHD Graphics 630]
+[GPU]Debug:    score: 34816
+[GPU]Debug:    m_Device type: integrated
+[GPU]Debug:    driver version: 1646037
+[GPU]Debug:    vulkan version: 4198529
+[GPU]Debug:    max viewports: 16
+[GPU]Debug:    max tesselation level: 64
+[GPU]Debug:    memory heap count: 1
+[GPU]Debug:    vendor id: 32902
+[GPU]Info:    Using discrete graphics [NVIDIA GeForce GTX 1060]
+[Logical Device]Trace:    Succesfully created logical m_Device
+[Uniform Buffer]Debug:    success!, created descriptor pool
+
+[Swap Chain]Trace:    Succesfully created swap chain
+[Swap Chain]Trace:    Succesfully created image views for swap chain
+[MSAA]Info:    MSAA : 8x  Max samples : 8x
+[VkRenderPass]Trace:    Succesfully created renderpass
+[VkRenderPass]Trace:    Succesfully created renderpass
+[VkImGui]Debug:    success!, created descriptor pool
+
+[VulkanCommandBuffer]Trace:    Destroyed PRIMARY command buffer
+[OBJ Loader]OBJ File found: sponza.obj
+[OBJ Loader]Info:    OBJ File: sponza.obj : 21.11 MB
+[Material Loader]Info:    MTL File: projects/Global_Assets/3D_Models/Sponza/sponza.mtl : 7.996 KB
+[ Image Loader]Warning:    Failed to load image projects/Global_Assets/3D_Models/Sponza/textures/Background__Roughness.png
+[ Image Loader]Warning:    Failed to load image projects/Global_Assets/3D_Models/Sponza/texture/Sponza_FlagPole_roughness.png
+[Material Loader]Debug:    Execution time: 7.1926
+[OBJ Loader]Debug:    Execution time: 6.85781
+[VkRenderPass]Trace:    Succesfully created renderpass
+[DescriptorSetManager]Debug:    Created descriptor set layout
+
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[VkRenderPass]Trace:    Succesfully created renderpass
+[Rendering]Trace:    Succesfully created graphics pipeline
+[DescriptorSetManager]Debug:    Created descriptor set layout
+
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[VkRenderPass]Trace:    Succesfully created renderpass
+[Rendering]Trace:    Succesfully created graphics pipeline
+[DescriptorSetManager]Debug:    Created descriptor set layout
+
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][4]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][4]
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[VkRenderPass]Trace:    Succesfully created renderpass
+[Rendering]Trace:    Succesfully created graphics pipeline
+[DescriptorSetManager]Debug:    Created descriptor set layout
+
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][3]
+[VkRenderPass]Trace:    Succesfully created renderpass
+[Rendering]Trace:    Succesfully created graphics pipeline
+[DescriptorSetManager]Debug:    Created descriptor set layout
+
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: storage buffer
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: storage buffer
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[VkRenderPass]Trace:    Succesfully created renderpass
+[Rendering]Trace:    Succesfully created graphics pipeline
+[DescriptorSetManager]Debug:    Created descriptor set layout
+
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Created descriptor set layout
+
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Created descriptor set layout
+
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Created descriptor set layout
+
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][3]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[0][2]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: uniform buffer[1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][0]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][1]
+[DescriptorSetManager]Debug:    Updated descriptor sets: image descriptor[1][2]
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[GLSLANG]Vertex shader compilation
+[GLSLANG]Fragment shader compilation
+[Rendering]Trace:    Succesfully created graphics pipeline
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xf582f600000001d8[] (subresource: aspectMask 0x1 array layer 0, mip level 1) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xf582f600000001d8[] (subresource: aspectMask 0x1 array layer 0, mip level 2) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xf582f600000001d8[] (subresource: aspectMask 0x1 array layer 0, mip level 3) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xf582f600000001d8[] (subresource: aspectMask 0x1 array layer 0, mip level 4) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xf582f600000001d8[] (subresource: aspectMask 0x1 array layer 0, mip level 5) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xf582f600000001d8[] (subresource: aspectMask 0x1 array layer 0, mip level 6) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xf582f600000001d8[] (subresource: aspectMask 0x1 array layer 0, mip level 7) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xf582f600000001d8[] (subresource: aspectMask 0x1 array layer 0, mip level 8) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xf582f600000001d8[] (subresource: aspectMask 0x1 array layer 0, mip level 9) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xf582f600000001d8[] (subresource: aspectMask 0x1 array layer 0, mip level 10) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xcfdd9a00000001d4[] (subresource: aspectMask 0x1 array layer 0, mip level 1) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xcfdd9a00000001d4[] (subresource: aspectMask 0x1 array layer 0, mip level 2) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xcfdd9a00000001d4[] (subresource: aspectMask 0x1 array layer 0, mip level 3) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xcfdd9a00000001d4[] (subresource: aspectMask 0x1 array layer 0, mip level 4) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xcfdd9a00000001d4[] (subresource: aspectMask 0x1 array layer 0, mip level 5) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xcfdd9a00000001d4[] (subresource: aspectMask 0x1 array layer 0, mip level 6) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xcfdd9a00000001d4[] (subresource: aspectMask 0x1 array layer 0, mip level 7) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xcfdd9a00000001d4[] (subresource: aspectMask 0x1 array layer 0, mip level 8) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xcfdd9a00000001d4[] (subresource: aspectMask 0x1 array layer 0, mip level 9) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+[Vk Validation]Error:    Validation Error: [ UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout ] Object 0: handle = 0x2042046b960, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0x4dae5635 | vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] command buffer VkCommandBuffer 0x2042046b960[] expects VkImage 0xcfdd9a00000001d4[] (subresource: aspectMask 0x1 array layer 0, mip level 10) to be in layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+

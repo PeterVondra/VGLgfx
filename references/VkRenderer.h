@@ -41,9 +41,9 @@ namespace vgl
 						dsc.destroy();
 				m_DescriptorInfo.clear();
 				m_DescriptorAlbedoInfo.clear();
-				//for (auto& cmds : m_CommandBuffers)
-				//	for (auto& cmd : cmds)
-				//		cmd.destroy();
+				for (auto& cmds : m_CommandBuffers)
+					for (auto& cmd : cmds)
+						cmd.destroy();
 			}
 
 			private:

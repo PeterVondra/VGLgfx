@@ -149,7 +149,7 @@ namespace vgl
 		EntityNameComponent* name = getComponent<EntityNameComponent>(p_Handle);
 		Mesh3DComponent* mesh = getComponent<Mesh3DComponent>(p_Handle);
 		Transform3DComponent* transform = getComponent<Transform3DComponent>(p_Handle);
-		Camera3DComponent* camera = getComponent<Camera3DComponent>(p_Handle);
+		CameraComponent* camera = getComponent<CameraComponent>(p_Handle);
 		CameraController3DComponent* cameraController = getComponent<CameraController3DComponent>(p_Handle);
 		SkyboxComponent* skybox = getComponent<SkyboxComponent>(p_Handle);
 		DirectionalLight3DComponent* directional_light = getComponent<DirectionalLight3DComponent>(p_Handle);
@@ -168,7 +168,7 @@ namespace vgl
 				p_Emitter << YAML::Key << "TangentSpaceCorrectedUV" << YAML::Value << mesh->mesh->m_TangentSpaceCorrectedUV;
 
 				p_Emitter << YAML::Key << "Materials" << YAML::Value << YAML::BeginSeq;
-				for (uint32_t i = 0; i < mesh->mesh->m_MaterialIndices.size(); i++) {
+				for (uint32_t i = 0; i < mesh->mesh->m_SubMeshIndices.size(); i++) {
 					p_Emitter << YAML::BeginMap; // Material
 					p_Emitter << YAML::Key << "Material" << YAML::Value << mesh->mesh->getMaterial(i).m_Name;
 					p_Emitter << YAML::Key << "Albedo" << YAML::Value << mesh->mesh->getMaterial(i).config.m_Albedo;
@@ -188,22 +188,22 @@ namespace vgl
 			p_Emitter << YAML::Key << "SkyBoxComponent";
 			p_Emitter << YAML::BeginMap; // SkyBoxComponent
 
-			p_Emitter << YAML::Key << "Atmospheric_Scattering" << YAML::Value << skybox->AtmosphericScattering;
+			p_Emitter << YAML::Key << "Atmospheric_Scattering" << YAML::Value << skybox->_AtmosphericScattering;
 			p_Emitter << YAML::Key << "HDR_Image_Path" << YAML::Value << skybox->HDR_Image_Path;
 
 			p_Emitter << YAML::Key << "Atmosphere_Info";
 			p_Emitter << YAML::BeginMap; // Atmosphere
-			p_Emitter << YAML::Key << "Ray_Origin" << YAML::Value << skybox->AtmosphericScatteringInfo.p_RayOrigin;
-			p_Emitter << YAML::Key << "Sun_Position" << YAML::Value << skybox->AtmosphericScatteringInfo.p_SunPos;
-			p_Emitter << YAML::Key << "Sun_Intensity" << YAML::Value << skybox->AtmosphericScatteringInfo.p_SunIntensity;
-			p_Emitter << YAML::Key << "Planet_Radius" << YAML::Value << skybox->AtmosphericScatteringInfo.p_PlanetRadius;
-			p_Emitter << YAML::Key << "Atmosphere_Radius" << YAML::Value << skybox->AtmosphericScatteringInfo.p_AtmosphereRadius;
-			p_Emitter << YAML::Key << "Rayleigh_Scale" << YAML::Value << skybox->AtmosphericScatteringInfo.p_RayleighSC;
-			p_Emitter << YAML::Key << "Mie_Scale" << YAML::Value << skybox->AtmosphericScatteringInfo.p_MieSC;
-			p_Emitter << YAML::Key << "Rayleigh_Scale_Height" << YAML::Value << skybox->AtmosphericScatteringInfo.p_RayleighSHeight;
-			p_Emitter << YAML::Key << "Mie_Scale_Height" << YAML::Value << skybox->AtmosphericScatteringInfo.p_MieSHeight;
-			p_Emitter << YAML::Key << "Mie_Scatter_Scale" << YAML::Value << skybox->AtmosphericScatteringInfo.p_MieDir;
-			p_Emitter << YAML::Key << "Scale" << YAML::Value << skybox->AtmosphericScatteringInfo.p_Scale;
+			p_Emitter << YAML::Key << "Ray_Origin" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_RayOrigin;
+			p_Emitter << YAML::Key << "Sun_Position" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_SunPos;
+			p_Emitter << YAML::Key << "Sun_Intensity" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_SunIntensity;
+			p_Emitter << YAML::Key << "Planet_Radius" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_PlanetRadius;
+			p_Emitter << YAML::Key << "Atmosphere_Radius" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_AtmosphereRadius;
+			p_Emitter << YAML::Key << "Rayleigh_Scale" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_RayleighSC;
+			p_Emitter << YAML::Key << "Mie_Scale" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_MieSC;
+			p_Emitter << YAML::Key << "Rayleigh_Scale_Height" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_RayleighSHeight;
+			p_Emitter << YAML::Key << "Mie_Scale_Height" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_MieSHeight;
+			p_Emitter << YAML::Key << "Mie_Scatter_Scale" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_MieDir;
+			p_Emitter << YAML::Key << "Scale" << YAML::Value << skybox->_AtmosphericScatteringInfo.p_Scale;
 			p_Emitter << YAML::EndMap; // Atmosphere
 
 			p_Emitter << YAML::EndMap; // SkyBoxComponent
@@ -223,13 +223,13 @@ namespace vgl
 			p_Emitter << YAML::Key << "DShadowMapComponent";
 			p_Emitter << YAML::BeginMap; // DShadowMapComponent
 
-			p_Emitter << YAML::Key << "Resolution" << YAML::Value << d_shadow_map->ShadowMap.m_Resolution.getVec2f();
+			/*p_Emitter << YAML::Key << "Resolution" << YAML::Value << d_shadow_map->ShadowMap.m_Resolution.getVec2f();
 			p_Emitter << YAML::Key << "Direction" << YAML::Value << d_shadow_map->ShadowMap.m_Direction;
 			p_Emitter << YAML::Key << "DepthBiasConstant" << YAML::Value << d_shadow_map->ShadowMap.m_DepthBiasConstant;
 			p_Emitter << YAML::Key << "DepthBiasSlope" << YAML::Value << d_shadow_map->ShadowMap.m_DepthBiasSlope;
 			p_Emitter << YAML::Key << "View_Matrix" << YAML::Value << d_shadow_map->ShadowMap.m_View;
 			p_Emitter << YAML::Key << "Projection_Matrix" << YAML::Value << d_shadow_map->ShadowMap.m_Projection;
-
+      */
 			p_Emitter << YAML::EndMap; // DShadowMapComponent
 		}
 		
@@ -293,7 +293,7 @@ namespace vgl
 		std::ofstream fout(p_FilePath);
 		fout << out.c_str();
 
-		return true;
+		return true;  
 	}
 	bool Scene::serialize_bin(const std::string& p_FilePath)
 	{
@@ -305,7 +305,7 @@ namespace vgl
 			auto mesh = getComponent<Mesh3DComponent>(handle);
 			auto shadowMap = getComponent<DShadowMapComponent>(handle);
 			
-			if(shadowMap) shadowMap->ShadowMap.destroy();
+			//if(shadowMap) shadowMap->ShadowMap.destroy();
 
 			if(mesh) if(mesh->mesh) mesh->mesh->destroy();
 
@@ -323,11 +323,11 @@ namespace vgl
 		}
 
 		std::string scene_name = data["Scene"].as<std::string>();
-		Utils::Logger::logMSG("Deserialized Scene: " + scene_name, "Scene", Utils::Severity::Info);
+    Utils::Logger::logMSG("Deserialized Scene: " + scene_name, "Scene", Utils::Severity::Info);
 
 		auto entities = data["Entities"];
 		if (entities) {
-			for (auto& entity : entities) {
+			for (auto entity : entities) {
 				std::string uuid = entity["Entity"].as<std::string>();
 				Utils::Logger::logMSG("Deserialized Entity: " + uuid, "Scene", Utils::Severity::Info);
 
@@ -335,19 +335,19 @@ namespace vgl
 
 				Mesh3DComponent* mesh = nullptr;
 				Transform3DComponent* transform = nullptr;
-				Camera3DComponent* camera = nullptr;
+				CameraComponent* camera = nullptr;
 				CameraController3DComponent* cameraController = nullptr;
 				SkyboxComponent* skybox = nullptr;
 				DirectionalLight3DComponent* directional_light = nullptr;
 				DShadowMapComponent* shadowMap = nullptr;
 
-				auto& meshNode = entity["Mesh3DComponent"];
-				auto& transformNode = entity["Transform3DComponent"];
-				auto& cameraNode = entity["CameraComponent"];
-				auto& skyboxNode = entity["SkyBoxComponent"];
-				auto& dShadowMapNode = entity["DShadowMapComponent"];
-				auto& dLightNode = entity["DirectionalLightComponent"];
-				auto& cameraControllerNode = entity["CameraController3DComponent"];
+				auto meshNode = entity["Mesh3DComponent"];
+				auto transformNode = entity["Transform3DComponent"];
+				auto cameraNode = entity["CameraComponent"];
+				auto skyboxNode = entity["SkyBoxComponent"];
+				auto dShadowMapNode = entity["DShadowMapComponent"];
+				auto dLightNode = entity["DirectionalLightComponent"];
+				auto cameraControllerNode = entity["CameraController3DComponent"];
 
 				if (meshNode) {
 					mesh = new Mesh3DComponent;
@@ -367,7 +367,7 @@ namespace vgl
 					else OBJ_Loader::loadModel((mesh->mesh->m_FileDirectory + "/").c_str(), mesh->mesh->m_FileName.c_str(), mesh->mesh, mesh->mesh->m_TangentSpaceCorrectedUV);
 
 					int i = 0;
-					for (auto& mtl : meshNode["Materials"]) {
+					for(auto mtl : meshNode["Materials"]) {
 						mesh->mesh->getMaterial(i).config.m_Albedo = mtl["Albedo"].as<Vector3f>();
 						mesh->mesh->getMaterial(i).config.m_Ambient = mtl["Ambient"].as<float>();
 						mesh->mesh->getMaterial(i).config.m_Metallic = mtl["Metallic"].as<float>();
@@ -387,7 +387,7 @@ namespace vgl
 					transform->transform.model = transformNode["Model"].as<Matrix4f>();
 					addComponent(handle, transform);
 				}
-				
+			/*	
 				if (dShadowMapNode) {
 					shadowMap = new DShadowMapComponent;
 
@@ -410,10 +410,13 @@ namespace vgl
 						vk::SamplerMode::ClampToEdge, true, true
 					);
 					shadowMap->ShadowMap.m_Attachment.create();
+          
+          
 
 					addComponent(handle, shadowMap);
 				}
-				
+			  */
+
 				if (dLightNode) {
 					directional_light = new DirectionalLight3DComponent;
 					directional_light->Direction = dLightNode["Direction"].as<Vector3f>();
@@ -423,31 +426,31 @@ namespace vgl
 				
 				if (skyboxNode) {
 					skybox = new SkyboxComponent;
-					skybox->AtmosphericScattering = skyboxNode["Atmospheric_Scattering"].as<bool>();
+					skybox->_AtmosphericScattering = skyboxNode["Atmospheric_Scattering"].as<bool>();
 					skybox->HDR_Image_Path = skyboxNode["HDR_Image_Path"].as<std::string>();
 
-					auto& atmosphereNode = skyboxNode["Atmosphere_Info"];
+					auto atmosphereNode = skyboxNode["Atmosphere_Info"];
 
-					skybox->AtmosphericScatteringInfo.p_RayOrigin			= atmosphereNode["Ray_Origin"].as<Vector3f>();
-					skybox->AtmosphericScatteringInfo.p_SunPos				= atmosphereNode["Sun_Position"].as<Vector3f>();
-					skybox->AtmosphericScatteringInfo.p_SunIntensity		= atmosphereNode["Sun_Intensity"].as<float>();
-					skybox->AtmosphericScatteringInfo.p_PlanetRadius		= atmosphereNode["Planet_Radius"].as<float>();
-					skybox->AtmosphericScatteringInfo.p_AtmosphereRadius	= atmosphereNode["Atmosphere_Radius"].as<float>();
-					skybox->AtmosphericScatteringInfo.p_RayleighSC			= atmosphereNode["Rayleigh_Scale"].as<Vector3f>();
-					skybox->AtmosphericScatteringInfo.p_MieSC				= atmosphereNode["Mie_Scale"].as<float>();
-					skybox->AtmosphericScatteringInfo.p_RayleighSHeight		= atmosphereNode["Rayleigh_Scale_Height"].as<float>();
-					skybox->AtmosphericScatteringInfo.p_MieSHeight			= atmosphereNode["Mie_Scale_Height"].as<float>();
-					skybox->AtmosphericScatteringInfo.p_MieDir				= atmosphereNode["Mie_Scatter_Scale"].as<float>();
-					skybox->AtmosphericScatteringInfo.p_Scale				= atmosphereNode["Scale"].as<float>();
+					skybox->_AtmosphericScatteringInfo.p_RayOrigin			= atmosphereNode["Ray_Origin"].as<Vector3f>();
+					skybox->_AtmosphericScatteringInfo.p_SunPos				= atmosphereNode["Sun_Position"].as<Vector3f>();
+					skybox->_AtmosphericScatteringInfo.p_SunIntensity		= atmosphereNode["Sun_Intensity"].as<float>();
+					skybox->_AtmosphericScatteringInfo.p_PlanetRadius		= atmosphereNode["Planet_Radius"].as<float>();
+					skybox->_AtmosphericScatteringInfo.p_AtmosphereRadius	= atmosphereNode["Atmosphere_Radius"].as<float>();
+					skybox->_AtmosphericScatteringInfo.p_RayleighSC			= atmosphereNode["Rayleigh_Scale"].as<Vector3f>();
+					skybox->_AtmosphericScatteringInfo.p_MieSC				= atmosphereNode["Mie_Scale"].as<float>();
+					skybox->_AtmosphericScatteringInfo.p_RayleighSHeight		= atmosphereNode["Rayleigh_Scale_Height"].as<float>();
+					skybox->_AtmosphericScatteringInfo.p_MieSHeight			= atmosphereNode["Mie_Scale_Height"].as<float>();
+					skybox->_AtmosphericScatteringInfo.p_MieDir				= atmosphereNode["Mie_Scatter_Scale"].as<float>();
+					skybox->_AtmosphericScatteringInfo.p_Scale				= atmosphereNode["Scale"].as<float>();
 
 					addComponent(handle, skybox);
 				}
 
 				if (cameraNode) {
-					camera = new Camera3DComponent;
+					camera = new CameraComponent;
 					camera->camera.setView((View)cameraNode["ViewType"].as<uint32_t>());
 					camera->camera.setViewModifier(cameraNode["ViewModZ"].as<float>());
-					camera->camera.setFieldOfView(cameraNode["PerspectiveFOV"].as<float>());
+					camera->camera.setFOV(cameraNode["PerspectiveFOV"].as<float>());
 					camera->camera.setAspectRatio(cameraNode["AspectRatio"].as<float>());
 					camera->camera.setPosition(cameraNode["Position"].as<Vector3f>());
 					camera->camera.rotation = cameraNode["Rotation"].as<Vector3f>();

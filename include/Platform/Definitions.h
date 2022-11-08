@@ -25,11 +25,4 @@ namespace vgl
 		PolygonMode p_PolygonMode = PolygonMode::Fill;
 		IATopoogy p_IATopology = IATopoogy::TriList;
 	};
-	enum class ShaderStage
-	{
-		None = -1,
-		VertexBit = 0,
-		FragmentBit = 1,
-		GeometryBit = 2
-	};
 }
