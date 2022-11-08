@@ -162,8 +162,8 @@ void main()
     //float point_light_count = ubo.viewPos.w;
     
 	#ifdef MAX_POINT_LIGHTS
-    for(int i = 0; i < int(point_light_count); i++)
-	    outColor.rgb += lightPointPBR(ubo.point_lights[i]);
+    //for(int i = 0; i < int(point_light_count); i++)
+	//    outColor.rgb += lightPointPBR(ubo.point_lights[i]);
 	#endif
     
 	outColor.r = min(max(0.0f, outColor.x), 1000);
@@ -239,6 +239,7 @@ vec3 lightDirPBR(vec3 p_Dir, vec3 p_Color)
 	vec3 R = reflect(-V, normal);
 
 	#ifdef IBL
+    const float MAX_R_LOD = 4;
 	vec3 preFilteredColor = textureLod(preFilteredMap, R, roughness * MAX_R_LOD).rgb;
 	#endif
 
@@ -314,6 +315,7 @@ vec3 lightPointPBR(PointLight p_PointLight)
 	vec3 R = reflect(-V, normal);
 
 	#ifdef IBL
+    const float MAX_R_LOD = 4;
 	vec3 preFilteredColor = textureLod(preFilteredMap, R, roughness * MAX_R_LOD).rgb;
 	#endif
 
@@ -865,7 +867,6 @@ vec2 PCSS_DirectionalLight()
 
 vec3 volumetric_ligt()
 {
-
     vec3 ray = fragPos.xyz - ubo.viewPos.xyz;
 
     float ray_length = length(ray);

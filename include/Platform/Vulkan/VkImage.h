@@ -82,6 +82,8 @@ namespace vgl
 			VkDescriptorSet m_DescriptorSet;
 			VkDescriptorSetLayout m_DescriptorSetLayout;
 
+			VkDescriptorSet m_ImGuiDescriptorSet;
+
 			// Channels used by the image
 			Channels m_CurrentChannels;
 			// Corresponding formats for number of channels, used as a lookup

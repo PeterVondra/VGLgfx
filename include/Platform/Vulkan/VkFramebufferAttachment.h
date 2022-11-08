@@ -50,7 +50,7 @@ namespace vgl
 				p_AttachmentInfo.p_InitialLayout = Layout::Undefined;
 				p_AttachmentInfo.p_FinalLayout = p_Layout;
 				p_AttachmentInfo.p_AttachmentType = 
-					(p_ImageFormat == ImageFormat::D16UN || p_ImageFormat == ImageFormat::D32SF ? AttachmentType::Depth : AttachmentType::Color);
+					((p_ImageFormat == ImageFormat::D16UN || p_ImageFormat == ImageFormat::D32SF) ? AttachmentType::Depth : AttachmentType::Color);
 
 				m_IsValid = true;
 			}

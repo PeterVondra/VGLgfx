@@ -38,11 +38,10 @@ vec3 reconstructVSPosFromDepth(vec2 uv)
 
 void main()
 {
-	mat4 view = inverse(ubo.projection)* ubo.view;
+	mat4 view = inverse(ubo.projection) * ubo.view;
 	noiseScale = textureSize(in_Position, 0);
 	vec2 noiseSize = textureSize(in_Noise, 0);
 	noiseScale /= noiseSize;
-
 	
 	vec3 fragPos = (view * vec4(texture(in_Position, UV).xyz, 1.0f)).xyz;
 	
@@ -108,6 +107,6 @@ void main()
 	//	occlusion += (sampleDepth >= sampleZ + 0.025 ? 1.0f : 0.0f) * range;
 	//}
 
-	occlusion = 1.0f - (occlusion / 64);
+	occlusion = 1.0f - (occlusion / ubo.kernel_size);
 	outColor = pow(occlusion, ubo.intensity);
 }

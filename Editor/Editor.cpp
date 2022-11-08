@@ -65,24 +65,21 @@ namespace vgl
 
 		auto shadow_map = new DShadowMapComponent;
 
-		//shadow_map->ShadowMap.m_DepthBiasConstant = 1.00005;
-		//shadow_map->ShadowMap.m_DepthBiasSlope = 1.0005;
-		//shadow_map->ShadowMap.m_Direction = directional_light->Direction;
-		//shadow_map->ShadowMap.m_Resolution = { int32_t(4096*1.5), int32_t(4096*1.5) };
-		//shadow_map->ShadowMap.m_Projection = Matrix4f::orthoRH_ZO(-3000, 3000, -3000, 3000, 1, 4800);
-		////shadow_map->ShadowMap.m_Projection = Matrix4f::perspectiveRH_ZO(45, 1, 1, 4800);
-		//
-		//// Create shadow map framebuffer
-		//shadow_map->ShadowMap.m_Attachment.m_FramebufferAttachmentInfo.p_RectangleData = const_cast<VertexArray*>(&GraphicsContext::getRecVao());
-		//shadow_map->ShadowMap.m_Attachment.m_FramebufferAttachmentInfo.p_Size = shadow_map->ShadowMap.m_Resolution;
-		//shadow_map->ShadowMap.m_Attachment.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
-		//	shadow_map->ShadowMap.m_Resolution,
-		//	ImageFormat::D16UN_1C,
-		//	Layout::DepthR,
-		//	BorderColor::OpaqueWhite,
-		//	SamplerMode::ClampToEdge, true, true
-		//);
-		//shadow_map->ShadowMap.m_Attachment.create();
+			shadow_map->ShadowMap.m_DepthBiasConstant = 1.00005;
+			shadow_map->ShadowMap.m_DepthBiasSlope = 1.0005;
+			shadow_map->ShadowMap.m_Direction = directional_light->Direction;
+			shadow_map->ShadowMap.m_Resolution = { int32_t(4096*1.5), int32_t(4096*1.5) };
+			shadow_map->ShadowMap.m_Projection = Matrix4f::orthoRH_ZO(-3000, 3000, -3000, 3000, 1, 4800);
+			//shadow_map->ShadowMap.m_Projection = Matrix4f::perspectiveRH_ZO(45, 1, 1, 4800);
+			
+			// Create shadow map framebuffer
+			shadow_map->ShadowMap.m_Attachment.m_FramebufferAttachmentInfo.p_Size = shadow_map->ShadowMap.m_Resolution;
+			shadow_map->ShadowMap.m_Attachment.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
+				shadow_map->ShadowMap.m_Resolution,
+				ImageFormat::D32SF,
+				Layout::DepthR
+			);
+			shadow_map->ShadowMap.m_Attachment.create();
 
 		m_DirectionalLightEntity = m_Scene.addEntity(*directional_light, *shadow_map, *(new EntityNameComponent("Directional Light")));
 
@@ -109,19 +106,19 @@ namespace vgl
 
 		auto shadow_map = m_Scene.getComponent<DShadowMapComponent>(m_DirectionalLightEntity);
 
-		//if (Input::keyIsDown(Key::Left))
-		//	shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 1, 0 }, rotSpeed);
-		//else if (Input::keyIsDown(Key::Right))
-		//	shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 1, 0 }, -rotSpeed);
-		//if (Input::keyIsDown(Key::Up))
-		//	shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 0, 1 }, rotSpeed);
-		//else if (Input::keyIsDown(Key::Down))
-		//	shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 0, 1 }, -rotSpeed);
+		if (Input::keyIsDown(Key::Left))
+			shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 1, 0 }, rotSpeed);
+		else if (Input::keyIsDown(Key::Right))
+			shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 1, 0 }, -rotSpeed);
+		if (Input::keyIsDown(Key::Up))
+			shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 0, 1 }, rotSpeed);
+		else if (Input::keyIsDown(Key::Down))
+			shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 0, 1 }, -rotSpeed);
 
-		//shadow_map->ShadowMap.m_View = Matrix4f::lookAtRH(shadow_map->ShadowMap.m_Direction*3000, { 0,0,0 }, { 0, 1, 0 });
+		shadow_map->ShadowMap.m_View = Matrix4f::lookAtRH(shadow_map->ShadowMap.m_Direction*3000, { 0,0,0 }, { 0, 1, 0 });
 
-		//if(Input::keyIsPressed(Key::R))
-		//	shadow_map->ShadowMap.m_Direction = { 0.333, 1, 0.333 };
+		if(Input::keyIsPressed(Key::R))
+			shadow_map->ShadowMap.m_Direction = { 0.333, 1, 0.333 };
 
 		m_CameraController.setDeltaTime(m_WindowPtr->getDeltaTime());
 		m_CameraController.update();
@@ -164,8 +161,8 @@ namespace vgl
 		auto shadow_map = m_Scene.getComponent<DShadowMapComponent>(m_DirectionalLightEntity);
 
 		ImGui::Begin("Shadow Map", nullptr, ImGuiWindowFlags_NoDecoration);
-		//ImGuiContext::Image(shadow_map->ShadowMap.m_Attachment.getImageAttachment()[m_RendererPtr->getImageIndex()][0].getImage(), ImGui::GetContentRegionAvail());
-		//ImGuiContext::Image(m_RenderPipeline.m_SSRFramebuffer.getImageAttachment()[m_RendererPtr->getImageIndex()][0].getImage(), ImGui::GetContentRegionAvail());
+		ImGuiContext::Image(shadow_map->ShadowMap.m_Attachment.getCurrentImageAttachments()[0].getImage(), ImGui::GetContentRegionAvail());
+		ImGuiContext::Image(m_RenderPipeline.m_SSRFramebuffer.getCurrentImageAttachments()[0].getImage(), ImGui::GetContentRegionAvail());
 		ImGui::End();
 	
 		ImGui::Begin("GBuffer", nullptr);

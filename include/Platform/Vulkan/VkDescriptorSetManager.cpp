@@ -88,6 +88,16 @@ namespace vgl
 		{
 			if (!m_DescriptorSetInfo->p_UniformBuffers[(int)p_ShaderStage].m_MappedData.empty())
 			{
+				if (m_ContextPtr->m_ImageIndex >= m_ContextPtr->m_SwapchainImageCount || m_ContextPtr->m_ImageIndex == UINT32_MAX) {
+					// Rendering has not yet begun, copy data to all(-->m_SwapchainImageCount) buffer offset partitions
+					for (int i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+						m_ContextPtr->waitForFences();
+						void* mapped = (char*)(m_DescriptorSetInfo->p_UniformBuffers[(int)p_ShaderStage].m_MappedData[i]) + p_Offset;
+						memcpy(mapped, p_Data, p_Size);
+					}
+					return;
+				}
+				m_ContextPtr->waitForFences();
 				void* mapped = (char*)(m_DescriptorSetInfo->p_UniformBuffers[(int)p_ShaderStage].m_MappedData[m_ContextPtr->m_ImageIndex]) + p_Offset;
 				memcpy(mapped, p_Data, p_Size);
 			}
@@ -99,6 +109,7 @@ namespace vgl
 			for(int i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
 				if (!m_DescriptorSetInfo->p_StorageBuffer.m_MappedData.empty())
 				{
+					m_ContextPtr->waitForFences();
 					void* mapped = (char*)(m_DescriptorSetInfo->p_StorageBuffer.m_MappedData[i]) + p_Offset;
 					memcpy(mapped, p_Data, p_Size);
 				}
@@ -623,16 +634,6 @@ namespace vgl
 				m_Size = 0;
 				m_IsValid = false;
 			}
-		}
-		VkShaderStageFlagBits getShaderStageVkH(ShaderStage p_ShaderStage)
-		{
-			if(p_ShaderStage == ShaderStage::VertexBit)
-				return VK_SHADER_STAGE_VERTEX_BIT;
-			if(p_ShaderStage == ShaderStage::FragmentBit)
-				return VK_SHADER_STAGE_FRAGMENT_BIT;
-			if(p_ShaderStage == ShaderStage::GeometryBit)
-				return VK_SHADER_STAGE_GEOMETRY_BIT;
-			return VK_SHADER_STAGE_ALL;
 		}
 	}
 }

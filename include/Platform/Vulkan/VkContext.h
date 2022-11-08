@@ -1,6 +1,7 @@
 #pragma once
 
 // HELLO THIS IS VGL
+#include "../../Utils/Logger.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include<GLFW/glfw3.h>
@@ -10,7 +11,7 @@
 #include <set>
 #include <string>
 
-#include "VkDescriptorLayoutCache.h"
+#include "VkDescriptorLayoutCache.h"
 
 #include "../../../lib/VulkanMemoryAllocator/src/vk_mem_alloc.h"
 
@@ -133,7 +134,8 @@ namespace vgl
 
 				VkSurfaceKHR* m_SurfacePtr;
 				uint16_t m_SwapchainImageCount;
-				uint32_t m_ImageIndex;
+				uint32_t m_ImageIndex = UINT32_MAX; // Image index for frame that is not currently occupied by renderer
+				uint32_t m_CurrentFrame = UINT32_MAX; // Current frame that is currently occupied by the renderer
 
 				bool m_Initialized = false;
 
@@ -145,18 +147,21 @@ namespace vgl
 				DescriptorAllocator m_DescriptorAllocator;
 				DescriptorLayoutCache m_DescriptorSetLayoutCache;
 
+				std::vector<VkFence>* m_InFlightFencesPtr = nullptr;
+
 			public:
 				// Initialize Vulkan Memory Allocator
 				void VMA_Init();
 
 				void deviceWaitIdle();
+				void waitForFences();
 
 				VkCommandBuffer beginSingleTimeCmds();
 				void endSingleTimeCmds(VkCommandBuffer& p_CommandBuffer);
 
 				// Utility functions for image handling
 				void setImageLayout(VkCommandBuffer p_CommandBuffer, VkImage p_Image, VkImageAspectFlags p_Aspect, VkImageLayout p_OldLayout, VkImageLayout p_NewLayout);
-				void setImageLayout(VkCommandBuffer p_CommandBuffer, VkImage p_Image, VkImageLayout p_OldLayout, VkImageLayout p_NewLayout, VkImageSubresourceRange p_SubRSRCRange);
+				void setImageLayout(VkCommandBuffer p_CommandBuffer, VkImage p_Image, VkImageLayout p_OldLayout, VkImageLayout p_NewLayout, VkImageSubresourceRange p_SubRSRCRange, VkFormat p_Format = (VkFormat)0);
 				void transitionLayoutImage(VkImage p_Image, VkFormat p_Format, VkImageLayout p_OldLayout, VkImageLayout p_NewLayout, uint32_t p_MipLevels = 1, uint32_t p_ArrayLayers = 1);
 				void copyBufferToImage(VkBuffer& p_Buffer, VkImage& p_Image, uint32_t p_Width, uint32_t p_Height, uint32_t p_ArrayLayers = 1);
 

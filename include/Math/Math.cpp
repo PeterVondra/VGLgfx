@@ -35,18 +35,26 @@ Vector2f Math::cross(const float a, const Vector2f b)
 	return Vector2f(-a * b.y, a * b.x);
 }
 
-Vector2f Math::rotate(const Vector2f p_Vector, const float p_Degrees)
+Vector2f Math::rotate(const Vector2f p_Vector, const float p_Theta)
 {
-	if (p_Degrees != 0)
+	if (p_Theta != 0)
 	{
 		Vector2f result;
 
-		result.x = p_Vector.x * cos(p_Degrees * DEG2RAD) - p_Vector.y * sin(p_Degrees * DEG2RAD);
-		result.y = p_Vector.x * sin(p_Degrees * DEG2RAD) + p_Vector.y * cos(p_Degrees * DEG2RAD);
+		result.x = p_Vector.x * cos(p_Theta * DEG2RAD) - p_Vector.y * sin(p_Theta * DEG2RAD);
+		result.y = p_Vector.x * sin(p_Theta * DEG2RAD) + p_Vector.y * cos(p_Theta * DEG2RAD);
 
 		return result;
 	}
 	return p_Vector;
+}
+
+Vector3f Math::rotate(const Vector3f p_Vector, Vector3f p_Direction, const float p_Theta)
+{
+    double cos_theta = cos(p_Theta);
+    double sin_theta = sin(p_Theta);
+
+    return (p_Vector * cos_theta) + (cross(p_Direction, p_Vector) * sin_theta) + (p_Direction * dot(p_Direction, p_Vector)) * (1 - cos_theta);
 }
 
 double Math::sqrt(double num)

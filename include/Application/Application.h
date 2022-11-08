@@ -1,7 +1,8 @@
 #pragma once
 
-#include "LayerStack.h"
+#include "../Utils/Logger.h"
 #include "../VGL_Internal.h"
+#include "LayerStack.h"
 
 namespace vgl
 {

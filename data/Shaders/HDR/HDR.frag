@@ -193,6 +193,8 @@ void main()
 	
 	if (ubo.autofocus > 0)
 		fDepth = linearize(texture(imageHDR,ubo.focus).w);
+
+	sbo.prevDepth = fDepth;
 	
 	//dof blur factor calculation
 	
@@ -233,7 +235,7 @@ void main()
 	
 	vec3 col = vec3(0.0);
 	
-	if(blur >= 0.05) //some optimization thingy
+	if(blur >= 0.03) // optimization
 	{
 		col = texture(imageHDR, UV.xy).rgb;
 		float s = 1.0;
@@ -266,7 +268,7 @@ void main()
 	float exposure = pushConstants.exposure;
     //vec3 bloomColor = texture(imageBloom, UV).rgb;
     
-	if(blur < 0.05){
+	if(blur < 0.03){
 		// FXAA
 		vec2 texSize = 1.0f/textureSize(imageHDR, 0);
 		
@@ -323,7 +325,7 @@ void main()
 	
 	exposure = abs(sbo.prevExposure + (exposure - sbo.prevExposure)*time_c);
 	
-	exposure = max(0.4, exposure);
+	exposure = max(0.7, exposure);
 
 	//exposure = pushConstants.exposure * mix(sbo.prevExposure, 0.5/avgLuma, 0.02);
 	

@@ -304,14 +304,17 @@ namespace vgl
 
 		void CommandBuffer::cmdDrawIndexed(uint32_t p_FirstIndex, uint32_t p_LastIndex)
 		{
+			if (p_FirstIndex == p_LastIndex) return;
 			vkCmdDrawIndexed(m_CommandBuffer, p_LastIndex - p_FirstIndex, 1, p_FirstIndex, 0, 0);
 		}
 		void CommandBuffer::cmdDrawIndexed(uint32_t p_VertexOffset, uint32_t p_FirstIndex, uint32_t p_LastIndex)
 		{
+			if (p_FirstIndex == p_LastIndex) return;
 			vkCmdDrawIndexed(m_CommandBuffer, p_LastIndex - p_FirstIndex, 1, p_FirstIndex, p_VertexOffset, 0);
 		}
 		void CommandBuffer::cmdDrawIndexedInstanced(uint32_t p_FirstIndex, uint32_t p_LastIndex, uint32_t p_Instances)
 		{
+			if (p_FirstIndex == p_LastIndex) return;
 			vkCmdDrawIndexed(m_CommandBuffer, p_LastIndex - p_FirstIndex, p_Instances, p_FirstIndex, 0, 0);
 		}
 		void CommandBuffer::cmdDraw(const uint32_t p_VertexCount)

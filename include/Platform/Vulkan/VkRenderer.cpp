@@ -1,4 +1,5 @@
 #include "VkRenderer.h"
+#include "VkGraphics_Internal.h"
 
 namespace vgl
 {
@@ -25,7 +26,24 @@ namespace vgl
 			}
 		};
 
-		Renderer::Renderer() : m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_PostSwapchainRenderPass(RenderPassType::Graphics), m_ImGuiContext(nullptr)
+		D_ShadowMap::D_ShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_CommandBufferIdx(0) {
+			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+				for (uint32_t j = 0; j < 500; j++) {
+					m_CommandBuffers[i].emplace_back(i, Level::Secondary);
+					m_Descriptors.emplace_back();
+				}
+			}
+			m_DescriptorAlbedoInfo.resize(1000);
+
+			m_Attachment.m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_RenderPass = &GraphicsContextSingleton::getInstance().getDShadowMapRenderPass();
+		}
+
+		Renderer::Renderer()
+			: m_ContextPtr(&ContextSingleton::getInstance()),
+			m_GraphicsContextPtr(&GraphicsContextSingleton::getInstance()),
+			m_DefaultRenderPass(RenderPassType::Graphics),
+			m_PostSwapchainRenderPass(RenderPassType::Graphics),
+			m_ImGuiContext(nullptr)
 		{ 
 			m_CommandBuffers.resize(m_ContextPtr->m_SwapchainImageCount);
 			for (int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
@@ -48,6 +66,7 @@ namespace vgl
 			m_Viewport.m_Size = m_WindowPtr->getWindowSize();
 
 			createSyncObjects();
+			m_ContextPtr->m_InFlightFencesPtr = &m_InFlightFences;
 
 			createDefaultRenderPass();
 			createDepthImageAttachment();
@@ -56,9 +75,15 @@ namespace vgl
 
 			createPostSwapchainRenderPass();
 			m_ImGuiContext.init(m_PostSwapchainRenderPass);
+
+			m_GraphicsContextPtr->init();
 		}
 		Renderer::Renderer(Window* p_Window) 
-			: m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_PostSwapchainRenderPass(RenderPassType::Graphics), m_ImGuiContext(p_Window)
+			: m_ContextPtr(&ContextSingleton::getInstance()),
+			m_GraphicsContextPtr(&GraphicsContextSingleton::getInstance()),
+			m_DefaultRenderPass(RenderPassType::Graphics),
+			m_PostSwapchainRenderPass(RenderPassType::Graphics),
+			m_ImGuiContext(p_Window)
 		{
 			m_CommandBuffers.resize(m_ContextPtr->m_SwapchainImageCount);
 			for (int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
@@ -83,6 +108,7 @@ namespace vgl
 			m_Viewport.m_Size = m_WindowPtr->getWindowSize();
 
 			createSyncObjects();
+			m_ContextPtr->m_InFlightFencesPtr = &m_InFlightFences;
 
 			createDefaultRenderPass();
 			createDepthImageAttachment();
@@ -91,9 +117,15 @@ namespace vgl
 
 			createPostSwapchainRenderPass();
 			m_ImGuiContext.init(m_PostSwapchainRenderPass);
+
+			m_GraphicsContextPtr->init();
 		}
 		Renderer::Renderer(Window& p_Window) 
-			: m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_PostSwapchainRenderPass(RenderPassType::Graphics), m_ImGuiContext(&p_Window)
+			: m_ContextPtr(&ContextSingleton::getInstance()),
+			m_GraphicsContextPtr(&GraphicsContextSingleton::getInstance()),
+			m_DefaultRenderPass(RenderPassType::Graphics),
+			m_PostSwapchainRenderPass(RenderPassType::Graphics),
+			m_ImGuiContext(&p_Window)
 		{
 			m_CommandBuffers.resize(m_ContextPtr->m_SwapchainImageCount);
 			for (int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
@@ -118,6 +150,7 @@ namespace vgl
 			m_Viewport.m_Size = m_WindowPtr->getWindowSize();
 
 			createSyncObjects();
+			m_ContextPtr->m_InFlightFencesPtr = &m_InFlightFences;
 
 			createDefaultRenderPass();
 			createDepthImageAttachment();
@@ -126,9 +159,15 @@ namespace vgl
 
 			createPostSwapchainRenderPass();
 			m_ImGuiContext.init(m_PostSwapchainRenderPass);
+
+			m_GraphicsContextPtr->init();
 		}
 		Renderer::Renderer(Window& p_Window, float p_RenderResolutionScale) 
-			: m_ContextPtr(&ContextSingleton::getInstance()), m_DefaultRenderPass(RenderPassType::Graphics), m_PostSwapchainRenderPass(RenderPassType::Graphics), m_ImGuiContext(&p_Window)
+			: m_ContextPtr(&ContextSingleton::getInstance()),
+			m_GraphicsContextPtr(&GraphicsContextSingleton::getInstance()),
+			m_DefaultRenderPass(RenderPassType::Graphics),
+			m_PostSwapchainRenderPass(RenderPassType::Graphics),
+			m_ImGuiContext(&p_Window)
 		{ 
 			m_CommandBuffers.resize(m_ContextPtr->m_SwapchainImageCount);
 			for (int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
@@ -154,6 +193,7 @@ namespace vgl
 			m_Viewport.m_Size = m_WindowPtr->getWindowSize();
 
 			createSyncObjects();
+			m_ContextPtr->m_InFlightFencesPtr = &m_InFlightFences;
 
 			createDefaultRenderPass();
 			createDepthImageAttachment();
@@ -162,6 +202,8 @@ namespace vgl
 
 			createPostSwapchainRenderPass();
 			m_ImGuiContext.init(m_PostSwapchainRenderPass);
+
+			m_GraphicsContextPtr->init();
 		}
 
 		void Renderer::beginRenderPass(RenderInfo& p_RenderInfo)
@@ -179,7 +221,7 @@ namespace vgl
 
 			m_RecordPrimaryCmdBuffersFunPtrs.emplace_back(&p_FramebufferAttachment, &Renderer::primaryRecFun);
 		}
-		/*void Renderer::beginRenderPass(RenderInfo& p_RenderInfo, D_ShadowMap& p_ShadowMap)
+		void Renderer::beginRenderPass(RenderInfo& p_RenderInfo, D_ShadowMap& p_ShadowMap)
 		{
 			p_ShadowMap.m_CommandBufferIdx = 0;
 
@@ -191,7 +233,7 @@ namespace vgl
 			m_RecordMeshDataFun = &Renderer::shadowMapRecordMeshData;
 
 			m_RecordPrimaryCmdBuffersFunPtrs.emplace_back(&p_ShadowMap, &Renderer::primaryShadowRecFun);
-		}*/
+		}
 
 		void Renderer::submit(Camera& p_Camera)
 		{
@@ -329,18 +371,18 @@ namespace vgl
 		}
 		void Renderer::shadowMapRecordMeshData(MeshData& p_MeshData, Transform3D& p_Transform)
 		{
-			DescriptorSetManager& descriptor = m_DShadowMapPtr->m_Descriptors[m_DShadowMapPtr->m_CommandBufferIdx];
+			//DescriptorSetManager& descriptor = m_DShadowMapPtr->m_Descriptors[m_DShadowMapPtr->m_CommandBufferIdx];
+			//
+			//if (!descriptor.isValid())
+			//	descriptor.create(m_DShadowMapPtr->m_DescriptorInfo[m_DShadowMapPtr->m_CommandBufferIdx]);
 
-			if (!descriptor.isValid())
-				descriptor.create(m_DShadowMapPtr->m_DescriptorInfo[m_DShadowMapPtr->m_CommandBufferIdx]);
-
-			descriptor.copy(ShaderStage::VertexBit, p_Transform.model * m_DShadowMapPtr->m_View * m_DShadowMapPtr->m_Projection, 0);
+			//descriptor.copy(ShaderStage::VertexBit, p_Transform.model * m_DShadowMapPtr->m_View * m_DShadowMapPtr->m_Projection, 0);
 
 			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
 				CommandBuffer& cmd = m_DShadowMapPtr->m_CommandBuffers[i][m_DShadowMapPtr->m_CommandBufferIdx];
 
 				// Shadow map rendering
-				cmd.cmdBegin(m_DShadowMapPtr->m_Attachment.m_InheritanceInfo[0]);
+				cmd.cmdBegin(m_DShadowMapPtr->m_Attachment.m_InheritanceInfo[i]);
 
 				cmd.cmdSetViewport(
 					Viewport({
@@ -355,32 +397,57 @@ namespace vgl
 						)
 				);
 
-				cmd.cmdBindPipeline(GraphicsContext::getDShadowMapPipeline());
-				cmd.cmdBindDescriptorSets(m_DShadowMapPtr->m_Descriptors[m_DShadowMapPtr->m_CommandBufferIdx]);
+				Matrix4f data = p_Transform.model * m_DShadowMapPtr->m_View * m_DShadowMapPtr->m_Projection;
 
 				vkCmdSetDepthBias
 				(
 					cmd.m_CommandBuffer,
 					m_DShadowMapPtr->m_DepthBiasConstant,
-					0.00f,
+					0.0f,
 					m_DShadowMapPtr->m_DepthBiasSlope
 				);
 
+				uint32_t albedo_concurrent = 0;
+				uint32_t default_concurrent = 0;
 				cmd.cmdBindVertexArray(p_MeshData.m_VertexArray);
 				uint32_t prevIndex = 0;
-				for (int i = 0; i < p_MeshData.m_Materials.size(); i++) {
+				for (int j = 0; j < p_MeshData.m_Materials.size(); j++) {
 					// Should material be rendered?
-					if (!p_MeshData.m_Materials[i].config.render) {
-						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[i].first);
-						prevIndex = p_MeshData.m_SubMeshIndices[i].second;
+					if (!p_MeshData.m_Materials[j].config.render) {
+						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].first);
+						prevIndex = p_MeshData.m_SubMeshIndices[j].second;
+					}
+					else if (p_MeshData.m_Materials[j].m_AlbedoMap.isValid()) {
+						if (albedo_concurrent == 0) { // --> If pipeline is already bound, skip this step
+							cmd.cmdBindPipeline(m_GraphicsContextPtr->getDShadowMapAlbedoPipeline());
+							vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getDShadowMapAlbedoPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Matrix4f), &data);
+						}
+						vkCmdBindDescriptorSets(
+							cmd.vkHandle(),
+							VK_PIPELINE_BIND_POINT_GRAPHICS,
+							m_GraphicsContextPtr->getDShadowMapAlbedoPipeline().m_PipelineLayout,
+							0, 1,
+							&p_MeshData.m_Materials[j].m_AlbedoMap.m_DescriptorSet,
+							0, nullptr
+						);
+
+						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].second);
+						prevIndex = p_MeshData.m_SubMeshIndices[j].second;
+						albedo_concurrent++;
+						default_concurrent = 0;
+					}
+					else {
+						if (default_concurrent == 0) { // --> If pipeline is already bound, skip this step
+							cmd.cmdBindPipeline(m_GraphicsContextPtr->getDShadowMapPipeline());
+							vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getDShadowMapPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Matrix4f), &data);
+						}
+						cmd.cmdDrawIndexed(prevIndex, p_MeshData.indices.size());
+						albedo_concurrent = 0;
+						default_concurrent++;
 					}
 				}
-
-				cmd.cmdDrawIndexed(prevIndex, p_MeshData.indices.size());
-
 				cmd.cmdEnd();
 			}
-
 			m_DShadowMapPtr->m_CommandBufferIdx++;
 		}
 		
@@ -729,7 +796,6 @@ namespace vgl
 			FramebufferAttachment* framebufferPtr = (FramebufferAttachment*)p_Ptr;
 
 			if (framebufferPtr) {
-				//m_ContextPtr->m_ImageIndex = p_ImageIndex;
 				if (framebufferPtr->m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_CreateGraphicsPipeline)
 					framebufferPtr->recordCmdBuffer(p_PrimaryCommandBuffer, p_ImageIndex);
 				else{
@@ -799,6 +865,7 @@ namespace vgl
 			m_CurrentFrame = GET_CURRENT_IMAGE_INDEX(m_CurrentFrame);
 
 			m_ContextPtr->m_ImageIndex = m_ImageIndex;
+			m_ContextPtr->m_CurrentFrame = m_CurrentFrame;
 
 			vkWaitForFences(m_ContextPtr->m_Device, 1, &m_ImagesInFlight[m_ImageIndex], VK_TRUE, UINT64_MAX);
 		}

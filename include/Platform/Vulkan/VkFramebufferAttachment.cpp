@@ -110,6 +110,7 @@ namespace vgl
 					attachmentInfo.p_BorderColor = FBAinfo.p_AttachmentDescriptors[j].p_BorderColor;
 					attachmentInfo.p_SamplerMode = FBAinfo.p_AttachmentDescriptors[j].p_SamplerMode;
 					attachmentInfo.p_Size = FBAinfo.p_Size;
+					attachmentInfo.p_TransitionLayoutImage = true;
 					m_ImageAttachments[i][j].create(attachmentInfo);
 
 					if (FBAinfo.p_AttachmentDescriptors[j].p_AllowMipMapping) {
@@ -127,7 +128,7 @@ namespace vgl
 			m_InheritanceInfo.resize(m_ContextPtr->m_SwapchainImageCount);
 			for(uint16_t i = 0; i < m_InheritanceInfo.size(); i++){
 				m_InheritanceInfo[i].sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-				m_InheritanceInfo[i].renderPass = m_RenderPass.m_RenderPass;
+				m_InheritanceInfo[i].renderPass = FBAinfo.p_RenderPipelineInfo.p_RenderPass->m_RenderPass;
 				m_InheritanceInfo[i].framebuffer = m_Framebuffer[i].m_Framebuffer;
 			}
 		}

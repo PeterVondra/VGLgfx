@@ -8,10 +8,10 @@ namespace vgl
 {
 	namespace vk
 	{
+		// Pre-declarations
+		class CommandBuffer;
+		class FramebufferAttachment;
 		class ImGuiContext;
-
-		// Get vulkan handle for the shader stage
-		VkShaderStageFlagBits getShaderStageVkH(ShaderStage p_ShaderStage);
 
 		// Double/Triple buffered depending on the swapchain setup
 		struct UniformBuffer
@@ -226,6 +226,7 @@ namespace vgl
 
 				void copyToStorageBuffer(void* p_Data, uint64_t p_Size, uint64_t p_Offset);
 				void copy(ShaderStage p_ShaderStage, void* p_Data, uint64_t p_Size, uint64_t p_Offset);
+
 				template<typename T> void copy(ShaderStage p_ShaderStage, T&& p_Data, uint64_t p_Offset) {
 					copy(p_ShaderStage, &p_Data, sizeof(T), p_Offset);
 				}

@@ -31,7 +31,26 @@ class TestLayer : public vgl::Layer
 			auto directional_light = new vgl::DirectionalLight3DComponent;
 			directional_light->Color = { 7, 7, 7 };
 			directional_light->Direction = { 0.333, 1, 0.333 };
-			m_DirectionalLightEntity = m_Scene.addEntity(*directional_light, *(new vgl::EntityNameComponent("Directional Light")));
+
+			auto shadow_map = new vgl::DShadowMapComponent;
+
+			shadow_map->ShadowMap.m_DepthBiasConstant = 1.005;
+			shadow_map->ShadowMap.m_DepthBiasSlope = 1.05;
+			shadow_map->ShadowMap.m_Direction = directional_light->Direction;
+			shadow_map->ShadowMap.m_Resolution = { int32_t(4096*1.5), int32_t(4096*1.5) };
+			shadow_map->ShadowMap.m_Projection = Matrix4f::orthoRH_ZO(-3000, 3000, -3000, 3000, 1, 4800);
+			//shadow_map->ShadowMap.m_Projection = Matrix4f::perspectiveRH_ZO(45, 1, 1, 4800);
+			
+			// Create shadow map framebuffer
+			shadow_map->ShadowMap.m_Attachment.m_FramebufferAttachmentInfo.p_Size = shadow_map->ShadowMap.m_Resolution;
+			shadow_map->ShadowMap.m_Attachment.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
+				shadow_map->ShadowMap.m_Resolution,
+				vgl::ImageFormat::D32SF,
+				vgl::Layout::DepthR
+			);
+			shadow_map->ShadowMap.m_Attachment.create();
+
+			m_DirectionalLightEntity = m_Scene.addEntity(*directional_light, *shadow_map, *(new vgl::EntityNameComponent("Directional Light")));
 
 			m_RenderPipeline.setup(m_RendererPtr, m_WindowPtr, &m_Scene);
 			vgl::ImageLoader::getImageFromPath(img, "data/CMakeResources/Vulkan.png");
@@ -43,6 +62,22 @@ class TestLayer : public vgl::Layer
 				m_WindowPtr->toggleFullscreen();
 			
 			float rotSpeed = m_WindowPtr->getDeltaTime() / 1.2;
+
+			auto shadow_map = m_Scene.getComponent<vgl::DShadowMapComponent>(m_DirectionalLightEntity);
+
+			if (vgl::Input::keyIsDown(vgl::Key::Left))
+				shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 1, 0 }, rotSpeed);
+			else if (vgl::Input::keyIsDown(vgl::Key::Right))
+				shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 1, 0 }, -rotSpeed);
+			if (vgl::Input::keyIsDown(vgl::Key::Up))
+				shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 0, 1 }, rotSpeed);
+			else if (vgl::Input::keyIsDown(vgl::Key::Down))
+				shadow_map->ShadowMap.m_Direction = Math::rotate(shadow_map->ShadowMap.m_Direction, { 0, 0, 1 }, -rotSpeed);
+
+			shadow_map->ShadowMap.m_View = Matrix4f::lookAtRH(shadow_map->ShadowMap.m_Direction * 3000, { 0,0,0 }, { 0, 1, 0 });
+
+			if (vgl::Input::keyIsPressed(vgl::Key::R))
+				shadow_map->ShadowMap.m_Direction = { 0.333, 1, 0.333 };
 
 			m_CameraController.setDeltaTime(m_WindowPtr->getDeltaTime());
 			m_CameraController.update();
@@ -63,7 +98,10 @@ class TestLayer : public vgl::Layer
 
 			ImGui::DockSpaceOverViewport();
 
-			ImGui::ShowDemoWindow();
+			auto shadow_map = m_Scene.getComponent<vgl::DShadowMapComponent>(m_DirectionalLightEntity);
+			ImGui::Begin("Shadow Map", nullptr, ImGuiWindowFlags_NoDecoration);
+			vgl::ImGuiContext::Image(shadow_map->ShadowMap.m_Attachment.getCurrentImageAttachments()[0].getImage(), ImGui::GetContentRegionAvail());
+			ImGui::End();
 
 			ImGui::Begin("GBuffer", nullptr);
 			vgl::ImGuiContext::Image(m_RenderPipeline.m_GBuffer.getCurrentImageAttachments()[0].getImage(), { (float)ImGui::GetContentRegionAvail().x, (float)ImGui::GetContentRegionAvail().x });

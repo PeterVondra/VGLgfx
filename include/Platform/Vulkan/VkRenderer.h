@@ -19,16 +19,7 @@ namespace vgl
 
 		struct D_ShadowMap
 		{
-			D_ShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_CommandBufferIdx(0) {
-				for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
-					for (uint32_t j = 0; j < 500; j++) {
-						m_CommandBuffers[i].emplace_back(i, Level::Secondary);
-						m_Descriptors.emplace_back();
-					}
-				}
-
-				m_DescriptorAlbedoInfo.resize(1000);
-			}
+			D_ShadowMap();
 			~D_ShadowMap() {}
 
 			FramebufferAttachment m_Attachment;
@@ -38,8 +29,8 @@ namespace vgl
 			Vector2i m_Resolution;
 			Vector3f m_Direction;
 
-			float m_DepthBiasConstant;
-			float m_DepthBiasSlope;
+			float m_DepthBiasConstant = 1.00005;
+			float m_DepthBiasSlope = 1.0005;
 
 			void destroy() {
 				m_Attachment.destroy();
@@ -74,7 +65,10 @@ namespace vgl
 				Renderer(Window& p_Window);
 				Renderer(Window& p_Window, float p_RenderResolutionScale);
 
-				void begin(){}
+				void begin(){
+					m_ContextPtr->m_ImageIndex = m_ImageIndex;
+					m_ContextPtr->m_CurrentFrame = m_CurrentFrame;
+				}
 				void end() {
 					GPUSubmit();
 				}
@@ -82,7 +76,7 @@ namespace vgl
 				// If not called, will use default frambuffer/swapchain
 				void beginRenderPass(RenderInfo& p_RenderInfo, FramebufferAttachment& p_FramebufferAttachment);
 				// Renders into the shadow map
-				//void beginRenderPass(RenderInfo& p_RenderInfo, D_ShadowMap& p_ShadowMap);
+				void beginRenderPass(RenderInfo& p_RenderInfo, D_ShadowMap& p_ShadowMap);
 
 				void submit(Camera& p_Camera);
 
@@ -140,6 +134,8 @@ namespace vgl
 
 				static RenderInfo m_DefaultRenderInfo;
 
+				D_ShadowMap* m_DShadowMapPtr = nullptr;
+
 			private:
 				void recordPrimaryCommandBuffers(uint32_t p_ImageIndex);
 				void shadowMapRecordMeshData(MeshData& p_MeshData, Transform3D& p_Transform);
@@ -166,6 +162,7 @@ namespace vgl
 				friend class vgl::Application;
 
 				ImGuiContext m_ImGuiContext;
+				GraphicsContext* m_GraphicsContextPtr = nullptr;
 			private:
 				// Main commandbuffers used for rendering, these are used when calling the submit() functions
 				std::vector<std::vector<CommandBuffer>> m_CommandBuffers;

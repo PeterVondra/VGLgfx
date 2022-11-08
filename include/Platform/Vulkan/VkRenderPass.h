@@ -25,6 +25,15 @@ namespace vgl
 			AttachmentType p_AttachmentType;
 		};
 
+		// Pre-declarations
+		class FramebufferAttachment;
+		class Framebuffer;
+		class g_Pipeline;
+		class CommandBuffer;
+		class Renderer;
+		class GraphicsContext;
+		class ImGuiContext;
+
 		class RenderPass
 		{
 			public:
@@ -49,9 +58,6 @@ namespace vgl
 				friend class g_Pipeline;
 				friend class CommandBuffer;
 				friend class Renderer;
-				friend class BaseRenderer;
-				friend class ForwardRenderer;
-				friend class DeferredRenderer;
 				friend class GraphicsContext;
 				friend class ImGuiContext;
 
@@ -144,9 +150,6 @@ namespace vgl
 		private:
 			friend class CommandBuffer;
 			friend class Renderer;
-			friend class BaseRenderer;
-			friend class ForwardRenderer;
-			friend class DeferredRenderer;
 			friend class FramebufferAttachment;
 			friend class GraphicsContext;
 			friend class ImGuiContext;

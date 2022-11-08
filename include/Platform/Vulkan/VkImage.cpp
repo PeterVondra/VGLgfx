@@ -159,42 +159,42 @@ namespace vgl
 		// Use for imgui texture id
 		void Image::createDescriptors()
 		{
-			//VkDescriptorSetLayoutBinding binding = {};
-			////binding.binding = 0;
-			//binding.descriptorCount = 1;
-			//binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			//binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			//
-			//VkDescriptorSetLayoutCreateInfo info = {};
-			//info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			//info.bindingCount = 1;
-			//info.pBindings = &binding;
-			//
-			//vkCreateDescriptorSetLayout(m_ContextPtr->m_Device, &info, nullptr, &m_DescriptorSetLayout);
-			//
-			//// Create Descriptor Set:
-			//VkDescriptorSetAllocateInfo alloc_info = {};
-			//alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			//alloc_info.descriptorPool = m_ContextPtr->m_DefaultDescriptorPool;
-			//alloc_info.descriptorSetCount = 1;
-			//alloc_info.pSetLayouts = &m_DescriptorSetLayout;
-			//
-			//VkResult result = vkAllocateDescriptorSets(m_ContextPtr->m_Device, &alloc_info, &m_DescriptorSet);
-			//
-			//// Update the Descriptor Set:
-			//VkDescriptorImageInfo desc_image = {};
-			//desc_image.sampler = m_Sampler;
-			//desc_image.imageView = m_ImageView;
-			//desc_image.imageLayout = m_FinalLayout;
-			//
-			//VkWriteDescriptorSet write_desc = {};
-			//write_desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			//write_desc.dstSet = m_DescriptorSet;
-			//write_desc.descriptorCount = 1;
-			//write_desc.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			//write_desc.pImageInfo = &desc_image;
-			//
-			//vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &write_desc, 0, NULL);
+			VkDescriptorSetLayoutBinding binding = {};
+			//binding.binding = 0;
+			binding.descriptorCount = 1;
+			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			
+			VkDescriptorSetLayoutCreateInfo info = {};
+			info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			info.bindingCount = 1;
+			info.pBindings = &binding;
+			
+			vkCreateDescriptorSetLayout(m_ContextPtr->m_Device, &info, nullptr, &m_DescriptorSetLayout);
+			
+			// Create Descriptor Set:
+			VkDescriptorSetAllocateInfo alloc_info = {};
+			alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			alloc_info.descriptorPool = m_ContextPtr->m_DefaultDescriptorPool;
+			alloc_info.descriptorSetCount = 1;
+			alloc_info.pSetLayouts = &m_DescriptorSetLayout;
+			
+			VkResult result = vkAllocateDescriptorSets(m_ContextPtr->m_Device, &alloc_info, &m_DescriptorSet);
+			
+			// Update the Descriptor Set:
+			VkDescriptorImageInfo desc_image = {};
+			desc_image.sampler = m_Sampler;
+			desc_image.imageView = m_ImageView;
+			desc_image.imageLayout = m_FinalLayout;
+			
+			VkWriteDescriptorSet write_desc = {};
+			write_desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write_desc.dstSet = m_DescriptorSet;
+			write_desc.descriptorCount = 1;
+			write_desc.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			write_desc.pImageInfo = &desc_image;
+			
+			vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &write_desc, 0, NULL);
 		}
 
 		void Image::createImage()
@@ -363,7 +363,7 @@ namespace vgl
 			vkGetPhysicalDeviceFormatProperties(m_ContextPtr->m_PhysicalDevice.m_VkHandle, p_Format, &formatProperties);
 
 			if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
-				Utils::Logger::logMSG("texture image format does not support linear blitting!", "Vulkan Texture", Utils::Severity::Warning);
+				Utils::Logger::logMSG("Image format does not support linear blitting!", "VkImage", Utils::Severity::Warning);
 
 				m_ContextPtr->transitionLayoutImage(
 					p_Image,

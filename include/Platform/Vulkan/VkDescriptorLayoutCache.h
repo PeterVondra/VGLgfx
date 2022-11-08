@@ -17,6 +17,18 @@ namespace vgl
 {
 	namespace vk
 	{
+		// Get vulkan handle for the shader stage
+		inline VkShaderStageFlagBits getShaderStageVkH(ShaderStage p_ShaderStage)
+		{
+			if (p_ShaderStage == ShaderStage::VertexBit)
+				return VK_SHADER_STAGE_VERTEX_BIT;
+			if (p_ShaderStage == ShaderStage::FragmentBit)
+				return VK_SHADER_STAGE_FRAGMENT_BIT;
+			if (p_ShaderStage == ShaderStage::GeometryBit)
+				return VK_SHADER_STAGE_GEOMETRY_BIT;
+			return VK_SHADER_STAGE_ALL;
+		}
+
 		struct DescriptorSetLayoutInfo
 		{
 			DescriptorSetLayoutInfo() {};
@@ -86,7 +98,7 @@ namespace vgl
 						binding.binding = p_Binding;
 						binding.descriptorType = (VkDescriptorType)p_Type;
 						binding.descriptorCount = p_DescriptorCount;
-						binding.stageFlags = (VkShaderStageFlags)p_ShaderStage;
+						binding.stageFlags = getShaderStageVkH(p_ShaderStage);
 						binding.pImmutableSamplers = nullptr;
 					}
 

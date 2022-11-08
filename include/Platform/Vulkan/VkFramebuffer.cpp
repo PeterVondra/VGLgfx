@@ -37,8 +37,10 @@ namespace vgl
 			m_RenderPassPtr = p_FramebufferInfo.p_RenderPass;
 
 			m_FrameBufferCreateInfo = {};
+			m_FrameBufferCreateInfo.pNext = nullptr;
+			
+			VkFramebufferAttachmentsCreateInfo attachmentCreateInfo = {};
 			if (p_FramebufferInfo.p_AllowMipMapping) {
-				VkFramebufferAttachmentsCreateInfo attachmentCreateInfo = {};
 				attachmentCreateInfo.attachmentImageInfoCount = m_ImageViews.size();
 				attachmentCreateInfo.pAttachmentImageInfos = m_AttachmentImageInfos.data();
 				attachmentCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO;
@@ -63,6 +65,7 @@ namespace vgl
 				Utils::Logger::logMSG("Failed to create framebuffer", "VkFramebuffer", Utils::Severity::Error);
 				return false;
 			}
+
 			return true;
 		}
 		
@@ -145,14 +148,42 @@ namespace vgl
 				m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, p_ImageAttachmentInfo.p_AttachmentInfo->p_Format, VK_IMAGE_ASPECT_COLOR_BIT);
 
 			m_ImageObj.m_CurrentLayout = (VkImageLayout)info.p_AttachmentInfo->p_InitialLayout;
-			if (p_ImageAttachmentInfo.p_TransitionLayoutImage && p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType != AttachmentType::Depth)
-			{
-				m_ContextPtr->transitionLayoutImage
-				(
-					m_VkImageHandle, p_ImageAttachmentInfo.p_AttachmentInfo->p_Format,
+			if (p_ImageAttachmentInfo.p_AllowMipMapping) {
+				auto cmd = m_ContextPtr->beginSingleTimeCmds();
+				for (int i = 0; i < m_MipLevels; i++) {
+					VkImageSubresourceRange range = {};
+					range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+					range.baseMipLevel = i;
+					range.levelCount = 1;
+					range.baseArrayLayer = 0;
+					range.layerCount = 1;
+					m_ContextPtr->setImageLayout(
+						cmd, m_VkImageHandle,
+						(VkImageLayout)p_ImageAttachmentInfo.p_AttachmentInfo->p_InitialLayout,
+						(VkImageLayout)p_ImageAttachmentInfo.p_AttachmentInfo->p_FinalLayout,
+						range
+					);
+				}
+				m_ContextPtr->endSingleTimeCmds(cmd);
+			}
+			else if (p_ImageAttachmentInfo.p_TransitionLayoutImage){
+				auto cmd = m_ContextPtr->beginSingleTimeCmds();
+				VkImageSubresourceRange range = {};
+				if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Depth)
+					range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+				else if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Color)
+					range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				range.baseMipLevel = 0;
+				range.levelCount = 1;
+				range.baseArrayLayer = 0;
+				range.layerCount = 1;
+				m_ContextPtr->setImageLayout(
+					cmd, m_VkImageHandle,
 					(VkImageLayout)p_ImageAttachmentInfo.p_AttachmentInfo->p_InitialLayout,
-					(VkImageLayout)p_ImageAttachmentInfo.p_AttachmentInfo->p_FinalLayout
+					(VkImageLayout)p_ImageAttachmentInfo.p_AttachmentInfo->p_FinalLayout,
+					range, p_ImageAttachmentInfo.p_AttachmentInfo->p_Format
 				);
+				m_ContextPtr->endSingleTimeCmds(cmd);
 				m_ImageObj.m_CurrentLayout = (VkImageLayout)info.p_AttachmentInfo->p_FinalLayout;
 			}
 

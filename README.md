@@ -2,7 +2,7 @@
 > C++ Vulkan/OpenGL graphics engine for both 2D and 3D
 
 ## __Enginge Features:__
-- Built on Vulkan API (OpenGL not implemented at the moment)
+- Built on Vulkan API (OpenGL not implemented at the moment, but API is render agnostic)
 - Custom Math Library.
 - Load/Save scenes (editable in .yaml format)
 - Custom Entity Component System (ECS)

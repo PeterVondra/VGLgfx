@@ -51,20 +51,20 @@ namespace vgl
 	enum class ShaderType
 	{
 		Forward,
-		Deferred,
+		Deferred
 	};
 
 	struct ShaderInfo
 	{
 		// Bitflags
-		uint32_t p_LightingType;
-		uint32_t p_LightCaster;
-		uint32_t p_LightMaps;
-		uint32_t p_Effects;
+		uint32_t p_LightingType = 0;
+		uint32_t p_LightCaster = 0;
+		uint32_t p_LightMaps = 0;
+		uint32_t p_Effects = 0;
 		uint32_t p_MaxPrefilteredLod = 11;
 
 		bool p_DirectionalLight;
-		uint32_t p_SpotLights;
+		uint32_t p_SpotLights = 0;
 		std::vector<P_Light> p_PointLights;
 
 		bool operator==(ShaderInfo& p_S2)
@@ -260,28 +260,19 @@ namespace vgl
 			}
 		}
 
-		// Using shadow mapping
-		if (p_ShaderInfo.p_Effects & (uint32_t)Effects::ShadowMapping)
-		{
-			shader[0] += "#define SHADOW_MAPPING_PCF\n";
-			shader[1] += "#define SHADOW_MAPPING_PCF\n";
-			imageBindings += "layout(binding = " + Utils::to_string(binding) + ") uniform sampler2D shadowMap;\n";
-			binding++;
-		}
-
 		// Using Image Based Lighting
-		if (p_ShaderInfo.p_Effects & (uint32_t)Effects::IBL)
-		{
-			shader[0] += "#define IBL\n";
-			shader[1] += "#define IBL\n";
-			shader[1] += "#define MAX_R_LOD " + std::to_string(p_ShaderInfo.p_MaxPrefilteredLod) + "\n";
-			imageBindings += "layout(binding = " + Utils::to_string(binding) + ") uniform samplerCube irradianceMap;\n";
-			binding++;
-			imageBindings += "layout(binding = " + Utils::to_string(binding) + ") uniform samplerCube preFilteredMap;\n";
-			binding++;
-			imageBindings += "layout(binding = " + Utils::to_string(binding) + ") uniform sampler2D brdfMap;\n";
-			binding++;
-		}
+		//if (p_ShaderInfo.p_Effects & (uint32_t)Effects::IBL)
+		//{
+		//	shader[0] += "#define IBL\n";
+		//	shader[1] += "#define IBL\n";
+		//	shader[1] += "#define MAX_R_LOD " + std::to_string(p_ShaderInfo.p_MaxPrefilteredLod) + "\n";
+		//	imageBindings += "layout(binding = " + Utils::to_string(binding) + ") uniform samplerCube irradianceMap;\n";
+		//	binding++;
+		//	imageBindings += "layout(binding = " + Utils::to_string(binding) + ") uniform samplerCube preFilteredMap;\n";
+		//	binding++;
+		//	imageBindings += "layout(binding = " + Utils::to_string(binding) + ") uniform sampler2D brdfMap;\n";
+		//	binding++;
+		//}
 
 		//if (p_ShaderInfo.p_Effects & (uint32_t)Effects::Bloom)
 		//{

@@ -94,6 +94,7 @@ namespace vgl
 		
 		m_SSAOFramebuffer.getDescriptors().create(infoSSAO);
 		m_SSAOFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, SSAO_Kernel.data(), SSAO_Kernel.size() * sizeof(Vector4f), 2 * sizeof(Vector4f) + sizeof(Matrix4f));
+		m_SSAOFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, SSAO_Kernel.data(), SSAO_Kernel.size() * sizeof(Vector4f), 2 * sizeof(Vector4f) + sizeof(Matrix4f));
 		
 		// Create Post-Processing framebuffer
 		m_SSAOShader.setShader("data/Shaders/SSAO/vert.spv", "data/Shaders/SSAO/frag.spv");
@@ -108,7 +109,7 @@ namespace vgl
 		
 		static ShaderDescriptorInfo infoSSAOBlur;
 		for (int32_t i = 0; i < m_SSAOFramebuffer.getImageAttachments().size(); i++)
-			infoSSAOBlur.p_ImageDescriptors.emplace_back(&m_SSAOFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
+			infoSSAOBlur.addImage(&m_SSAOFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
 
 		m_SSAOBlurFramebuffer.getDescriptors().create(infoSSAOBlur);
 		m_SSAOBlurShader.setShader("data/Shaders/SSAO/Blur/vert.spv", "data/Shaders/SSAO/Blur/frag.spv");
@@ -155,7 +156,7 @@ namespace vgl
 			for (auto& entity : m_ScenePtr->getEntities()) {
 				auto d_shadow_map = m_ScenePtr->getComponent<DShadowMapComponent>(entity);
 				if (d_shadow_map) {
-					infoLightPass.addImage(i, &d_shadow_map->ShadowMap.m_Attachment.getImageAttachment()[i][0].getImage(), Layout::DepthR, 6);
+					infoLightPass.addImage(&d_shadow_map->ShadowMap.m_Attachment.getImageAttachments()[i][0].getImage(), 6, i);
 					shader_info.p_Effects |= (uint32_t)Effects::ShadowMapping;
 				}
 			}
@@ -167,27 +168,27 @@ namespace vgl
 		/////////////////////////////////////////////////////////////////////////////////////////////
 		//				Screen-Space-Reflections
 		/////////////////////////////////////////////////////////////////////////////////////////////
-		static ShaderDescriptorInfo infoSSR;
-		infoSSR.p_FragmentUniformBuffer = vk::UniformBuffer(4 * sizeof(float) + 2 * sizeof(Matrix4f) + sizeof(Vector4f), 0);
-		for (int32_t i = 0; i < m_GBuffer.getImageAttachments().size(); i++) {
-			infoSSR.addImage(&m_LightPassFramebuffer.getImageAttachments()[i][0].getImage(), 1, i);
-			infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][4].getImage(), 2, Layout::DepthR, i);
-			infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][1].getImage(), 3, i);
-			infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][3].getImage(), 4, i);
-		}
-		
-		m_SSRFramebuffer.getDescriptors().create(infoSSR);
-		
-		// Create SSR framebuffer
-		m_SSRShader.setShader("data/Shaders/SSR/vert.spv", "data/Shaders/SSR/frag.spv");
-		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Size = p_Window->getWindowSize();
-		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_SSRShader;
-		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
-			p_Window->getWindowSize(),
-			ImageFormat::C16SF_4C,
-			Layout::ShaderR
-		);
-		m_SSRFramebuffer.create();
+		//static ShaderDescriptorInfo infoSSR;
+		//infoSSR.p_FragmentUniformBuffer = vk::UniformBuffer(4 * sizeof(float) + 2 * sizeof(Matrix4f) + sizeof(Vector4f), 0);
+		//for (int32_t i = 0; i < m_GBuffer.getImageAttachments().size(); i++) {
+		//	infoSSR.addImage(&m_LightPassFramebuffer.getImageAttachments()[i][0].getImage(), 1, i);
+		//	infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][4].getImage(), 2, Layout::DepthR, i);
+		//	infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][1].getImage(), 3, i);
+		//	infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][3].getImage(), 4, i);
+		//}
+		//
+		//m_SSRFramebuffer.getDescriptors().create(infoSSR);
+		//
+		//// Create SSR framebuffer
+		//m_SSRShader.setShader("data/Shaders/SSR/vert.spv", "data/Shaders/SSR/frag.spv");
+		//m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Size = p_Window->getWindowSize();
+		//m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_SSRShader;
+		//m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
+		//	p_Window->getWindowSize(),
+		//	ImageFormat::C16SF_4C,
+		//	Layout::ShaderR
+		//);
+		//m_SSRFramebuffer.create();
 
 		/////////////////////////////////////////////////////////////////////////////////////////////
 		//				Hight-Definition-Range & Post-Processing
@@ -233,18 +234,18 @@ namespace vgl
 		m_SSAOFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getViewProjection() , sizeof(Vector4f) + sizeof(Matrix4f));
 		
 		// copy SSR specific data to uniformbuffer declared in SSR shaders
-		m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, SSR_Data, 0);
-		m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getCurrentCameraPtr()->getViewDirection(), 4 * sizeof(float));
-		m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getCurrentCameraPtr()->getPerspectiveMatrix(), 4*sizeof(float) + sizeof(Vector4f));
-		m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getViewProjection() , 4 * sizeof(float) + sizeof(Matrix4f) + sizeof(Vector4f));
+		//m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, SSR_Data, 0);
+		//m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getCurrentCameraPtr()->getViewDirection(), 4 * sizeof(float));
+		//m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getCurrentCameraPtr()->getPerspectiveMatrix(), 4*sizeof(float) + sizeof(Vector4f));
+		//m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getViewProjection() , 4 * sizeof(float) + sizeof(Matrix4f) + sizeof(Vector4f));
 
 		for (auto& entity : m_ScenePtr->getEntities()) {
 			auto directional_light = m_ScenePtr->getComponent<DirectionalLight3DComponent>(entity);
 			auto d_shadow_map = m_ScenePtr->getComponent<DShadowMapComponent>(entity);
-			if (directional_light){// && d_shadow_map) {
+			if (directional_light && d_shadow_map) {
 				volumetric_light_mie_scattering = directional_light->VolumetricLightDensity;
-				//m_LightPassFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, d_shadow_map->ShadowMap.m_View * d_shadow_map->ShadowMap.m_Projection, sizeof(Vector4f));
-				m_LightPassFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, directional_light->Direction, sizeof(Matrix4f) + sizeof(Vector4f));
+				m_LightPassFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, d_shadow_map->ShadowMap.m_View * d_shadow_map->ShadowMap.m_Projection, sizeof(Vector4f));
+				m_LightPassFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, d_shadow_map->ShadowMap.m_Direction, sizeof(Matrix4f) + sizeof(Vector4f));
 				m_LightPassFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, directional_light->Color, sizeof(Matrix4f) + 2 * sizeof(Vector4f));
 			}
 			auto point_light = m_ScenePtr->getComponent<PointLight3DComponent>(entity);
@@ -289,9 +290,9 @@ namespace vgl
 			auto spot_light = m_ScenePtr->getComponent<SpotLight3DComponent>(entity);
 		
 			if (directional_light) {
-				auto shadow_map = m_ScenePtr->getComponent<DShadowMapComponent>(entity);
-				if (shadow_map)
-					m_RendererPtr->submit(shadow_map->ShadowMap);
+				//auto shadow_map = m_ScenePtr->getComponent<DShadowMapComponent>(entity);
+				//if (shadow_map)
+				//	m_RendererPtr->submit(shadow_map->ShadowMap);
 			}
 
 			//auto skybox = m_ScenePtr->getComponent<SkyboxComponent>(entity);

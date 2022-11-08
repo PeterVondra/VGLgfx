@@ -61,10 +61,6 @@ namespace vgl
 			m_Materials[i].config.m_Ambient = 1.0f;
 
 			// Plus 16 for alignment
-			//m_Materials[i].m_Descriptor.setUniformBlock(ShaderStage::VertexBit, "ubo", nullptr, 3 * sizeof(Matrix4f) + 16);
-			//m_Materials[i].m_Descriptor.setUniformBlock(ShaderStage::FragmentBit, "ubo", nullptr, 14 * sizeof(float) );
-		
-			// Plus 16 for alignment
 			m_MTLDescriptorInfo[i].p_VertexUniformBuffer = UniformBuffer(3 * sizeof(Matrix4f) + 16 + sizeof(Vector3f), 0);
 			m_MTLDescriptorInfo[i].p_FragmentUniformBuffer = UniformBuffer(10 * sizeof(float), 1);
 

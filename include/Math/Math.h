@@ -21,6 +21,7 @@ class Math
         static Vector2f cross(const Vector2f a, const float b);
         static Vector2f cross(const float a, const Vector2f b);
         static Vector2f rotate(const Vector2f p_Vector, const float p_Degrees);
+        static Vector3f rotate(const Vector3f p_Vector, Vector3f p_Direction, const float p_Degrees);
 
         static double sqrt(double num);
         static float lerp(float a, float b, float f);

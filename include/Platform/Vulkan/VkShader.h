@@ -7,6 +7,11 @@ namespace vgl
 {
 	namespace vk
 	{
+		// Pre-declarations
+		class Renderer;
+		class g_Pipeline;
+		class RenderPass;
+
 		class Shader
 		{
 			public:
@@ -29,9 +34,9 @@ namespace vgl
 
 			protected:
 			private:
-				friend class Renderer;
-				friend class g_Pipeline;
-				friend class RenderPass;
+				friend class vk::Renderer;
+				friend class vk::g_Pipeline;
+				friend class vk::RenderPass;
 
 				Context* m_ContextPtr;
 

@@ -4,6 +4,7 @@
 #include "GDefinitions.h"
 #include "Math/Transform.h"
 #include "Math/Camera.h"
+#include "VGL_Internal.h"
 
 #include "VGL-3D/Mesh/Mesh.h"
 #include "VGL-3D/SkyBox.h"

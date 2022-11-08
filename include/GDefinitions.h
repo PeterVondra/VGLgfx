@@ -64,7 +64,7 @@ namespace vgl
 
 		int samples = 4;
 		int rings = 4;
-		float CoC = 0.03;//circle of confusion size in mm (35mm film = 0.03mm)
+		float CoC = 0.09;//circle of confusion size in mm (35mm film = 0.03mm)
 		float threshold = 0.8; //highlight threshold;
 		float gain = 0.1f; //highlight gain;
 

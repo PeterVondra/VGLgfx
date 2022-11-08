@@ -468,15 +468,15 @@ namespace vgl
 					const ImVec4& border_col = ImVec4(0, 0, 0, 0)
 				) {
 					if (user_texture_id.isValid() && !user_texture_id.m_IsDescriptorSetValid) {
-						user_texture_id.m_DescriptorSet = ImGui_ImplVulkan_AddTexture(user_texture_id.m_Sampler, user_texture_id.m_ImageView, user_texture_id.m_CurrentLayout);
+						user_texture_id.m_ImGuiDescriptorSet = ImGui_ImplVulkan_AddTexture(user_texture_id.m_Sampler, user_texture_id.m_ImageView, user_texture_id.m_FinalLayout);
 						user_texture_id.m_IsDescriptorSetValid = true;
 					}
 					else if (!user_texture_id.isValid() && user_texture_id.m_IsDescriptorSetValid) {
-						ImGui_ImplVulkan_RemoveTexture(user_texture_id.m_DescriptorSet);
+						ImGui_ImplVulkan_RemoveTexture(user_texture_id.m_ImGuiDescriptorSet);
 						user_texture_id.m_IsDescriptorSetValid = false;
 					}
 					if(user_texture_id.m_IsDescriptorSetValid)
-						ImGui::Image(user_texture_id.m_DescriptorSet, size, uv0, uv1, tint_col, border_col);
+						ImGui::Image(user_texture_id.m_ImGuiDescriptorSet, size, uv0, uv1, tint_col, border_col);
 				}
 				inline static bool ImageButton(
 					const char* str_id,
@@ -488,7 +488,7 @@ namespace vgl
 					const ImVec4& tint_col = ImVec4(1, 1, 1, 1)
 				) {
 					if (user_texture_id.isValid() && !user_texture_id.m_IsDescriptorSetValid) {
-						user_texture_id.m_DescriptorSet = ImGui_ImplVulkan_AddTexture(user_texture_id.m_Sampler, user_texture_id.m_ImageView, user_texture_id.m_CurrentLayout);
+						user_texture_id.m_DescriptorSet = ImGui_ImplVulkan_AddTexture(user_texture_id.m_Sampler, user_texture_id.m_ImageView, user_texture_id.m_FinalLayout);
 						user_texture_id.m_IsDescriptorSetValid = true;
 					}
 					else if (!user_texture_id.isValid() && user_texture_id.m_IsDescriptorSetValid) {

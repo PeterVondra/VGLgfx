@@ -4,26 +4,6 @@ namespace vgl
 {
 	namespace vk
 	{
-		::std::vector<Vector2f> GraphicsContext::m_RecRawVertices;
-		::std::vector<uint32_t> GraphicsContext::m_RecRawIndices;
-
-		VertexBuffer GraphicsContext::m_RecVertices;
-		IndexBuffer GraphicsContext::m_RecIndices;
-
-		BufferLayout GraphicsContext::m_RecLayout;
-		VertexArray GraphicsContext::m_RecVao;
-
-
-		g_Pipeline GraphicsContext::m_TextBoxPipeline;
-		g_Pipeline GraphicsContext::m_Shape2DPipeline;
-		g_Pipeline GraphicsContext::m_Circle2DPipeline;
-		g_Pipeline GraphicsContext::m_ParticlePipeline;
-
-		Shader GraphicsContext::m_TextBoxShader;
-		Shader GraphicsContext::m_Shape2DShader;
-		Shader GraphicsContext::m_Circle2DShader;
-		Shader GraphicsContext::m_ParticleShader;
-
 		void GraphicsContext::init() {
 			m_RecRawVertices =
 			{
@@ -48,6 +28,17 @@ namespace vgl
 
 			getDShadowMapShader().setShader("data/Shaders/SM3D/vert.spv", "data/Shaders/SM3D/frag.spv");
 			getDShadowMapAlbedoShader().setShader("data/Shaders/SM3D/Alpha/vert.spv", "data/Shaders/SM3D/Alpha/frag.spv");
+
+			//m_DShadowMapDescriptorSetLayout = ContextSingleton::getInstance().m_DescriptorSetLayoutCache.createLayout({
+			//		DLC::Binding(DLC::DescriptorType::Uniform_Buffer, ShaderStage::VertexBit, 0)
+			//	}
+			//);
+
+			m_DShadowMapAlbedoDescriptorSetLayout = ContextSingleton::getInstance().m_DescriptorSetLayoutCache.createLayout({
+				//DLC::Binding(DLC::DescriptorType::Uniform_Buffer, ShaderStage::VertexBit, 0),
+				DLC::Binding(DLC::DescriptorType::Combined_Image_Sampler, ShaderStage::FragmentBit, 0)
+				}
+			);
 
 			vgl::BufferLayout layout =
 			{
@@ -109,6 +100,9 @@ namespace vgl
 				pipelineInfo.p_RenderPass = &getDShadowMapRenderPass();
 				pipelineInfo.p_DepthBuffering = true;
 				pipelineInfo.p_MSAASamples = 1;
+				pipelineInfo.p_PushConstantShaderStage = getShaderStageVkH(ShaderStage::VertexBit);
+				pipelineInfo.p_PushConstantSize = sizeof(Matrix4f);
+				pipelineInfo.p_UsePushConstants = true;
 
 				BufferLayout m_ShadowDepthMapLayout = { {
 						{ ShaderDataType::Vec3f, 0, "in_Position"  },
@@ -120,7 +114,7 @@ namespace vgl
 				};
 
 				pipelineInfo.p_Shader = &getDShadowMapShader();
-				pipelineInfo.p_DescriptorSetLayout = getDShadowMapDescriptorSetLayout();
+				//pipelineInfo.p_DescriptorSetLayout = getDShadowMapDescriptorSetLayout();
 				pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_ShadowDepthMapLayout).first);
 				pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_ShadowDepthMapLayout).second);
 
@@ -131,6 +125,56 @@ namespace vgl
 
 				getDShadowMapAlbedoPipeline().create(pipelineInfo);
 			}
+		}
+
+		g_Pipeline& GraphicsContext::getAtmosphericScatteringPipeline() 
+		{ 
+			return m_AtmosphericScatteringPipeline; 
+		}
+		g_Pipeline& GraphicsContext::getSkyBoxPipeline()
+		{ 
+			return m_SkyBoxPipeline;
+		}
+		Shader& GraphicsContext::getSkyBoxShader() 
+		{ 
+			return m_SkyBoxShader;
+		}
+		//static g_Pipeline& getAtmosphericScatteringPipelineC16SF() { static g_Pipeline m_AtmosphericScatteringPipeline; return m_AtmosphericScatteringPipeline; }
+		//static g_Pipeline& getAtmosphericScatteringPipelineC16SFD() { static g_Pipeline m_AtmosphericScatteringPipeline; return m_AtmosphericScatteringPipeline; }
+
+
+		Shader& GraphicsContext::getAtmosphericScatteringShader() 
+		{ 
+			return m_AtmosphericScatteringShader;
+		}
+		//inline static g_Pipeline& getSkyBoxPipeline() { static g_Pipeline m_SkyBoxPipeline; return m_SkyBoxPipeline; }
+		//inline static Shader& getSkyBoxShader() { static Shader m_SkyBoxShader; return m_SkyBoxShader; }
+
+		Shader& GraphicsContext::getDShadowMapShader() 
+		{ 
+			return m_DShadowMapShader;
+		}
+		Shader& GraphicsContext::getDShadowMapAlbedoShader() 
+		{
+			return m_DShadowMapAlbedoShader;
+		}
+		g_Pipeline& GraphicsContext::getDShadowMapPipeline() 
+		{ 
+			return m_DShadowMapPipeline;
+		}
+		g_Pipeline& GraphicsContext::getDShadowMapAlbedoPipeline() 
+		{ 
+			return m_DShadowMapAlbedoPipeline;
+		}
+		RenderPass& GraphicsContext::getDShadowMapRenderPass() 
+		{ 
+			return m_DShadowMapRenderPass;
+		}
+		VkDescriptorSetLayout& GraphicsContext::getDShadowMapDescriptorSetLayout() {
+			return m_DShadowMapDescriptorSetLayout;
+		}
+		VkDescriptorSetLayout& GraphicsContext::getDShadowMapAlbedoDescriptorSetLayout() {
+			return m_DShadowMapAlbedoDescriptorSetLayout;
 		}
 
 		const VertexArray& GraphicsContext::getRecVao() { return m_RecVao; }
@@ -412,8 +456,11 @@ namespace vgl
 			pipelineInfo.p_PushConstantOffset = 0;
 			pipelineInfo.p_PushConstantSize = sizeof(Matrix4f);
 
-			auto layout = contextPtr->m_DescriptorSetLayoutCache.createDescriptorSetLayout({ {0} });
-			pipelineInfo.p_DescriptorSetLayout = &layout;
+			auto layout = contextPtr->m_DescriptorSetLayoutCache.createLayout({
+				DLC::Binding(DLC::DescriptorType::Uniform_Buffer, ShaderStage::VertexBit, 0)
+				}
+			);
+			pipelineInfo.p_DescriptorSetLayout = layout;
 			pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).first);
 			pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).second);
 
@@ -664,8 +711,11 @@ namespace vgl
 			pipelineInfo.p_PushConstantOffset = 0;
 			pipelineInfo.p_PushConstantSize = sizeof(Matrix4f);
 
-			auto layout = contextPtr->m_DescriptorSetLayoutCache.createDescriptorSetLayout({}, {}, { {0} });
-			pipelineInfo.p_DescriptorSetLayout = &layout;
+			auto layout = contextPtr->m_DescriptorSetLayoutCache.createLayout({
+				DLC::Binding(DLC::DescriptorType::Combined_Image_Sampler, ShaderStage::FragmentBit, 0)
+				}
+			);
+			pipelineInfo.p_DescriptorSetLayout = layout;
 			pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).first);
 			pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).second);
 
@@ -919,8 +969,11 @@ namespace vgl
 			pipelineInfo.p_PushConstantOffset = 0;
 			pipelineInfo.p_PushConstantSize = sizeof(Matrix4f);
 
-			auto layout = contextPtr->m_DescriptorSetLayoutCache.createDescriptorSetLayout({}, {}, { {0} });
-			pipelineInfo.p_DescriptorSetLayout = &layout;
+			auto layout = contextPtr->m_DescriptorSetLayoutCache.createLayout({
+				DLC::Binding(DLC::DescriptorType::Combined_Image_Sampler, ShaderStage::FragmentBit, 0)
+				}
+			);
+			pipelineInfo.p_DescriptorSetLayout = layout;
 			pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).first);
 			pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).second);
 
@@ -1180,8 +1233,11 @@ namespace vgl
 			pipelineInfo.p_PushConstantOffset = 0;
 			pipelineInfo.p_PushConstantSize = sizeof(PushC);
 
-			auto layout = contextPtr->m_DescriptorSetLayoutCache.createDescriptorSetLayout({}, {}, { {0} });
-			pipelineInfo.p_DescriptorSetLayout = &layout;
+			auto layout = contextPtr->m_DescriptorSetLayoutCache.createLayout({
+				DLC::Binding(DLC::DescriptorType::Combined_Image_Sampler, ShaderStage::FragmentBit, 0)
+				}
+			);
+			pipelineInfo.p_DescriptorSetLayout = layout;
 			pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).first);
 			pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).second);
 

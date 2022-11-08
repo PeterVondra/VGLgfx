@@ -48,18 +48,22 @@ namespace vgl
 		Custom,
 		D16UN = VK_FORMAT_D16_UNORM, 				// 16-bit depth unormalized
 		D32SF = VK_FORMAT_D32_SFLOAT, 				// 32-bit depth signed floating-point
-		C8SN_1C = VK_FORMAT_R8_SNORM, 				// 8-bit (color) signed normalized floating-point (1 channels)
+		C8SN_1C = VK_FORMAT_R8_SNORM, 				// 8-bit (color) signed normalized floating-point (1 channel)
 		C8SN_2C = VK_FORMAT_R8G8_SNORM, 			// 8-bit (color) signed normalized floating-point (2 channels)
 		C8SN_3C = VK_FORMAT_R8G8B8_SNORM, 			// 8-bit (color) signed normalized floating-point (3 channels)
 		C8SN_4C = VK_FORMAT_R8G8B8A8_SNORM, 		// 8-bit (color) signed normalized floating-point (4 channels)
-		C16SF_1C = VK_FORMAT_R16_SFLOAT, 			// 16-bit (color) signed floating-point (1 channels)
+		C16SF_1C = VK_FORMAT_R16_SFLOAT, 			// 16-bit (color) signed floating-point (1 channel)
 		C16SF_2C = VK_FORMAT_R16G16_SFLOAT, 		// 16-bit (color) signed floating-point (2 channels)
 		C16SF_3C = VK_FORMAT_R16G16B16_SFLOAT, 		// 16-bit (color) signed floating-point (3 channels)
 		C16SF_4C = VK_FORMAT_R16G16B16A16_SFLOAT, 	// 16-bit (color) signed floating-point (4 channels)
-		C32SF_1C = VK_FORMAT_R32_SFLOAT, 			// 32-bit (color) signed floating-point (1 channels)
+		C32SF_1C = VK_FORMAT_R32_SFLOAT, 			// 32-bit (color) signed floating-point (1 channel)
 		C32SF_2C = VK_FORMAT_R32G32_SFLOAT, 		// 32-bit (color) signed floating-point (2 channels)
 		C32SF_3C = VK_FORMAT_R32G32B32_SFLOAT, 		// 32-bit (color) signed floating-point (3 channels)
 		C32SF_4C = VK_FORMAT_R32G32B32A32_SFLOAT, 	// 32-bit (color) signed floating-point (4 channels)
+		C8UN_1C = VK_FORMAT_R8_UNORM,				// 8-bit (color) un-normalized (1 channel)
+		C8UN_2C = VK_FORMAT_R8G8_UNORM,				// 8-bit (color) un-normalized (2 channels)
+		C8UN_3C = VK_FORMAT_R8G8B8_UNORM,			// 8-bit (color) un-normalized (3 channels)
+		C8UN_4C = VK_FORMAT_R8G8B8A8_UNORM			// 8-bit (color) un-normalized (4 channels)
 
 	};
 
@@ -154,8 +158,8 @@ namespace vgl
 	enum class ShaderStage
 	{
 		None = -1,
-		VertexBit = VK_SHADER_STAGE_VERTEX_BIT,
-		FragmentBit = VK_SHADER_STAGE_FRAGMENT_BIT,
-		GeometryBit = VK_SHADER_STAGE_GEOMETRY_BIT
+		VertexBit = 0,
+		FragmentBit = 1,
+		GeometryBit = 2
 	};
 }
