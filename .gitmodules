@@ -1,0 +1,28 @@
+[submodule "VGLgfx/libs/spdlog"]
+	path = VGLgfx/libs/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "VGLgfx/libs/glslang"]
+	path = VGLgfx/libs/glslang
+	url = https://github.com/KhronosGroup/glslang.git
+[submodule "VGLgfx/libs/imgui"]
+	path = VGLgfx/libs/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "VGLgfx/libs/glfw"]
+	path = VGLgfx/libs/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "VGLgfx/libs/ImGuiFileDialog"]
+	path = VGLgfx/libs/ImGuiFileDialog
+	url = https://github.com/aiekick/ImGuiFileDialog.git
+[submodule "VGLgfx/libs/ImGuizmo"]
+	path = VGLgfx/libs/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "VGLgfx/libs/SPIRV-Cross"]
+	path = VGLgfx/libs/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "VGLgfx/libs/VulkanMemoryAllocator"]
+	path = VGLgfx/libs/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "VGLgfx/libs/yaml-cpp"]
+	path = VGLgfx/libs/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git

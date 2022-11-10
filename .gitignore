@@ -3,5 +3,7 @@
 .local-history/
 .history/
 out/
-build/
-projects/Global_Assets
+VGLgfx/build/
+VGLgfxEditor/build/
+VGLgfxEditor/projects/Global_Assets/
+Example/build

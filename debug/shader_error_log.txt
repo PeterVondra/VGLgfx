@@ -1,5 +1,0 @@
-ERROR: 0:256: 'MAX_R_LOD' : undeclared identifier 
-ERROR: 0:256: '=' :  cannot convert from ' global highp 4-component vector of float' to ' temp highp 3-component vector of float'
-ERROR: 0:256: '' : compilation terminated 
-ERROR: 3 compilation errors.  No code generated.
-
