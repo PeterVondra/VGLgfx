@@ -1,8 +1,8 @@
-.vs/
-.vscode/
-.local-history/
-.history/
-out/
+VGLgfx/.vs/
+VGLgfx/.vscode/
+VGLgfx/.local-history/
+VGLgfx/.history/
+VGLgfx/out/
 VGLgfx/build/
 VGLgfxEditor/build/
 VGLgfxEditor/projects/Global_Assets/

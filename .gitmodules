@@ -11,9 +11,6 @@
 [submodule "VGLgfx/libs/glfw"]
 	path = VGLgfx/libs/glfw
 	url = https://github.com/glfw/glfw.git
-[submodule "VGLgfx/libs/ImGuiFileDialog"]
-	path = VGLgfx/libs/ImGuiFileDialog
-	url = https://github.com/aiekick/ImGuiFileDialog.git
 [submodule "VGLgfx/libs/ImGuizmo"]
 	path = VGLgfx/libs/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
@@ -26,9 +23,6 @@
 [submodule "VGLgfx/libs/yaml-cpp"]
 	path = VGLgfx/libs/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
-[submodule "VGLgfx/libs/ImGuiFileDalog"]
-	path = VGLgfx/libs/ImGuiFileDalog
-	url = https://github.com/aiekick/ImGuiFileDialog.git
 [submodule "VGLgfx/libs/assimp"]
 	path = VGLgfx/libs/assimp
 	url = https://github.com/assimp/assimp.git

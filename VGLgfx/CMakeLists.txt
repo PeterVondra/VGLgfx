@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.0) 
-#set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -30,9 +29,14 @@ project(VGLgfx)
 set(
 	HEADER_FILES
 
+	include/VGLgfx.h
+
 	include/Platform/VkIncludes.h
 	#include/Platform/GLIncludes.h
 	include/VGL_Internal.h
+
+	include/GFXDefinitions.h
+	include/Platform/Definitions.h
 
 	# Math library
 	include/Math/Math.h
@@ -67,6 +71,9 @@ set(
 	include/VGL-3D/Shapes.h
 	include/VGL-3D/SkyBox.h
 	
+	# Utilites
+	include/Utils/Logger.h
+	include/Utils/FileGUI.h
 	
 	#Entity component system
 	include/ECS/Component.h
@@ -104,7 +111,6 @@ set(
 	include/Platform/Vulkan/VkShader.h
 	include/Platform/Vulkan/VkGraphics_Internal.h
 	include/Platform/Vulkan/VkImGui.h
-	include/VGLgfx.h
 )
 
 set(
@@ -132,6 +138,7 @@ set(
 	include/Events/KeyEvent.cpp
 	include/Events/MouseEvent.cpp
 
+	# 3D
 	include/VGL-3D/Mesh/Material.cpp
 	include/VGL-3D/Mesh/Mesh.cpp
 	include/VGL-3D/Mesh/OBJ_Loader.cpp
@@ -139,6 +146,12 @@ set(
 	include/VGL-3D/Grid.cpp
 	include/VGL-3D/Shapes.cpp
 	include/VGL-3D/SkyBox.cpp
+
+	# Utilites
+	include/Utils/Logger.h
+	include/Utils/Logger.cpp
+	include/Utils/FileGUI.h
+	include/Utils/FileGUI.cpp
 
 	# Entity component system
 	include/ECS/Component.cpp
@@ -172,6 +185,38 @@ set(
 	include/Platform/Vulkan/VkGraphics_Internal.cpp
 )
 
+set(
+	LIB_SRC_FILES 
+	${PROJECT_SOURCE_DIR}/libs/VulkanMemoryAllocator/include/vk_mem_alloc.h
+	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/dirent.h
+	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/ImGuiFileDialog/ImGuiFileDialog.h
+	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/ImGuiFileDialog/ImGuiFileDialog.cpp
+	${PROJECT_SOURCE_DIR}/libs/imgui/imgui.h
+	${PROJECT_SOURCE_DIR}/libs/imgui/imgui.cpp
+	${PROJECT_SOURCE_DIR}/libs/imgui/imconfig.h
+	${PROJECT_SOURCE_DIR}/libs/imgui/imgui_demo.cpp
+	${PROJECT_SOURCE_DIR}/libs/imgui/imgui_draw.cpp
+	${PROJECT_SOURCE_DIR}/libs/imgui/imgui_internal.h
+	${PROJECT_SOURCE_DIR}/libs/imgui/imgui_tables.cpp
+	${PROJECT_SOURCE_DIR}/libs/imgui/imgui_widgets.cpp
+	${PROJECT_SOURCE_DIR}/libs/imgui/imstb_rectpack.h
+	${PROJECT_SOURCE_DIR}/libs/imgui/imstb_textedit.h
+	${PROJECT_SOURCE_DIR}/libs/imgui/imstb_truetype.h
+	${PROJECT_SOURCE_DIR}/libs/imgui/backends/imgui_impl_vulkan.h
+	${PROJECT_SOURCE_DIR}/libs/imgui/backends/imgui_impl_vulkan.cpp
+	${PROJECT_SOURCE_DIR}/libs/imgui/backends/imgui_impl_glfw.h
+	${PROJECT_SOURCE_DIR}/libs/imgui/backends/imgui_impl_glfw.cpp
+
+	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImGuizmo.h
+	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImGuizmo.cpp
+	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImCurveEdit.h
+	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImCurveEdit.cpp
+	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImGradient.h
+	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImGradient.cpp
+	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImSequencer.h
+	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImSequencer.cpp
+)
+
 find_package(Vulkan REQUIRED)
 find_package(OpenGL REQUIRED)
 
@@ -185,7 +230,7 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-add_library(VGLgfx STATIC ${HEADER_FILES} ${SOURCE_FILES})
+add_library(VGLgfx STATIC ${HEADER_FILES} ${SOURCE_FILES} ${LIB_SRC_FILES})	
 
 target_include_directories( 
 		VGLgfx PRIVATE 
