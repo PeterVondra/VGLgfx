@@ -26,3 +26,7 @@
 [submodule "VGLgfx/libs/assimp"]
 	path = VGLgfx/libs/assimp
 	url = https://github.com/assimp/assimp.git
+[submodule "VGLgfx/libs/ImGuiFileDialog"]
+	path = VGLgfx/libs/ImGuiFileDialog
+	url = https://github.com/aiekick/ImGuiFileDialog.git
+	branch = Lib_Only
