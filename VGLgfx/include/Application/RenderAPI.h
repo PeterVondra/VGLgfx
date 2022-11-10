@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef VGL_USING_VULKAN
+#ifdef VGL_RENDER_API_VULKAN
 #include "../Platform/Vulkan/VkDescriptor.h"
 #include "../Platform/Vulkan/VkBuffers.h"
 
@@ -42,7 +42,7 @@ namespace vgl
 	typedef vk::D_ShadowMap D_ShadowMap;
 }
 
-#elif defined VGL_USING_OPENGL
+#elif defined VGL_RENDER_API_OPENGL
 #include "../Platform/OpenGL/GlWindow.h"
 #include "../Platform/OpenGL/GlRenderer.h"
 namespace vgl

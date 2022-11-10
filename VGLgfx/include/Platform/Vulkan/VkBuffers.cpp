@@ -1,5 +1,5 @@
 #include "VkBuffers.h"
-#include "../../VGL_Logging.h"
+#include "../../VGL_Logger.h"
 
 namespace vgl
 {

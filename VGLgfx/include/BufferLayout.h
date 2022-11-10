@@ -2,8 +2,8 @@
 
 #include<iostream>
 
-#include "../lib/imgui/imgui.h"
-#include "VGL_Logging.h"
+#include "../libs/imgui/imgui.h"
+#include "VGL_Logger.h"
 
 namespace vgl
 {

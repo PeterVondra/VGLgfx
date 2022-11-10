@@ -1,8 +1,8 @@
 #pragma once
 
-#ifdef VGL_USING_VULKAN
+#ifdef VGL_RENDER_API_VULKAN
 #include "Vulkan/VkDefinitions.h"
-#elif defined VGL_USING_OPENGL
+#elif defined VGL_RENDER_API_OPENGL
 #include "OpenGL/GlDefinitions.h"
 #endif
 

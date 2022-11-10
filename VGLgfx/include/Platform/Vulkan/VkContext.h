@@ -3,7 +3,7 @@
 #define VK_VALIDATION_LAYERS_ENABLED
 #define LOGGING_ENABLED
 
-#include "../../VGL_Logging.h"
+#include "../../VGL_Logger.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include<GLFW/glfw3.h>
@@ -13,11 +13,11 @@
 #include <deque>
 #include <set>
 #include <string>
+#include <functional>
 
 #include "VkDescriptorLayoutCache.h"
 
 #include "../../../lib/VulkanMemoryAllocator/src/vk_mem_alloc.h"
-#include "../../../lib/robin_hood.h"
 
 namespace vgl
 {

@@ -11,20 +11,20 @@ namespace vgl
 	{
 		setPerspectiveMatrix(m_AspectRatio);
 		if (m_View == View::Third_Person) {
-			#ifdef VGL_USING_VULKAN
+			#ifdef VGL_RENDER_API_VULKAN
 				m_ViewMatrix = Matrix4f::lookAtRH(m_ViewZ * m_ViewZModifier + m_LookAtPoint, m_LookAtPoint, m_UpDirection);
 			#endif
-			#ifdef VGL_USING_OPENGL
+			#ifdef VGL_RENDER_API_OPENGL
 				m_ViewMatrix = Matrix4f::lookAtLH(m_ViewZ + m_LookAtPoint, m_LookAtPoint, m_UpDirection);
 			#endif
 
 			position = m_ViewZ * m_ViewZModifier;
 		}
 		else if (m_View == View::First_Person) {
-			#ifdef VGL_USING_VULKAN
+			#ifdef VGL_RENDER_API_VULKAN
 				m_ViewMatrix = Matrix4f::lookAtRH(position + m_LookAtPoint, position + m_ViewZ + m_LookAtPoint, m_UpDirection);
 			#endif
-			#ifdef VGL_USING_OPENGL
+			#ifdef VGL_RENDER_API_OPENGL
 				m_ViewMatrix = Matrix4f::lookAtLH(position + m_LookAtPoint, position + m_ViewZ + m_LookAtPoint, m_UpDirection);
 			#endif
 		}
@@ -52,10 +52,10 @@ namespace vgl
 	{
 		m_AspectRatio = p_AspectRatio;
 
-		#ifdef VGL_USING_VULKAN
+		#ifdef VGL_RENDER_API_VULKAN
 			m_PerspectiveMatrix = Matrix4f::perspectiveRH_ZO(m_FieldOfView, m_AspectRatio, m_NearPlane, m_FarPlane);
 		#endif
-		#ifdef VGL_USING_OPENGL
+		#ifdef VGL_RENDER_API_OPENGL
 			m_PerspectiveMatrix = Matrix4f::perspective(m_FieldOfView, m_AspectRatio, m_NearPlane, m_FarPlane);
 		#endif
 

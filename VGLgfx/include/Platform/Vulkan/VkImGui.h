@@ -13,7 +13,7 @@
 #include "VkCommandBuffer.h"
 #include "VkWindow.h"
 
-#include "../../VGL_Logging.h"
+#include "../../VGL_Logger.h"
 
 static uint32_t _ReverseInt(uint32_t i)
 {

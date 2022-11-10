@@ -1,5 +1,5 @@
 #include "VkFramebuffer.h"
-#include "../../VGL_Logging.h"
+#include "../../VGL_Logger.h"
 
 #undef max
 #undef min

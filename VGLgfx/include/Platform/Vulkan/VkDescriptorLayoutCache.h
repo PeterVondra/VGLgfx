@@ -7,7 +7,7 @@
 #include <algorithm>
 
 #define LOGGING_ENABLED
-#include "../../VGL_Logging.h"
+#include "../../VGL_Logger.h"
 #include "../../Utils/Cache.h"
 #include "VkDefinitions.h"
 

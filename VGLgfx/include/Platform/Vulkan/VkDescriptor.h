@@ -2,7 +2,7 @@
 
 #include "VkContext.h"
 #include "VkImage.h"
-#include "../../VGL_Logging.h"
+#include "../../VGL_Logger.h"
 
 namespace vgl
 {

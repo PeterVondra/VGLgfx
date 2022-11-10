@@ -15,9 +15,9 @@ namespace vgl
 {
 	enum class View { Third_Person, First_Person };
 
-	// #ifdef VGL_USING_VULKAN
+	// #ifdef VGL_RENDER_API_VULKAN
 	// Camera will use 0 to 1 depth
-	// #ifdef VGL_USING_OPENGL
+	// #ifdef VGL_RENDER_API_OPENGL
 	// Camera will use -1 to 1 depth
 
 	/* 

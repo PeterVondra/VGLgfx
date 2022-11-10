@@ -26,6 +26,8 @@ ADD_CUSTOM_TARGET(release
 
 project(VGLgfx)
 
+add_compile_definitions(VGL_RENDER_API_VULKAN GLEW_STATIC IMGUI_UNLIMITED_FRAME_RATE)
+
 set(
 	HEADER_FILES
 
@@ -34,6 +36,7 @@ set(
 	include/Platform/VkIncludes.h
 	#include/Platform/GLIncludes.h
 	include/VGL_Internal.h
+	include/VGL_Logger.h
 
 	include/GFXDefinitions.h
 	include/Platform/Definitions.h
@@ -115,6 +118,9 @@ set(
 
 set(
 	SOURCE_FILES
+	
+	include/VGL_Logger.cpp
+
 	# Math library
 	include/Math/Math.cpp
 	include/Math/Matrix.cpp
@@ -188,9 +194,9 @@ set(
 set(
 	LIB_SRC_FILES 
 	${PROJECT_SOURCE_DIR}/libs/VulkanMemoryAllocator/include/vk_mem_alloc.h
-	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/dirent.h
-	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/ImGuiFileDialog/ImGuiFileDialog.h
-	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/ImGuiFileDialog/ImGuiFileDialog.cpp
+	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/dirent/dirent.h
+	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/ImGuiFileDialog.h
+	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/ImGuiFileDialog.cpp
 	${PROJECT_SOURCE_DIR}/libs/imgui/imgui.h
 	${PROJECT_SOURCE_DIR}/libs/imgui/imgui.cpp
 	${PROJECT_SOURCE_DIR}/libs/imgui/imconfig.h
@@ -225,6 +231,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/libs/soil/)
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/freetype/)
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/glslang/)
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/yaml-cpp/)
+add_subdirectory(${PROJECT_SOURCE_DIR}/libs/spdlog/)
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -233,26 +240,42 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_library(VGLgfx STATIC ${HEADER_FILES} ${SOURCE_FILES} ${LIB_SRC_FILES})	
 
 target_include_directories( 
-		VGLgfx PRIVATE 
-		Vulkan_INCLUDE_DIR		
-		OpenGL_INCLUDE_DIR
+	VGLgfx PRIVATE 
+	Vulkan_INCLUDE_DIR		
+	OpenGL_INCLUDE_DIR
 
-		${PROJECT_SOURCE_DIR}/lib/glfw/include
-		${PROJECT_SOURCE_DIR}/lib/soil/include
-		${PROJECT_SOURCE_DIR}/lib/freetype/include
-		${PROJECT_SOURCE_DIR}/lib/glslang
-		${PROJECT_SOURCE_DIR}/lib/yaml-cpp/include
-	)
+	${PROJECT_SOURCE_DIR}/lib/glfw/include
+	${PROJECT_SOURCE_DIR}/lib/soil/include
+	${PROJECT_SOURCE_DIR}/lib/freetype/include
+	${PROJECT_SOURCE_DIR}/lib/glslang
+	${PROJECT_SOURCE_DIR}/lib/yaml-cpp/include
+	${PROJECT_SOURCE_DIR}/lib/spdlog/include
+)
 
-	target_link_libraries( 
-		VGLgfx
-		glfw
-		Vulkan::Vulkan 
-		#glew
-		OpenGL::GL 
-		soil 
-		freetype 
-		glslang 
-		SPIRV 
-		yaml-cpp  
-	)
+target_link_libraries( 
+	VGLgfx
+
+	glfw
+	Vulkan::Vulkan 
+	#glew
+	OpenGL::GL 
+	soil 
+	freetype 
+	glslang 
+	SPIRV 
+	yaml-cpp
+	spdlog
+)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
+
+add_executable(
+	VGLgfxTest
+
+	${PROJECT_SOURCE_DIR}/test/VGLgfxTest.cpp
+	data/CMakeResources/icon.rc
+)
+
+target_include_directories(VGLgfxTest PRIVATE ${PROJECT_SOURCE_DIR}/include/)
+
+target_link_libraries(VGLgfxTest VGLgfx)

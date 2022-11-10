@@ -6,7 +6,7 @@
 
 #include "Component.h"
 #include "System.h"
-#include "../VGL_Logging.h"
+#include "../VGL_Logger.h"
 #include "../Math/Math.h"
 
 #define VGL_ECS_COMPONENT(T) T : public vgl::ecs::Component<T> // Name of component/struct/class is T

@@ -1,12 +1,7 @@
 #include <ostream>
-#define VGL_USING_VULKAN
+#define VGL_RENDER_API_VULKAN
 #define IMGUI_VK_IMPL
-#include "include/Application/Application.h"
-#include "include/Math/Camera.h"
-#include "include/RenderPipelines.h"
-#include "include/Scene.h"
-#include "Editor/Editor.h"
-#include "../lib/ImGuiFileDialog/ImGuiFileDialog/ImGuiFileDialog.h"
+#include <VGLgfx.h>
 
 class TestLayer : public vgl::Layer
 {
@@ -142,7 +137,7 @@ public:
 			  (float)m_ViewportData.m_Position.y + (float)m_ViewportData.m_Size.y },
 			false
 		);
-		ImGuizmo::SetDrawlist();
+		//ImGuizmo::SetDrawlist();
 		vgl::ImGuiContext::Image(m_RenderPipeline.m_HDRFramebuffer.getCurrentImageAttachments()[0].getImage(), { (float)m_ViewportData.m_Size.x, (float)m_ViewportData.m_Size.y });
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		m_Camera.setAspectRatio((float)m_ViewportData.m_Size.x / m_ViewportData.m_Size.y);

@@ -1,5 +1,5 @@
 #include "VkImage.h"
-#include "../../VGL_Logging.h"
+#include "../../VGL_Logger.h"
 #include <cstring>
 
 #include <SOIL/SOIL.h>

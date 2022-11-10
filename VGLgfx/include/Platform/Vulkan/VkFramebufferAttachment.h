@@ -8,7 +8,7 @@
 #include "VkCommandBuffer.h"
 #include "VkWindow.h"
 
-#include "../../VGL_Logging.h"
+#include "../../VGL_Logger.h"
 
 namespace vgl
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../VGL_Logging.h"
+#include "../VGL_Logger.h"
 #include "../VGL_Internal.h"
 #include "LayerStack.h"
 

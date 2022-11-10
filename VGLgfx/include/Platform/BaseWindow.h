@@ -16,7 +16,7 @@
 #include<GLFW/glfw3native.h>
 #include<SOIL/stb_image_aug.h>
 
-#include "../VGL_Logging.h"
+#include "../VGL_Logger.h"
 #include "../Events/Event.h"
 #include "../Events/ApplicationEvent.h"
 #include "../Events/KeyEvent.h"
