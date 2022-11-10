@@ -1,5 +1,5 @@
-### __VGL-Engine__
-> C++ Vulkan/OpenGL graphics engine for both 2D and 3D
+### __VGLgfx__
+> C++ Vulkan/OpenGL engine for both 2D and 3D
 
 ## __Enginge Features:__
 - Built on Vulkan API (OpenGL not implemented at the moment, but API is render agnostic)
@@ -37,11 +37,11 @@ ___(Editor is currently not running, Editor will be rewritten)___
   
 
 ## __Screenshots from previous working versions:__
-![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(174).png?raw=true)
-![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(179).png?raw=true)
-![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(183).png?raw=true)
-![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(185).png?raw=true)
-![Alt text](https://github.com/PeterVondra/VGL/blob/main/images/Screenshot%20(84).png?raw=true)
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(174).png?raw=true)
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(179).png?raw=true)
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(183).png?raw=true)
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(185).png?raw=true)
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(84).png?raw=true)
 
 
 
