@@ -25,7 +25,6 @@
   - Directional Shadow mapping + Summed-Area Variance Shadow Maps(Nvidia, GPU Gems 3 Chapter 8.), also includes basic PCF Filtering
   - Volumetric lighting (Using ray marching).
   - Physically based Atmospheric Scattering.
-  - Basic Bloom (Needs to be improved)
   - Fast Approximate Anti-Aliasing (FXAA)
   - Bokeh Depth of Field.
   - Auto Adaptive Exposure(HDR + Gamma Correction)
