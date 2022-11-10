@@ -22,6 +22,8 @@ project(VGLGFXTEST)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 
+
+
 add_executable(
 	VGLgfxTest
 
