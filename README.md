@@ -1,7 +1,7 @@
 ### __VGLgfx__
 > C++ Vulkan/OpenGL engine for both 2D and 3D
 
-## __Enginge Features:__
+## __Engine Features:__
 - Built on Vulkan API (OpenGL not implemented at the moment, but API is meant to be render agnostic)
 - Custom Math Library.
 - Load/Save scenes (editable in .yaml format)
