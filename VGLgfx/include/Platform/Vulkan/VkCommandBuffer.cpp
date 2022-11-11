@@ -15,23 +15,18 @@ namespace vgl
 			m_AllocationInfo.commandBufferCount = 1;
 
 			if (p_Level == Level::Primary){
-				if (vkAllocateCommandBuffers(m_ContextPtr->m_Device, &m_AllocationInfo, &m_CommandBuffer) != VK_SUCCESS){
-					VGL_LOG_MSG("Failed to allocate PRIMARY command buffer", "VkCommandBuffer", Utils::Severity::Error);
-					m_Allocated = false;
-				}else{
-					//VGL_LOG_MSG("Allocated PRIMARY command buffer", "VkCommandBuffer", Utils::Severity::Trace);
-					m_Allocated = true;
-				}
+				VkResult result = vkAllocateCommandBuffers(m_ContextPtr->m_Device, &m_AllocationInfo, &m_CommandBuffer);
+				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to allocate PRIMARY command buffer, VkResult: %i", result);
+				if (result != VK_SUCCESS) m_Allocated = false;
+				else m_Allocated = true;
 				return;
 			}
 
-			if (vkAllocateCommandBuffers(m_ContextPtr->m_Device, &m_AllocationInfo, &m_CommandBuffer) != VK_SUCCESS){
-					VGL_LOG_MSG("Failed to allocate SECONDARY command buffer", "VkCommandBuffer", Utils::Severity::Error);
-				m_Allocated = false;
-			}else{
-				//VGL_LOG_MSG("Allocated SECONDARY command buffer", "VkCommandBuffer", Utils::Severity::Trace);
-				m_Allocated = true;
-			}
+			VkResult result = vkAllocateCommandBuffers(m_ContextPtr->m_Device, &m_AllocationInfo, &m_CommandBuffer);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to allocate SECONDARY command buffer, VkResult: %i", result);
+
+			if (result != VK_SUCCESS) m_Allocated = false;
+			else m_Allocated = true;
 		}
 		CommandBuffer::~CommandBuffer()
 		{
@@ -47,11 +42,11 @@ namespace vgl
 					m_BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 					m_BeginInfo.pInheritanceInfo = nullptr;
 
-					if (vkBeginCommandBuffer(m_CommandBuffer, &m_BeginInfo) != VK_SUCCESS)
-						VGL_LOG_MSG("Failed to begin recording command buffer", "VkCommandBuffer", Utils::Severity::Error);
-					else m_Recording = true;
-				}else
-					VGL_LOG_MSG("Cannot record SECONDARY command buffer without inheritance info, therefore command buffer did start recording", "VkCommandBuffer", Utils::Severity::Error);
+					VkResult result = vkBeginCommandBuffer(m_CommandBuffer, &m_BeginInfo);
+					VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to begin command buffer recording, VkResult: %i", result);
+
+					if (result == VK_SUCCESS) m_Recording = true;
+				}else VGL_INTERNAL_WARNING("[vk::CommandBuffer]Cannot record SECONDARY command buffer without inheritance info, command buffer did not begin recording");
 			}
 		}
 		void CommandBuffer::cmdBegin(VkCommandBufferInheritanceInfo& p_InheritanceInfo)
@@ -66,12 +61,11 @@ namespace vgl
 					m_BeginInfo.pInheritanceInfo = &p_InheritanceInfo;
 					m_InheritanceInfo = p_InheritanceInfo;
 				}else
-					VGL_LOG_MSG("Passed inheritance info when recording PRIMARY command buffer, recording will continue without it", "VkCommandBuffer", Utils::Severity::Warning);
+					VGL_INTERNAL_WARNING("[vk::CommandBuffer]Passed inheritance info when recording PRIMARY command buffer, recording will continue without it");
 
-				if (vkBeginCommandBuffer(m_CommandBuffer, &m_BeginInfo) != VK_SUCCESS)
-					VGL_LOG_MSG("Failed to begin recording command buffer", "VkCommandBuffer", Utils::Severity::Error);
-				else
-					m_Recording = true;
+				VkResult result = vkBeginCommandBuffer(m_CommandBuffer, &m_BeginInfo);
+				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to begin command buffer recording, VkResult: %i", result);
+				if(result == VK_SUCCESS) m_Recording = true;
 			}
 		}
 
@@ -79,10 +73,10 @@ namespace vgl
 		{
 			m_PipelinePtr = nullptr;
 
-			if (vkEndCommandBuffer(m_CommandBuffer) != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to end command buffer recording", "VkCommandBuffer", Utils::Severity::Error);
-			else
-				m_Recording = false;
+			VkResult result = vkEndCommandBuffer(m_CommandBuffer);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to end command buffer recording, VkResult: %i", result);
+
+			if (result == VK_SUCCESS) m_Recording = false;
 		}
 
 		void CommandBuffer::cmdBeginRenderPass(RenderPass& p_RenderPass, SubpassContents p_SubPassContents, Framebuffer& p_Framebuffer, VkRenderPassAttachmentBeginInfo* p_Next)
@@ -106,9 +100,7 @@ namespace vgl
 				renderPassInfo.pClearValues = clearValues.data();
 
 				vkCmdBeginRenderPass(m_CommandBuffer, &renderPassInfo, (VkSubpassContents)p_SubPassContents);
-			}
-			else
-				VGL_LOG_MSG("Renderpass can't begin, command buffer level is SECONDARY", "VkCommandBuffer", Utils::Severity::Error);
+			}else VGL_INTERNAL_WARNING("[vk::CommandBuffer]Renderpass can't begin, command buffer level is SECONDARY");
 		}
 		void CommandBuffer::cmdBeginRenderPass(RenderPass& p_RenderPass, SubpassContents p_SubPassContents, VkFramebuffer& p_Framebuffer, Vector2i p_Size)
 		{
@@ -131,15 +123,13 @@ namespace vgl
 				renderPassInfo.pClearValues = clearValues.data();
 
 				vkCmdBeginRenderPass(m_CommandBuffer, &renderPassInfo, (VkSubpassContents)p_SubPassContents);
-			}else
-				VGL_LOG_MSG("Renderpass can't begin, command buffer level is SECONDARY", "VkCommandBuffer", Utils::Severity::Error);
+			}else VGL_INTERNAL_WARNING("[vk::CommandBuffer]Renderpass can't begin, command buffer level is SECONDARY");
 		}
 		void CommandBuffer::cmdEndRenderPass()
 		{
 			if (m_Level == Level::Primary)
 				vkCmdEndRenderPass(m_CommandBuffer);
-			else
-				VGL_LOG_MSG("Renderpass can't end, command buffer level is SECONDARY", "VkCommandBuffer", Utils::Severity::Error);
+			else VGL_INTERNAL_WARNING("[vk::CommandBuffer]Renderpass can't end, command buffer level is SECONDARY");
 		}
 
 		// Execute secondary command buffers, if this command buffer level is set to primary
@@ -151,13 +141,7 @@ namespace vgl
 					if (p_CommandBuffers[i].m_Level == Level::Secondary)
 						commandBuffers.push_back(p_CommandBuffers[i].m_CommandBuffer);
 					else
-						VGL_LOG_MSG(
-							"Secondary command buffer at index "
-							+ Utils::to_string(i)
-							+ " is not a secondary command buffer, therefore will not be executed",
-							"VkCommandBuffer",
-							Utils::Severity::Warning
-						);
+						VGL_INTERNAL_WARNING("[vk:CommandBuffer]Secondary command buffer at index %i is not a secondary command buffer, therefore will not be executed", i);
 				}
 				vkCmdExecuteCommands(m_CommandBuffer, commandBuffers.size(), commandBuffers.data());
 			}
@@ -175,14 +159,8 @@ namespace vgl
 				for (int i = 0; i < p_Size; i++){
 					if (p_CommandBuffers[i].m_Level == Level::Secondary)
 						commandBuffers.push_back(p_CommandBuffers[i].m_CommandBuffer);
-					else
-						VGL_LOG_MSG(
-							"Secondary command buffer at index "
-							+ Utils::to_string(i)
-							+ " is not a secondary command buffer, therefore will not be executed",
-							"VkCommandBuffer",
-							Utils::Severity::Warning
-						);
+					else 
+						VGL_INTERNAL_WARNING("[vk:CommandBuffer]Secondary command buffer at index %i is not a secondary command buffer, therefore will not be executed", i);
 				}
 				vkCmdExecuteCommands(m_CommandBuffer, p_Size, commandBuffers.data());
 			}
@@ -205,7 +183,7 @@ namespace vgl
 				);
 				return;
 			}
-			VGL_LOG_MSG("Can't bind descriptor set, pipeline is not bound", "VkCommandBuffer", Utils::Severity::Error);
+			VGL_INTERNAL_ERROR("[vk::CommandBuffer]Can't bind descriptor set, pipeline is not bound");
 		}
 		void CommandBuffer::cmdBindVertexArray(VertexArray& p_Vao)
 		{
@@ -331,7 +309,7 @@ namespace vgl
 				dstStage = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 			}
 			else
-				VGL_LOG_MSG("unsupported layout transition", "Image Layout Transition", Utils::Severity::Error);
+				VGL_INTERNAL_ERROR("[vk::CommandBuffer/VkPipelineBarrier]Unsupported layout transition: p_OldLayout is %i and p_NewLayout is %i", p_OldLayout, p_NewLayout);
 
 			if (p_NewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL){
 				imageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -354,11 +332,11 @@ namespace vgl
 			m_Allocated = false;
 
 			if (m_Level == Level::Primary){
-				VGL_LOG_MSG("Destroyed PRIMARY command buffer", "VkCommandBuffer", Utils::Severity::Trace);
+				VGL_INTERNAL_TRACE("[vk::CommandBuffer]Destroyed PRIMARY command buffer");
 				return;
 			}
 
-			VGL_LOG_MSG("Destroyed SECONDARY command buffer", "VkCommandBuffer", Utils::Severity::Trace);
+			VGL_INTERNAL_TRACE("[vk::CommandBuffer]Destroyed SECONDARY command buffer");
 		}
 		void CommandBuffer::reset()
 		{

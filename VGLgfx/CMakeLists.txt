@@ -280,6 +280,7 @@ target_link_libraries(
 	spdlog
 )
 
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
 
 add_executable(

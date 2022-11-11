@@ -53,11 +53,9 @@ namespace vgl
 			m_MagFilter = p_MagFilter;
 			m_MinFilter = p_MinFilter;
 
-			if (!m_ImageData)
-			{
-				VGL_LOG_MSG("p_Image was nullptr", "VkImage", Utils::Severity::Warning);
-				m_IsValid = false;
-			}
+			VGL_INTERNAL_ASSERT_WARNING(m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
+
+			if (!m_ImageData) m_IsValid = false;
 
 			m_CurrentChannels = p_Channels;
 
@@ -106,10 +104,9 @@ namespace vgl
 			m_MagFilter = p_MagFilter;
 			m_MinFilter = p_MinFilter;
 
-			if (!m_ImageData){
-				VGL_LOG_MSG("p_Image was nullptr", "Texture", Utils::Severity::Warning);
-				m_IsValid = false;
-			}
+			VGL_INTERNAL_ASSERT_WARNING(m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
+
+			if (!m_ImageData) m_IsValid = false;
 
 			m_CurrentChannels = p_Channels;
 
@@ -145,6 +142,8 @@ namespace vgl
 		{
 			m_IsValid = false;
 
+			VGL_INTERNAL_TRACE("[vk::Image]Destroyed Image: %i", m_VkImageHandle);
+
 			m_ContextPtr->destroyImage(m_VkImageHandle, m_ImageAllocation);
 			
 			vkDestroySampler(m_ContextPtr->m_Device, m_Sampler, nullptr);
@@ -153,7 +152,6 @@ namespace vgl
 			vkDestroyDescriptorSetLayout(m_ContextPtr->m_Device, m_DescriptorSetLayout, nullptr);
 			vkFreeDescriptorSets(m_ContextPtr->m_Device, m_ContextPtr->m_DefaultDescriptorPool, 1, &m_DescriptorSet);
 
-			VGL_LOG_MSG("Destroyed vulkan Image", "VulkanImage", Utils::Severity::Trace);
 		}
 
 		// Use for imgui texture id
@@ -350,11 +348,8 @@ namespace vgl
 			samplerInfo.minLod = 0.0f;
 			samplerInfo.maxLod = static_cast<float>(m_MipLevels);
 
-			if (vkCreateSampler(m_ContextPtr->m_Device, &samplerInfo, nullptr, &m_Sampler) != VK_SUCCESS) {
-
-				VGL_LOG_MSG("Failed to create image sampler", "VkImage->Sampler", Utils::Severity::Error);
-#endif
-			}
+			VkResult result = vkCreateSampler(m_ContextPtr->m_Device, &samplerInfo, nullptr, &m_Sampler);
+			VGL_INTERNAL_ASSERT_ERROR(result != nullptr, "[vk::Image]Failed to create Image sampler, VkResult: %i", result);
 		}
 
 		void Image::generateMipMaps(VkImage p_Image, VkFormat p_Format, Vector2i p_Size, uint32_t mipLevels)
@@ -363,7 +358,7 @@ namespace vgl
 			vkGetPhysicalDeviceFormatProperties(m_ContextPtr->m_PhysicalDevice.m_VkHandle, p_Format, &formatProperties);
 
 			if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
-				VGL_LOG_MSG("Image format does not support linear blitting!", "VkImage", Utils::Severity::Warning);
+				VGL_INTERNAL_WARNING("[vk::Image]Image format does not support linear blitting!");
 
 				m_ContextPtr->transitionLayoutImage(
 					p_Image,
@@ -463,12 +458,13 @@ namespace vgl
 		{
 			m_IsValid = false;
 			
+			VGL_INTERNAL_TRACE("[vk::ImageCube]Destroyed Image: %i", m_VkImageHandle);
+
 			m_ContextPtr->destroyImage(m_VkImageHandle, m_ImageAllocation);
 			
 			vkDestroySampler(m_ContextPtr->m_Device, m_Sampler, nullptr);
 			vkDestroyImageView(m_ContextPtr->m_Device, m_ImageView, nullptr);
 
-			VGL_LOG_MSG("Destroyed vulkan ImageCube", "VulkanImageCube", Utils::Severity::Trace);
 		}
 		void ImageCube::createImage()
 		{
@@ -558,11 +554,8 @@ namespace vgl
 			samplerInfo.minLod = 0.0f;
 			samplerInfo.maxLod = static_cast<float>(m_MipLevels);
 
-			if (vkCreateSampler(m_ContextPtr->m_Device, &samplerInfo, nullptr, &m_Sampler) != VK_SUCCESS) {
-
-				VGL_LOG_MSG("Failed to create image sampler", "VkImage->Sampler", Utils::Severity::Error);
-#endif
-			}
+			VkResult result = vkCreateSampler(m_ContextPtr->m_Device, &samplerInfo, nullptr, &m_Sampler);
+			VGL_INTERNAL_ASSERT_ERROR(result != nullptr, "[vk::ImageCube]Failed to create Image sampler, VkResult: %i", result);
 		}
 
 		bool ImageLoader::getImageFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
@@ -574,8 +567,10 @@ namespace vgl
 			p_Image.m_ImageData = (unsigned char*)SOIL_load_image(p_Path, &p_Image.m_Size.x, &p_Image.m_Size.y, &channels, SOIL_LOAD_RGBA);
 			p_Image.m_IsValid = false;
 
+			VGL_INTERNAL_ASSERT_WARNING(m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
+
 			if (!p_Image.m_ImageData){
-				VGL_LOG_MSG("Failed to load image " + std::string(p_Path) + "", " Image Loader", Utils::Severity::Warning);
+				VGL_INTERNAL_WARNING("[vk::ImageLoader]Failed to load image " + std::string(p_Path) + "");
 				return false;
 			}
 
@@ -602,8 +597,10 @@ namespace vgl
 
 			p_Image.m_IsValid = false;
 
-			if (!p_Image.m_ImageData){
-				VGL_LOG_MSG("Failed to load image " + std::string(p_Path) + "", " Image Loader", Utils::Severity::Warning);
+			VGL_INTERNAL_ASSERT_WARNING(m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
+
+			if (!p_Image.m_ImageData) {
+				VGL_INTERNAL_WARNING("[vk::ImageLoader]Failed to load image " + std::string(p_Path) + "");
 				return false;
 			}
 
@@ -630,8 +627,10 @@ namespace vgl
 			p_Image.m_ImageData = (unsigned char*)SOIL_load_image(p_Path, &p_Image.m_Size.x, &p_Image.m_Size.y, &channels, SOIL_LOAD_RGBA);
 			p_Image.m_IsValid = false;
 
+			VGL_INTERNAL_ASSERT_WARNING(m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
+
 			if (!p_Image.m_ImageData) {
-				VGL_LOG_MSG("Failed to load image " + std::string(p_Path) + "", " Image Loader", Utils::Severity::Warning);
+				VGL_INTERNAL_WARNING("[vk::ImageLoader]Failed to load image " + std::string(p_Path) + "");
 				return false;
 			}
 

@@ -7,7 +7,7 @@
 #include <windows.h>
 #endif
 
-#include <ppk_assert.h>
+#include "ppk_assert.h"
 
 #include <cstdio>  // fprintf() and vsnprintf()
 #include <cstring>

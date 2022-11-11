@@ -17,7 +17,7 @@ namespace vgl
 
 		void IndexBuffer::destroy()
 		{
-			VGL_LOG_MSG("Destroyed Index buffer", "VkIndexBuffer", Utils::Severity::Trace);
+			VGL_INTERNAL_TRACE("[vk::IndexBuffer]Destroyed Index buffer %i", m_Buffer);
 
 			m_ContextPtr->deviceWaitIdle();
 			m_ContextPtr->destroyBuffer(m_Buffer, m_AllocInfo.p_Alloc);
@@ -46,10 +46,8 @@ namespace vgl
 
 		void IndexBuffer::fill(std::vector<uint32_t>* p_BufferData)
 		{
-			if (!p_BufferData) {
-				VGL_LOG_MSG("Buffer data is nullptr", "VkIndexBuffer", Utils::Severity::Error);
-				return;
-			}
+			VGL_INTERNAL_ASSERT_WARNING(p_BufferData != nullptr, "[vk::Buffer]Attempted to allocate Index buffer with 'p_BufferData' == nullptr, buffer will not be allocated");
+			if (!p_BufferData) return;
 
 			m_Count = p_BufferData->size();
 
@@ -73,10 +71,9 @@ namespace vgl
 		{
 			m_BufferSize = p_Size;
 
-			if (!p_BufferData) {
-				VGL_LOG_MSG("Buffer data is nullptr", "VkIndexBuffer", Utils::Severity::Error);
-				return;
-			}
+			VGL_INTERNAL_ASSERT_WARNING(p_BufferData != nullptr, "[vk::Buffer]Attempted to allocate Index buffer with 'p_BufferData' == nullptr, buffer will not be allocated");
+
+			if (!p_BufferData) return;
 
 			m_Count = p_Size/sizeof(uint32_t);
 

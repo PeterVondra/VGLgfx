@@ -57,11 +57,8 @@ namespace vgl
 			auto vertShaderCode = readFile(p_VertexShader);
 			auto fragShaderCode = readFile(p_FragmentShader);
 
-			if (vertShaderCode.empty() || fragShaderCode.empty())
-			{
-
-				VGL_LOG_MSG("shader code is nullptr", "Shader", Utils::Severity::Error);
-#endif
+			if (vertShaderCode.empty() || fragShaderCode.empty()){
+				VGL_INTERNAL_ERROR("[vk::Shader]Failed to create shader, source data is empty");
 				return;
 			}
 
@@ -89,11 +86,8 @@ namespace vgl
 			std::vector<char> vertShaderCode = readFile(p_VertexShader);
 			std::vector<char> fragShaderCode = readFile(p_FragmentShader);
 
-			if (vertShaderCode.empty() || fragShaderCode.empty())
-			{
-				
-				VGL_LOG_MSG("shader code is empty", "Shader", Utils::Severity::Error);
-				#endif
+			if (vertShaderCode.empty() || fragShaderCode.empty()) {
+				VGL_INTERNAL_ERROR("[vk::Shader]Failed to create shader, source data is empty");
 				return;
 			}
 
@@ -261,13 +255,11 @@ namespace vgl
 			DirStackFileIncluder Includer;
 			std::string vPreprocessed;
 
-			if (!shader.preprocess(&resources, ClientInputSemanticsVersion, ENoProfile, false, false, messages, &vPreprocessed, Includer))
-			{
+			if (!shader.preprocess(&resources, ClientInputSemanticsVersion, ENoProfile, false, false, messages, &vPreprocessed, Includer)){
+				VGL_INTERNAL_ERROR("[GLSLANG]GLSL preprocessing failed");
+				VGL_INTERNAL_ERROR("[GLSLANG]" + std::string(shader.getInfoLog()) + "\n");
+				VGL_INTERNAL_ERROR("[GLSLANG]" + std::string(shader.getInfoDebugLog()) + "\n");
 
-				VGL_LOG_MSG("GLSL preprocessing failed", "GLSLANG", Utils::Severity::Error);
-				VGL_LOG_MSG(std::string(shader.getInfoLog()) + "\n", "GLSLANG", Utils::Severity::Error);
-				VGL_LOG_MSG(std::string(shader.getInfoDebugLog()) + "\n", "GLSLANG", Utils::Severity::Error);
-#endif
 				Utils::FileGUI::writeToFile("debug/compiled_shader_preprocesed.txt", vPreprocessed);
 				Utils::FileGUI::writeToFile("debug/shader_error_log.txt", std::string(shader.getInfoLog()) + std::string(shader.getInfoDebugLog()));
 				std::cin.get();
@@ -278,13 +270,11 @@ namespace vgl
 
 			shader.setStrings(&vPreprocessedC, 1);
 
-			if (!shader.parse(&resources, ClientInputSemanticsVersion, false, messages))
-			{
+			if (!shader.parse(&resources, ClientInputSemanticsVersion, false, messages)){
+				VGL_INTERNAL_ERROR("[GLSLANG]GLSL parsing failed");
+				VGL_INTERNAL_ERROR("[GLSLANG]" + std::string(shader.getInfoLog()) + "\n");
+				VGL_INTERNAL_ERROR("[GLSLANG]" + std::string(shader.getInfoDebugLog()) + "\n");
 
-				VGL_LOG_MSG("GLSL parsing failed", "GLSLANG", Utils::Severity::Error);
-				VGL_LOG_MSG(std::string(shader.getInfoLog()) + "\n", "GLSLANG", Utils::Severity::Error);
-				VGL_LOG_MSG(std::string(shader.getInfoDebugLog()) + "\n", "GLSLANG", Utils::Severity::Error);
-#endif
 				Utils::FileGUI::writeToFile("debug/compiled_shader.txt", vPreprocessed);
 				Utils::FileGUI::writeToFile("debug/shader_error_log.txt", std::string(shader.getInfoLog()) + std::string(shader.getInfoDebugLog()));
 				std::cin.get();
@@ -295,13 +285,11 @@ namespace vgl
 			glslang::TProgram program;
 			program.addShader(&shader);
 
-			if (!program.link(messages))
-			{
+			if (!program.link(messages)){
+				VGL_INTERNAL_ERROR("[GLSLANG]GLSL linking failed");
+				VGL_INTERNAL_ERROR("[GLSLANG]" + std::string(shader.getInfoLog()) + "\n");
+				VGL_INTERNAL_ERROR("[GLSLANG]" + std::string(shader.getInfoDebugLog()) + "\n");
 
-				VGL_LOG_MSG("GLSL linking failed", "GLSLANG", Utils::Severity::Error);
-				VGL_LOG_MSG(std::string(shader.getInfoLog()) + "\n", "GLSLANG", Utils::Severity::Error);
-				VGL_LOG_MSG(std::string(shader.getInfoDebugLog()) + "\n", "GLSLANG", Utils::Severity::Error);
-#endif
 				Utils::FileGUI::writeToFile("debug/shader_error_log.txt", std::string(shader.getInfoLog()) + std::string(shader.getInfoDebugLog()));
 				std::cin.get();
 			}
@@ -313,10 +301,9 @@ namespace vgl
 
 
 			if(p_Type == glslType::Vertex)
-				VGL_LOG_MSG("Vertex shader compilation", "GLSLANG", Utils::Result::Success);
+				VGL_INTERNAL_TRACE("[GLSLANG]Vertex shader compiled");
 			else if(p_Type == glslType::Fragment)
-				VGL_LOG_MSG("Fragment shader compilation", "GLSLANG", Utils::Result::Success);
-#endif
+				VGL_INTERNAL_TRACE("[GLSLANG]Fragment shader compiled");
 
 			return spirv;
 		}
@@ -331,11 +318,7 @@ namespace vgl
 
 			VkShaderModule shaderModule;
 			VkResult result = vkCreateShaderModule(m_ContextPtr->m_Device, &createInfo, nullptr, &shaderModule);
-
-
-			if (result != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to create shader module", "Shader", Utils::Severity::Error);
-#endif
+			VGL_INTERNAL_ASSERT_ERROR(resutl == VK_SUCCESS, "[vk::Shader]Failed to create shader module, VkResult: %i", result);
 
 			return shaderModule;
 		}
@@ -349,11 +332,7 @@ namespace vgl
 
 			VkShaderModule shaderModule;
 			VkResult result = vkCreateShaderModule(m_ContextPtr->m_Device, &createInfo, nullptr, &shaderModule);
-
-
-			if (result != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to create shader module", "Shader", Utils::Severity::Error);
-#endif
+			VGL_INTERNAL_ASSERT_ERROR(resutl == VK_SUCCESS, "[vk::Shader]Failed to create shader module, VkResult: %i", result);
 
 			return shaderModule;
 		}
