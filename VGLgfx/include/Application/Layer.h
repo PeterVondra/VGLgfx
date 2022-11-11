@@ -10,7 +10,7 @@
 #include "RenderAPI.h"
 
 #define USE_IMGUI_API
-#include "../../lib/ImGuizmo/ImGuizmo.h"
+#include "../../libs/ImGuizmo/ImGuizmo.h"
 
 namespace vgl
 {

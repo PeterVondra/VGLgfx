@@ -47,7 +47,7 @@ namespace vgl
 		{
 			if (m_Attachments.empty())
 			{
-				VGL_LOG_MSG("Failed to create render pass, no attachments submitted", "RenderPass", Utils::Severity::Warning);
+				VGL_INTERNAL_WARNING("[VKRenderPass]Failed to create render pass, no attachments submitted");
 				m_IsValid = false;
 				return false;
 			}
@@ -88,15 +88,17 @@ namespace vgl
 			renderPassInfo.dependencyCount = static_cast<uint32_t>(m_Dependencies.size());
 			renderPassInfo.pDependencies = m_Dependencies.data();
 
-			if (vkCreateRenderPass(m_ContextPtr->m_Device, &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS){
-				VGL_LOG_MSG("Failed to create render pass", "VkRenderPass", Utils::Severity::Error);
+			VkResult result = vkCreateRenderPass(m_ContextPtr->m_Device, &renderPassInfo, nullptr, &m_RenderPass);
+			VGL_INTERNAL_ASSERT_ERROR("[VkRenderPass]Failed to create Render pass, VkResult: %i", result);
+
+			if (result != VK_SUCCESS){
 				m_IsValid = false;
 				return false;
 			}
 
 
-			VGL_LOG_MSG("Succesfully created renderpass", "VkRenderPass", Utils::Severity::Trace);
-#endif
+			VGL_INTERNAL_TRACE("[VkRenderPass]Succesfully created renderpass");
+
 			m_IsValid = true;
 			return true;
 		}
@@ -138,9 +140,7 @@ namespace vgl
 		bool g_Pipeline::create(g_PipelineInfo p_PipelineInfo)
 		{
 			if (m_IsValid) {
-
-				VGL_LOG_MSG("Graphics Pipeline was already created, destroy it first!", "vk::g_Pipeline", Utils::Severity::Warning);
-#endif
+				VGL_INTERNAL_WARNING("[vk::g_Pipeline]Graphics Pipeline was already created, destroy it first!");
 				return false;
 			}
 
@@ -329,11 +329,11 @@ namespace vgl
 				pipelineLayoutInfo.pPushConstantRanges = &pcRange;
 			}
 
-			if (vkCreatePipelineLayout(m_ContextPtr->m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS){
+			{
+				VkResult result = vkCreatePipelineLayout(m_ContextPtr->m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout);
+				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::g_Pipeline]Failed to create pipeline layout, VkResult: %i", result);
 
-				VGL_LOG_MSG("Failed to create pipeline layout", "Rendering", Utils::Severity::Error);
-#endif
-				return false;
+				if (result != VK_SUCCESS) return false;
 			}
 
 			VkGraphicsPipelineCreateInfo pipelineInfo = {};
@@ -354,22 +354,14 @@ namespace vgl
 			pipelineInfo.basePipelineIndex = -1;
 			pipelineInfo.subpass = 0;
 
-			if (p_PipelineInfo.p_RenderPass == nullptr){
+			VGL_INTERNAL_ASSERT_ERROR(p_PipelineInfo.p_RenderPass == nullptr, "[vk::g_Pipeline]Failed to create graphics pipeline, p_RenderPass == nullptr");
+			if (p_PipelineInfo.p_RenderPass == nullptr) return false;
+			VkResult result = vkCreateGraphicsPipelines(m_ContextPtr->m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::g_Pipeline]Failed to create graphics pipeline, VkResult: %i", result);
+			if (result != VK_SUCCESS) return false;
 
-				VGL_LOG_MSG("Failed to create graphics pipeline, p_RenderPass == nullptr", "Rendering", Utils::Severity::Error);
-#endif
-				return false;
-			}
-			else if (vkCreateGraphicsPipelines(m_ContextPtr->m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline) != VK_SUCCESS){
+			VGL_INTERNAL_TRACE("[vk::g_Pipeline]Succesfully created graphics pipeline");
 
-				VGL_LOG_MSG("Failed to create graphics pipeline", "Rendering", Utils::Severity::Error);
-#endif
-				return false;
-			}
-
-			else
-				VGL_LOG_MSG("Succesfully created graphics pipeline", "Rendering", Utils::Severity::Trace);
-#endif
 			m_IsValid = true;
 
 			return true;

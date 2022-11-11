@@ -1,7 +1,9 @@
 #pragma once
 
+#define VGL_INTERNAL_LOGGING_ENABLED
+#ifdef VGL_INTERNAL_LOGGING_ENABLED
 #define VK_VALIDATION_LAYERS_ENABLED
-#define LOGGING_ENABLED
+#endif
 
 #include "../../VGL_Logger.h"
 

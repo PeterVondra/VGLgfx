@@ -4,6 +4,7 @@
 
 #include "../../Math/Vector.h"
 #include "../../Application/RenderAPI.h"
+#include "../../Utils/Logger.h"
 
 namespace vgl
 {

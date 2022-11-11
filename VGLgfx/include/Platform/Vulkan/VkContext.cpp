@@ -1,6 +1,7 @@
 #define VMA_IMPLEMENTATION
 #include "VkContext.h"
 #include <chrono>
+#include "../../Utils/Logger.h"
 
 namespace vgl
 {
@@ -50,9 +51,9 @@ namespace vgl
 			m_AppInfo.apiVersion = VK_API_VERSION_1_2;
 			m_AppInfo.pNext = NULL;
 
-			VGL_LOG_MSG("Api version: " + Utils::to_string(m_AppInfo.apiVersion) + "", "Application", Utils::Severity::Info);
-			VGL_LOG_MSG("Engine version: " + Utils::to_string(m_AppInfo.engineVersion) + "", "Application", Utils::Severity::Info);
-			VGL_LOG_MSG("Application version: " + Utils::to_string(m_AppInfo.applicationVersion) + "", "Application", Utils::Severity::Info);
+			VGL_INTERNAL_INFO("[VkContext]API version: " + Utils::to_string(m_AppInfo.apiVersion));
+			VGL_INTERNAL_INFO("[VkContext]Engine version: " + Utils::to_string(m_AppInfo.engineVersion));
+			VGL_INTERNAL_INFO("[VkContext]Application version: " + Utils::to_string(m_AppInfo.applicationVersion));
 
 			m_InstanceCreateInfo = {};
 			m_InstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -69,7 +70,7 @@ namespace vgl
 
 			std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-			#ifdef USE_VK_VALIDATION_LAYERS
+			#ifdef VK_VALIDATION_LAYERS_ENABLED
 			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 			#endif
 
@@ -78,11 +79,11 @@ namespace vgl
 		}
 		void Context::initInstance()
 		{
-			#if defined(LOGGING_ENABLED) && defined(VK_VALIDATION_LAYERS_ENABLED)
+			#ifdef VK_VALIDATION_LAYERS_ENABLED
 			if (!d_CheckValidationLayerSupport())
-				VGL_LOG_MSG("Validation layers requested but not available", "VKValidationLayers", Utils::Severity::Warning);
+				VGL_INTERNAL_WARNING("[VkContext]Validation layers requested but not available");
 			else
-				VGL_LOG_MSG("Validation layers available", "Validation Layers", Utils::Severity::Debug);
+				VGL_INTERNAL_INFO("[VkContext]Validation layers available");
 			#endif
 
 			auto extensions = getRequiredExtensions();
@@ -100,13 +101,14 @@ namespace vgl
 			VkResult result = vkCreateInstance(&m_InstanceCreateInfo, nullptr, &m_Instance);
 			
 			for (int i = 0; i < extensions.size(); i++)
-				VGL_LOG_MSG(std::string(extensions[i]), "Extensions", Utils::Severity::Info);
+				VGL_INTERNAL_INFO("[VkContext]Instance extensions" + std::string(extensions[i]));
+
+			VGL_ASSERT_FATAL(result == VK_SUCCESS, "[VkContext]Failed to create Vulkan instance, VkResult: %i", result);
 
 			if (result != VK_SUCCESS) {
-				VGL_LOG_MSG("Failed to create instance", "Vulkan-Instance", Utils::Severity::Error);
 				m_VkDeleteQueue.emplace_front(VkDeleteQueueFun([&] { vkDestroyInstance(m_Instance, nullptr); }));
-			}else
-				VGL_LOG_MSG("Succesfully created instance", "Vulkan-Instance", Utils::Severity::Trace);
+				VGL_INTERNAL_TRACE("[VkContext]Succesfully created Vulkan instance, VkResult: %i", result);
+			}
 		}
 		void Context::initCommandPool()
 		{
@@ -120,9 +122,9 @@ namespace vgl
 
 			VkResult result = vkCreateCommandPool(m_Device, &commandPoolInfo, nullptr, &m_DefaultCommandPool);
 
-			if(result != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to create command pool", "Vulkan command pool", Utils::Severity::Error);
-			else m_VkDeleteQueue.emplace_front(VkDeleteQueueFun([&] { vkDestroyCommandPool(m_Device, m_DefaultCommandPool, nullptr); }));
+			VGL_ASSERT_FATAL(result == VK_SUCCESS, "[VkContext]Failed to create default command pool, VkResult: %i", result);
+
+			if(result == VK_SUCCESS) m_VkDeleteQueue.emplace_front(VkDeleteQueueFun([&] { vkDestroyCommandPool(m_Device, m_DefaultCommandPool, nullptr); }));
 		}
 		void Context::initLogicalDevice()
 		{
@@ -154,18 +156,21 @@ namespace vgl
 
 			createInfo.enabledLayerCount = 0;
 			
-			#ifdef USE_VK_VALIDATION_LAYERS
+			#ifdef VK_VALIDATION_LAYERS_ENABLED
 			createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayerExtensions.size());
 			createInfo.ppEnabledLayerNames = m_ValidationLayerExtensions.data();
 			#endif
 
-			VkResult result = vkCreateDevice(m_PhysicalDevice.m_VkHandle, &createInfo, nullptr, &m_Device);
+			{
+				VkResult result = vkCreateDevice(m_PhysicalDevice.m_VkHandle, &createInfo, nullptr, &m_Device);
 
-			if (result != VK_SUCCESS) {
-				VGL_LOG_MSG("Failed to create logical m_Device", "Logical Device", Utils::Severity::Error);
-				m_VkDeleteQueue.emplace_front(VkDeleteQueueFun([&] { vkDestroyDevice(m_Device, nullptr); }));
-			}else
-				VGL_LOG_MSG("Succesfully created logical m_Device", "Logical Device", Utils::Severity::Trace);
+				VGL_ASSERT_FATAL(result == VK_SUCCESS, "[VkContext]Failed to create logical device, VkResult: %i", result);
+			
+				if (result == VK_SUCCESS) {
+					m_VkDeleteQueue.emplace_front(VkDeleteQueueFun([&] { vkDestroyDevice(m_Device, nullptr); }));
+					VGL_INTERNAL_TRACE("[VkContext]Succesfully created logical device, VkResult: %i", result);
+				}
+			}
 
 			vkGetDeviceQueue(m_Device, indices.graphicsFamily, 0, &m_GraphicsQueue);
 			vkGetDeviceQueue(m_Device, indices.presentFamily, 0, &m_PresentQueue);
@@ -186,22 +191,24 @@ namespace vgl
 				{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
 			};
 
-			//Size of pool to limit size
-			VkDescriptorPoolCreateInfo poolInfo = {};
-			poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-			poolInfo.poolSizeCount = m_DefaultDescriptorPoolSizes.size();
-			poolInfo.pPoolSizes = m_DefaultDescriptorPoolSizes.data();
-			poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-			poolInfo.maxSets = static_cast<uint32_t>(1000);
+			{
+				//Size of pool to limit size
+				VkDescriptorPoolCreateInfo poolInfo = {};
+				poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+				poolInfo.poolSizeCount = m_DefaultDescriptorPoolSizes.size();
+				poolInfo.pPoolSizes = m_DefaultDescriptorPoolSizes.data();
+				poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+				poolInfo.maxSets = static_cast<uint32_t>(1000);
 
-			VkResult result2 = vkCreateDescriptorPool(m_Device, &poolInfo, nullptr, &m_DefaultDescriptorPool);
+				VkResult result = vkCreateDescriptorPool(m_Device, &poolInfo, nullptr, &m_DefaultDescriptorPool);
 
+				VGL_ASSERT_ERROR(result == VK_SUCCESS, "[VkContext]Failed to create default descriptor pool, VkResult: %i", result);
 			
-			if (result2 != VK_SUCCESS) {
-				VGL_LOG_MSG("Failed to create descriptor pool\n", "Uniform Buffer", Utils::Severity::Error);
-				m_VkDeleteQueue.emplace_front(VkDeleteQueueFun([&] { vkDestroyDescriptorPool(m_Device, m_DefaultDescriptorPool, nullptr); }));
-			}else
-				VGL_LOG_MSG("success!, created descriptor pool\n", "Uniform Buffer", Utils::Severity::Debug);
+				if (result == VK_SUCCESS) {
+					m_VkDeleteQueue.emplace_front(VkDeleteQueueFun([&] { vkDestroyDescriptorPool(m_Device, m_DefaultDescriptorPool, nullptr); }));
+					VGL_INTERNAL_TRACE("[VkContext]Succesfully created default descriptor pool, VkResult: %i", result);
+				}
+			}
 
 			m_DescriptorSetLayoutCache.m_Device = m_Device;
 			m_DescriptorAllocator.m_Device = m_Device;
@@ -215,10 +222,9 @@ namespace vgl
 			uint32_t deviceCount = 0;
 			vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
 
-			if (deviceCount == 0)
-				VGL_LOG_MSG("Failed to find GPU's with vulkan support", "GPU", Utils::Severity::Error);
-			else
-				VGL_LOG_MSG("Found atleast one GPU with vulkan support", "GPU", Utils::Severity::Info);
+			VGL_ASSERT_ERROR(deviceCount > 0, "[VkContext]Failed to find Vulkan supported GPU's, Device Count: %i", deviceCount);
+
+			if (deviceCount > 0) VGL_INTERNAL_TRACE("[VkContext]Found GPU's with vulkan support");
 
 			std::vector<VkPhysicalDevice> devices(deviceCount);
 			vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
@@ -289,9 +295,7 @@ namespace vgl
 			getDeviceFeatures2(m_PhysicalDevice);
 			m_PhysicalDevice.m_DeviceBufferAdressFeatures.bufferDeviceAddressCaptureReplay = VK_TRUE;
 
-			VGL_LOG_MSG("Using " + m_PhysicalDevice.getDeviceType() + " graphics " + "[" + m_PhysicalDevice.m_DeviceProperties.deviceName + "]", "GPU", Utils::Severity::Info);
-			
-			Utils::Logger::setLogFile("debug/log.txt");
+			VGL_INTERNAL_TRACE("[VkContext]Using " + m_PhysicalDevice.getDeviceType() + " graphics " + "[" + m_PhysicalDevice.m_DeviceProperties.deviceName + "]");
 		}
 
 		VkResult Context::setupDebugMessenger()
@@ -315,9 +319,9 @@ namespace vgl
 			if (vkCreateDebugUtilsMessengerEXT != nullptr) {
 				VkResult result = vkCreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger);
 				
-				if (result != VK_SUCCESS)
-					VGL_LOG_MSG("Failed to create debug messenger", "Validation Layers", Utils::Severity::Warning);
-				m_VkDeleteQueue.emplace_front(VkDeleteQueueFun([&] { DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr); }));
+				VGL_INTERNAL_ASSERT_WARNING(result == VK_SUCCESS, "[VkContext]Failed to create debug messenger for Vulkan validation layers, VkResult: %i", result);
+
+				if (result == VK_SUCCESS) m_VkDeleteQueue.emplace_front(VkDeleteQueueFun([&] { DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr); }));
 				return result;
 			}
 			else
@@ -343,15 +347,13 @@ namespace vgl
 
 				switch (p_MessageSeverity) {
 				case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-					VGL_LOG_MSG(m_DebugMessage, "Vk Validation", Utils::Severity::Error);
-					Utils::Logger::setLogFile("debug/log.txt");
+					VGL_INTERNAL_ERROR("[VkValidation]" + m_DebugMessage);
 					break;
 				case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-					VGL_LOG_MSG(m_DebugMessage, "Vk Validation", Utils::Severity::Warning);
-					Utils::Logger::setLogFile("debug/log.txt");
+					VGL_INTERNAL_WARNING("[VkValidation]" + m_DebugMessage);
 					break;
 				case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-					VGL_LOG_MSG(m_DebugMessage, "Vk Validation", Utils::Severity::Info);
+					VGL_INTERNAL_INFO("[VkValidation]" + m_DebugMessage);
 					break;
 				default:
 					if (p_MessageType ==
@@ -361,7 +363,7 @@ namespace vgl
 						//VGL_LOG_MSG(m_DebugMessage, "Vk Validation", Utils::Severity::Debug);
 						break;
 					}
-					VGL_LOG_MSG(m_DebugMessage, "Vk Validation", Utils::Severity::Info);
+					VGL_INTERNAL_INFO("[VkValidation]" + m_DebugMessage);
 					break;
 				}
 			}
@@ -389,7 +391,7 @@ namespace vgl
 				}
 
 				if (!layerFound) {
-					VGL_LOG_MSG("Validation layers not available", "VkValidationLayers", Utils::Severity::Warning);
+					VGL_INTERNAL_WARNING("[VkValidation]Vulkan validation layers not available");
 
 					return false;
 				}
@@ -476,15 +478,15 @@ namespace vgl
 			VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
 			vkGetPhysicalDeviceMemoryProperties(p_PhysicalDevice.m_VkHandle, &deviceMemoryProperties);
 
-			VGL_LOG_MSG("[" + std::string(deviceProperties.deviceName) + "]", "GPU", Utils::Severity::Debug);
-			VGL_LOG_MSG("score: " + Utils::to_string(score) + "", "GPU", Utils::Severity::Debug);
-			VGL_LOG_MSG("m_Device type: " + std::string(deviceType) + "", "GPU", Utils::Severity::Debug);
-			VGL_LOG_MSG("driver version: " + Utils::to_string(deviceProperties.driverVersion) + "", "GPU", Utils::Severity::Debug);
-			VGL_LOG_MSG("vulkan version: " + Utils::to_string(deviceProperties.apiVersion) + "", "GPU", Utils::Severity::Debug);
-			VGL_LOG_MSG("max viewports: " + Utils::to_string(deviceProperties.limits.maxViewports) + "", "GPU", Utils::Severity::Debug);
-			VGL_LOG_MSG("max tesselation level: " + Utils::to_string(deviceProperties.limits.maxTessellationGenerationLevel) + "", "GPU", Utils::Severity::Debug);
-			VGL_LOG_MSG("memory heap count: " + Utils::to_string(deviceMemoryProperties.memoryHeapCount) + "", "GPU", Utils::Severity::Debug);
-			VGL_LOG_MSG("vendor id: " + Utils::to_string(deviceProperties.vendorID) + "", "GPU", Utils::Severity::Debug);
+			VGL_INTERNAL_INFO("[VkContext][" + std::string(deviceProperties.deviceName) + "]");
+			VGL_INTERNAL_INFO("[VkContext]score: " + Utils::to_string(score));
+			VGL_INTERNAL_INFO("[VkContext]m_Device type: " + std::string(deviceType));
+			VGL_INTERNAL_INFO("[VkContext]driver version: " + Utils::to_string(deviceProperties.driverVersion));
+			VGL_INTERNAL_INFO("[VkContext]vulkan version: " + Utils::to_string(deviceProperties.apiVersion));
+			VGL_INTERNAL_INFO("[VkContext]max viewports: " + Utils::to_string(deviceProperties.limits.maxViewports));
+			VGL_INTERNAL_INFO("[VkContext]max tesselation level: " + Utils::to_string(deviceProperties.limits.maxTessellationGenerationLevel));
+			VGL_INTERNAL_INFO("[VkContext]memory heap count: " + Utils::to_string(deviceMemoryProperties.memoryHeapCount));
+			VGL_INTERNAL_INFO("[VkContext]vendor id: " + Utils::to_string(deviceProperties.vendorID));
 
 			bool extensionSupported = checkDeviceExtensionSupport(m_DeviceExtensions, p_PhysicalDevice.m_VkHandle);
 			bool SwapchainAdequate = false;
@@ -542,7 +544,7 @@ namespace vgl
 					return format;
 			}
 
-			VGL_LOG_MSG("Failed to find supported image formats", "Image Format", Utils::Severity::Fatal);
+			VGL_INTERNAL_FATAL("[VkContext/VkSwapchain]Failed to find supported image formats for swapchain");
 		}
 
 		VkFormat Context::findDepthFormat()
@@ -719,7 +721,7 @@ namespace vgl
 			}
 
 			else
-				VGL_LOG_MSG("Unsupported layout transition", "Image Layout Transition", Utils::Severity::Error);
+				VGL_INTERNAL_ERROR("[VkContext/VkPipelineBarrier]Unsupported layout transition: p_OldLayout is %i and p_NewLayout is %i", p_OldLayout, p_NewLayout);
 
 			imageBarrier.subresourceRange.aspectMask = p_Aspect;
 
@@ -844,7 +846,7 @@ namespace vgl
 				break;
 			default:
 				// Other dst layouts aren't handled (yet)
-				VGL_LOG_MSG("Unsupported layout transition", "VkPipelineBarrier", Utils::Severity::Error);
+				VGL_INTERNAL_ERROR("[VkContext/VkPipelineBarrier]Unsupported layout transition: p_OldLayout is %i and p_NewLayout is %i", p_OldLayout, p_NewLayout);
 				break;
 			}
 
@@ -993,7 +995,7 @@ namespace vgl
 				break;
 			default:
 				// Other source layouts aren't handled (yet)
-				VGL_LOG_MSG("unsupported layout transition", "Image Layout Transition", Utils::Severity::Error);
+				VGL_INTERNAL_ERROR("[VkContext/VkPipelineBarrier]Unsupported layout transition: p_OldLayout is %i and p_NewLayout is %i", p_OldLayout, p_NewLayout);
 				break;
 			}
 
@@ -1059,10 +1061,8 @@ namespace vgl
 			VmaAllocationInfo allocInfo;
 			VmaAllocation alloc;
 
-			if (vmaCreateImage(m_VmaAllocator, &imageInfo, &allocCreateInfo, &p_Image, &alloc, &allocInfo) != VK_SUCCESS) {
-
-				VGL_LOG_MSG("Failed to create image", "Vulkan Image", Utils::Severity::Error);
-			}
+			VkResult result = vmaCreateImage(m_VmaAllocator, &imageInfo, &allocCreateInfo, &p_Image, &alloc, &allocInfo);
+			VGL_INTERNAL_ASSERT_WARNING(result == VK_SUCCESS, "[VkContext/VkImage]Failed to create image, VkResult: %i", result);
 
 			return { alloc, allocInfo };
 		}
@@ -1094,9 +1094,8 @@ namespace vgl
 			VmaAllocationInfo allocInfo;
 			VmaAllocation alloc;
 
-			if (vmaCreateImage(m_VmaAllocator, &imageInfo, &allocCreateInfo, &p_Image, &alloc, &allocInfo) != VK_SUCCESS) {
-				VGL_LOG_MSG("Failed to create image", "Vulkan Image", Utils::Severity::Error);
-			}
+			VkResult result = vmaCreateImage(m_VmaAllocator, &imageInfo, &allocCreateInfo, &p_Image, &alloc, &allocInfo);
+			VGL_INTERNAL_ASSERT_WARNING(result == VK_SUCCESS, "[VkContext/VkImage]Failed to create image, VkResult: %i", result);
 
 			return { alloc, allocInfo };
 		}
@@ -1114,10 +1113,9 @@ namespace vgl
 			imageViewInfo.subresourceRange.levelCount = static_cast<float>(p_MipLevels);
 			imageViewInfo.subresourceRange.baseArrayLayer = 0;
 			imageViewInfo.subresourceRange.layerCount = 1;
-			
-			if (vkCreateImageView(m_Device, &imageViewInfo, nullptr, &imageView) != VK_SUCCESS) {
-				VGL_LOG_MSG("Failed to create image view", "Image View", Utils::Severity::Error);
-			}
+
+			VkResult result = vkCreateImageView(m_Device, &imageViewInfo, nullptr, &imageView);
+			VGL_INTERNAL_ASSERT_WARNING(result == VK_SUCCESS, "[VkContext/VkImageView]Failed to create image view, VkResult: %i", result);
 
 			return imageView;
 		}
@@ -1171,8 +1169,8 @@ namespace vgl
 			bufferInfo.usage = p_Usage;
 			bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			if (vkCreateBuffer(m_Device, &bufferInfo, nullptr, &p_Buffer) != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to create buffer", "Vulkan buffer", Utils::Severity::Warning);
+			VkResult result = vkCreateBuffer(m_Device, &bufferInfo, nullptr, &p_Buffer);
+			VGL_INTERNAL_ASSERT_WARNING(result == VK_SUCCESS, "[VkContext/VkBuffer]Failed to create buffer, VkResult: %i", result);
 
 			VkMemoryRequirements memRequirements;
 			vkGetBufferMemoryRequirements(m_Device, p_Buffer, &memRequirements);
@@ -1181,12 +1179,14 @@ namespace vgl
 			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			allocInfo.allocationSize = memRequirements.size;
 			allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, p_Properties);
-
-			if (vkAllocateMemory(m_Device, &allocInfo, nullptr, &p_BufferMemory) != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to allocate buffer memory", "Vulkan Buffer", Utils::Severity::Warning);
-
-			if (vkBindBufferMemory(m_Device, p_Buffer, p_BufferMemory, 0) != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to bind buffer memory", "Vulkan Buffer", Utils::Severity::Warning);
+			{
+				VkResult result = vkAllocateMemory(m_Device, &allocInfo, nullptr, &p_BufferMemory);
+				VGL_INTERNAL_ASSERT_WARNING(result == VK_SUCCESS, "[VkContext/VkBuffer]Failed to allocate buffer memory, VkResult: %i", result);
+			}
+			{
+				VkResult result = vkBindBufferMemory(m_Device, p_Buffer, p_BufferMemory, 0);
+				VGL_INTERNAL_ASSERT_WARNING(result == VK_SUCCESS, "[VkContext/VkBuffer]Failed to bind buffer memory, VkResult: %i", result);
+			}
 
 			return bufferInfo;
 		}
@@ -1214,7 +1214,7 @@ namespace vgl
 					return i;
 			}
 
-			VGL_LOG_MSG("Failed to find suitable memory type", "GPU", Utils::Severity::Error);
+			VGL_INTERNAL_ASSERT_ERROR("[VkContext]Failed to find suitable memory type");
 		}
 
 		DescriptorAllocator::DescriptorAllocator(VkDevice p_Device) : m_Device(p_Device)
@@ -1263,7 +1263,7 @@ namespace vgl
 					reallocate = true;
 					break;
 				default:
-					VGL_LOG_MSG("Failed to allocate descriptor sets\n", "VkDescriptor", Utils::Severity::Error);
+					VGL_INTERNAL_ASSERT_ERROR("[VkDescriptorAllocator]Failed to allocate descriptor sets");
 					return false;
 			}
 
@@ -1273,13 +1273,12 @@ namespace vgl
 
 				allocResult = vkAllocateDescriptorSets(m_Device, &allocInfo, p_DescriptorSet);
 
-				if (allocResult == VK_SUCCESS) {
-					VGL_LOG_MSG("Allocated descriptor sets\n", "VkDescriptor", Utils::Severity::Debug);
-					return true;
-				}
+				VGL_INTERNAL_ASSERT_ERROR(allocResult == VK_SUCCESS, "[VkDescriptorAllocator]Failed to allocate descriptor sets, VkResult: %i", allocResult);
+
+				if (allocResult == VK_SUCCESS) return true;
 			}
 
-			VGL_LOG_MSG("Failed to allocate descriptor sets\n", "VkDescriptor", Utils::Severity::Error);
+			VGL_INTERNAL_ASSERT_ERROR("[VkDescriptorAllocator]Failed to allocate descriptor sets");
 			return false;
 		}
 

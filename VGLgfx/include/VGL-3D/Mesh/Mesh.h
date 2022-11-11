@@ -6,7 +6,7 @@
 
 #include "../../Math/Vector.h"
 #include "../../Math/Transform.h"
-#include "../../BufferLayout.h"
+#include "../../Platform/BufferLayout.h"
 
 #include "Material.h"
 

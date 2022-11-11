@@ -41,6 +41,12 @@ set(
 	include/GFXDefinitions.h
 	include/Platform/Definitions.h
 
+	# Buffer layouts and handling
+	include/Platform/BufferLayout.h
+	
+	# Base glfw window
+	include/Platform/BaseWindow.h
+
 	# Math library
 	include/Math/Math.h
 	include/Math/Matrix.h
@@ -87,11 +93,6 @@ set(
 	include/Octree.h
 	include/Font.h
 	
-	# Buffer layouts and handling
-	include/BufferLayout.h
-	
-	include/Platform/BaseWindow.h
-	
 	#include/Platform/OpenGL/GlWindow.h
 	#include/Platform/OpenGL/GlRenderer.h
 	#include/Platform/OpenGL/GlFramebufferAttachment.h
@@ -120,6 +121,12 @@ set(
 	SOURCE_FILES
 	
 	include/VGL_Logger.cpp
+
+	# Buffer layouts and handling
+	include/Platform/BufferLayout.cpp
+
+	# Base glfw window
+	include/Platform/BaseWindow.cpp
 
 	# Math library
 	include/Math/Math.cpp
@@ -167,11 +174,6 @@ set(
 	include/Octree.cpp
 	include/Font.cpp
 
-	# Buffer layouts and handling
-	include/BufferLayout.cpp
-
-	include/Platform/BaseWindow.cpp
-
 	#include/Platform/OpenGL/GlWindow.cpp
 	#include/Platform/OpenGL/GlRenderer.cpp
 	#include/Platform/OpenGL/GlFramebufferAttachment.cpp
@@ -193,6 +195,10 @@ set(
 
 set(
 	LIB_SRC_FILES 
+
+	${PROJECT_SOURCE_DIR}/libs/PPK_ASSERT/ppk_assert.h
+	${PROJECT_SOURCE_DIR}/libs/PPK_ASSERT/ppk_assert.cpp
+
 	${PROJECT_SOURCE_DIR}/libs/VulkanMemoryAllocator/include/vk_mem_alloc.h
 	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/dirent/dirent.h
 	${PROJECT_SOURCE_DIR}/libs/ImGuiFileDialog/ImGuiFileDialog.h

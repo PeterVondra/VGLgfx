@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <algorithm>
 
-#define LOGGING_ENABLED
+#define VGL_INTERNAL_LOGGING_ENABLED
 #include "../../VGL_Logger.h"
 #include "../../Utils/Cache.h"
 #include "VkDefinitions.h"
@@ -145,10 +145,9 @@ namespace vgl
 					VkDescriptorSetLayout layout;
 					VkResult result = vkCreateDescriptorSetLayout(m_Device, info, nullptr, &layout);
 
-					if (result != VK_SUCCESS)
-						VGL_LOG_MSG("Failed to create descriptor set layout\n", "Descriptor", Utils::Severity::Error);
-					else
-						VGL_LOG_MSG("Created descriptor set layout\n", "Descriptor", Utils::Severity::Debug);
+					VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[VkDescriptorLayoutCache]Failed to create descriptor set layout, VkResult: %i", result);
+
+					if (result == VK_SUCCESS) VGL_INTERNAL_DEBUG("[VkDescriptorLayoutCache]Created descriptor set layout");
 
 					m_LayoutCache[layoutInfo] = layout;
 					return layout;

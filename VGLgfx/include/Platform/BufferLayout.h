@@ -3,7 +3,7 @@
 #include<iostream>
 
 #include "../libs/imgui/imgui.h"
-#include "VGL_Logger.h"
+#include "../VGL_Logger.h"
 
 namespace vgl
 {
@@ -37,7 +37,7 @@ namespace vgl
 			case ShaderDataType::Bool:		return sizeof(int);
 			}
 
-			VGL_LOG_MSG("Unknown data type for buffer element\n", "Buffer Element", Utils::Severity::Error);
+			VGL_INTERNAL_WARNING("[BufferLayout]Unknown data type for buffer element");
 			return 0;
 		}
 

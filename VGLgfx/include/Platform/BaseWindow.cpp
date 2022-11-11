@@ -1,4 +1,5 @@
 #include "BaseWindow.h"
+#include "../Utils/Logger.h"
 
 namespace vgl
 {
@@ -267,7 +268,7 @@ namespace vgl
 			stbi_image_free(m_Icon.pixels);
 			return;
 		}
-		VGL_LOG_MSG("Failed to load icon image for window\n", "BaseWindow", Utils::Severity::Warning);
+		VGL_INTERNAL_WARNING("[BaseWindow]Failed to load icon image for window");
 		return;
 	}
 

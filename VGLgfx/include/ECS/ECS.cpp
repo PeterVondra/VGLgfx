@@ -31,8 +31,8 @@ namespace vgl
 			{
 				// Check components for valid ID
 				if (!BaseComponent::isIDValid(p_ComponentIDs[i])){
-					VGL_LOG_MSG("Invalid ID for new entity", "ECS", Utils::Severity::Warning);
-					VGL_LOG_MSG("Entity creation", "ECS", Utils::Result::Failed);
+					VGL_INTERNAL_WARNING("[ECS]Invalid ID for new entity");
+					VGL_INTERNAL_WARNING("[ECS]Entity creation", "ECS");
 					delete newEntity;
 					return NULL_ENTITY_HANDLE;
 				}

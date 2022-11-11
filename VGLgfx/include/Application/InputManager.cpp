@@ -1,5 +1,6 @@
 #include "InputManager.h"
 #include <functional>
+#include "../Utils/Logger.h"
 
 namespace vgl
 {

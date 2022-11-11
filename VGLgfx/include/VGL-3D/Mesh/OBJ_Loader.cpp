@@ -96,11 +96,11 @@ namespace vgl
 	)
 	{
 		FILE* file = fopen(((std::string)p_Directory + (std::string)p_FileName).c_str(), "r");
-		if (file == NULL) {
-			VGL_LOG_MSG("OBJ File not found: " + Utils::to_string(p_FileName), "OBJ Loader", Utils::Result::Failed);
-			return false;
-		}
-		VGL_LOG_MSG("OBJ File found: " + Utils::to_string(p_FileName), "OBJ Loader", Utils::Result::Success);
+
+		VGL_INTERNAL_ASSERT_WARNING(file != NULL, "[VGL/OBJ_LOADER]OBJ File not found: " + (std::string)p_Directory + (std::string)p_FileName);
+
+		if (file == NULL) return false;
+		else VGL_INTERNAL_INFO("[VGL/OBJ_LOADER]OBJ File found: " + Utils::to_string(p_FileName));
 
 		int read_size = 0;
 
@@ -121,9 +121,9 @@ namespace vgl
 		int faceCount = 0;
 
 		if((float)file_size / 1000000 > 1.0f)
-			VGL_LOG_MSG("OBJ File: " + Utils::to_string(p_FileName) + " : " + Utils::to_string((float)file_size / 1000000) + " MB", "OBJ Loader", Utils::Severity::Info);
+			VGL_INTERNAL_INFO("[VGL/OBJ_LOADER]OBJ File: " + Utils::to_string(p_FileName) + " : " + Utils::to_string((float)file_size / 1000000) + " MB");
 		else
-			VGL_LOG_MSG("OBJ File: " + Utils::to_string(p_FileName) + " : " + Utils::to_string((float)file_size / 1000) + " KB", "OBJ Loader", Utils::Severity::Info);
+			VGL_INTERNAL_INFO("[VGL/OBJ_LOADER]OBJ File: " + Utils::to_string(p_FileName) + " : " + Utils::to_string((float)file_size / 1000) + " KB");
 
 		bool mtlFound = false;
 
@@ -175,7 +175,7 @@ namespace vgl
 			}
 		}
 
-		VGL_LOG_MSG("Execution time: " + Utils::to_string(Utils::Logger::getTimePoint() - start), "Material Loader", Utils::Severity::Debug);
+		VGL_INTERNAL_INFO("[VGL/OBJ_LOADER/MTL-Load]Execution time: " + Utils::to_string(Utils::Logger::getTimePoint() - start));
 
 		start = Utils::Logger::getTimePoint();
 
@@ -386,7 +386,7 @@ namespace vgl
 
 		if (mtlVertexIndices.empty())
 		{
-			VGL_LOG_MSG("No vertex positions in OBJ file", "OBJ Loader", Utils::Result::Failed);
+			VGL_INTERNAL_WARNING("[VGL/OBJ_LOADER]No vertex positions in " + Utils::to_string(p_FileName));
 			return false;
 		}
 
@@ -468,13 +468,13 @@ namespace vgl
 			
 			MeshData::indexVertexData(vertices, p_MeshData);
 
-			VGL_LOG_MSG("Execution time: " + Utils::to_string(Utils::Logger::getTimePoint() - start), "OBJ Loader", Utils::Severity::Debug);
+			VGL_INTERNAL_WARNING("[VGL/OBJ_LOADER/OBJ-Load]Execution time: " + Utils::to_string(Utils::Logger::getTimePoint() - start));
 
 			return true;
 		}
 
-		VGL_LOG_MSG("Execution time: " + Utils::to_string(Utils::Logger::getTimePoint() - start), "OBJ Loader", Utils::Severity::Debug);
-		VGL_LOG_MSG("No vertex positions in OBJ file", "OBJ Loader", Utils::Result::Failed);
+		VGL_INTERNAL_WARNING("[VGL/OBJ_LOADER/OBJ-Load]Execution time: " + Utils::to_string(Utils::Logger::getTimePoint() - start));
+		VGL_INTERNAL_WARNING("[VGL/OBJ_LOADER]No vertex positions in " + Utils::to_string(p_FileName));
 
 		return false;
 	}
@@ -522,7 +522,7 @@ namespace vgl
 		int file_size = ftell(file);
 		fseek(file, 0, SEEK_SET);
 
-		VGL_LOG_MSG("MTL File: " + std::string(mtl_directory) + " : " + Utils::to_string((float)file_size / 1000) + " KB", "Material Loader", Utils::Severity::Info);
+		VGL_INTERNAL_INFO("[VGL/OBJ_LOADER/MTL-Load]MTL File: " + std::string(mtl_directory) + " : " + Utils::to_string((float)file_size / 1000) + " KB");
 
 		int i = 0;
 		while (1) {

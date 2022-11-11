@@ -1,4 +1,5 @@
 #include "VkWindow.h"
+#include "../../Utils/Logger.h"
 
 namespace vgl
 {
@@ -26,12 +27,10 @@ namespace vgl
 			//creating the surface for a render context
 			VkResult result = glfwCreateWindowSurface(m_ContextPtr->m_Instance, m_Window, nullptr, &m_Surface);
 			
-			
-			if (result != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to create window surface", "Window", Utils::Severity::Error);
-			else
-				VGL_LOG_MSG("Succesfully created window surface", "Window", Utils::Severity::Trace);
-			#endif
+			VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS ,"[vk::Window]Failed to create window surface, VkResult: %i", result);
+			if (result != VK_SUCCESS) return;
+
+			VGL_INTERNAL_TRACE("[vk::Window]Succesfully created window surface");
 
 			if (!m_ContextPtr->m_Initialized) {
 				m_ContextPtr->setPhysicalDevice(m_ContextPtr->getSuitablePhysicalDevice(m_ContextPtr->getPhysicalDevices(m_Surface, m_Swapchain.m_SwapchainSupport)));
@@ -46,10 +45,8 @@ namespace vgl
 			m_ContextPtr->m_DescriptorAllocators.resize(m_ContextPtr->m_SwapchainImageCount, DescriptorAllocator(m_ContextPtr->m_Device));
 
 			m_MSAASamples = p_MSAASamples > getMaxUsableSampleCount() ? getMaxUsableSampleCount() : p_MSAASamples;
-
 			
-			VGL_LOG_MSG("MSAA : " + Utils::to_string(m_MSAASamples) + "x" + "  Max samples : " + Utils::to_string(getMaxUsableSampleCount()) + "x", "MSAA", Utils::Severity::Info);
-			#endif
+			VGL_INTERNAL_INFO("[vk::Window]MSAA : " + Utils::to_string(m_MSAASamples) + "x" + "  Max samples : " + Utils::to_string(getMaxUsableSampleCount()) + "x");
 
 			createColorResources();
 		}
@@ -122,8 +119,8 @@ namespace vgl
 				framebufferInfo.height = m_SwapchainExtent.height;
 				framebufferInfo.layers = 1;
 
-				if (vkCreateFramebuffer(m_ContextPtr->m_Device, &framebufferInfo, nullptr, &m_SwapchainFramebuffers[i]) != VK_SUCCESS)
-					VGL_LOG_MSG("Failed to create framebuffer", "Swap Chain", Utils::Severity::Fatal);
+				VkResult result = vkCreateFramebuffer(m_ContextPtr->m_Device, &framebufferInfo, nullptr, &m_SwapchainFramebuffers[i]);
+				VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS, "[vk::Swapchain]Failed to create swapchain framebuffers, VkResult: %i", result);
 			}
 		}
 
@@ -139,7 +136,7 @@ namespace vgl
 			if (SwapchainSupport.capabilities.minImageCount > 0 && imageCount > SwapchainSupport.capabilities.maxImageCount)
 				imageCount = SwapchainSupport.capabilities.maxImageCount;
 			if (!(SwapchainSupport.capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT))
-				VGL_LOG_MSG("Swap chain image does not support VK_IMAGE_USAGE_TRANSFER_DST_BIT usage", "Swap chain", Utils::Severity::Warning);
+				VGL_INTERNAL_WARNING("[vk::Swapchain]Swap chain image does not support VK_IMAGE_USAGE_TRANSFER_DST_BIT usage");
 
 			VkSwapchainCreateInfoKHR createInfo = {};
 			createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -172,10 +169,10 @@ namespace vgl
 			createInfo.clipped = VK_TRUE;
 			createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-			if (vkCreateSwapchainKHR(m_ContextPtr->m_Device, &createInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to create swap chain", "Swap Chain", Utils::Severity::Fatal);
-			else
-				VGL_LOG_MSG("Succesfully created swap chain", "Swap Chain", Utils::Severity::Trace);
+			VkResult result = vkCreateSwapchainKHR(m_ContextPtr->m_Device, &createInfo, nullptr, &m_Swapchain);
+			VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS, "[vk::Swapchain]Failed to create swapchain, VkResult: %i", result);
+
+			if(result == VK_SUCCESS) VGL_INTERNAL_TRACE("[vk::Swapchain]Succesfully created swap chain");
 
 			vkGetSwapchainImagesKHR(m_ContextPtr->m_Device, m_Swapchain, &imageCount, nullptr);
 			m_SwapchainImages.resize(imageCount);
@@ -211,16 +208,14 @@ namespace vgl
 				createInfo.subresourceRange.baseArrayLayer = 0;
 				createInfo.subresourceRange.layerCount = 1;
 
-				if (vkCreateImageView(m_ContextPtr->m_Device, &createInfo, nullptr, &m_SwapchainImageViews[i]) != VK_SUCCESS) {
-					VGL_LOG_MSG("Failed to create image views", "Swap Chain", Utils::Severity::Error);
-					success = false;
-				}
-				else if (success)
-					success = true;
+				VkResult result = vkCreateImageView(m_ContextPtr->m_Device, &createInfo, nullptr, &m_SwapchainImageViews[i]);
+				VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS, "[vk::Swapchain]Failed to create swapchain image views, VkResult: %i", result);
+				if (result != VK_SUCCESS) success = false;
+				else if (success) success = true;
 			}
 
 			if (success)
-				VGL_LOG_MSG("Succesfully created image views for swap chain", "Swap Chain", Utils::Severity::Trace);
+				VGL_INTERNAL_TRACE("[vk::Swapchain]Succesfully created image views for swap chain");
 		}
 
 		VkSurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& p_AvailableFormats)
