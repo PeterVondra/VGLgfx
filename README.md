@@ -32,7 +32,7 @@
   - Currently working on Screen Space Reflection + Screens Space Refraction. (SSR)
   
   
-___(Editor is currently not running, Editor will be rewritten)___
+___(Editor is currently not running, rewrite is pending)___
   
 
 ## __Screenshots from previous working versions:__
