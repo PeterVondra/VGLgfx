@@ -9,7 +9,7 @@
 - ImGui integration
 - Deferred Rendering.
 - Basic 2D rendering.
-- 2D Phsyics Enginge eg. impulse resolution with rotational velocity and impulses, using Separating Axis Theorem for collision detection.
+- 2D Phsyics Enginge eg. impulse resolution with rotational velocity/impulses, using Separating Axis Theorem for collision detection.
 - __Edit scenes via the VGLgfx editor__
   - Add light casters.
   - Editing materials eg. Albedo, Displacement, Normals, Metallic, Roughness and Ambient textures
