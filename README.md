@@ -22,7 +22,7 @@
 - __Graphical Features__
   - Physically Based Rendering.
   - Screen Space Ambient Occlusion (SSAO)
-  - Directional Shadow mapping + Summed-Area Variance Shadow Maps(Nvidia, GPU Gems 3 Chapter 8.), also includes basic PCF Filtering
+  - Directional Shadow mapping + Percentage Closer Soft Shadows(PCSS), also includes basic PCF Filtering
   - Volumetric lighting (Using ray marching).
   - Physically based Atmospheric Scattering.
   - Fast Approximate Anti-Aliasing (FXAA)
@@ -32,7 +32,7 @@
   - Currently working on Screen Space Reflection + Screens Space Refraction. (SSR)
   
   
-___(Editor is currently not running, Editor will be rewritten)___
+___(Editor is currently not running, rewrite is pending)___
   
 
 ## __Screenshots from previous working versions:__
