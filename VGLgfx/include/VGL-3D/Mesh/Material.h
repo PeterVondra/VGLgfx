@@ -64,7 +64,7 @@ namespace vgl
 		uint32_t p_Effects = 0;
 		uint32_t p_MaxPrefilteredLod = 11;
 
-		bool p_DirectionalLight;
+		bool p_DirectionalLight = false;
 		uint32_t p_SpotLights = 0;
 		std::vector<P_Light> p_PointLights;
 
@@ -333,15 +333,17 @@ namespace vgl
 				binding++;
 			}
 
-			for (int32_t i = 0; i < p_ShaderInfo.p_SpotLights; i++) {
-				imageBindings += "layout(binding = " + Utils::to_string(binding) + ") uniform sampler2D shadowMap_" + std::to_string(binding) + ";\n";
-				binding++;
-			}
+			//for (int32_t i = 0; i < p_ShaderInfo.p_SpotLights; i++) {
+			//	imageBindings += "layout(binding = " + Utils::to_string(binding) + ") uniform sampler2D shadowMap_" + std::to_string(binding) + ";\n";
+			//	binding++;
+			//}
 
 			for (int32_t i = 0; i < p_ShaderInfo.p_PointLights.size(); i++) {
-				if (p_ShaderInfo.p_PointLights[i].m_ShadowMapID >= 0)
+				if (p_ShaderInfo.p_PointLights[i].m_ShadowMapID >= 0) {
 					imageBindings += "layout(binding = " + Utils::to_string(binding) + ") uniform samplerCube shadowCube_" + std::to_string(binding) + ";\n";
-				binding++;
+					shader[1] += "#define OMNI_SHADOWMAP shadowCube_" + std::to_string(binding) + "\n";
+					binding++;
+				}
 			}
 		}
 		

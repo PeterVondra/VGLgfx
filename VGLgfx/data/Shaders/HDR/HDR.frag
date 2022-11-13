@@ -67,7 +67,7 @@ vec3 filmicgrain(vec4 color)
 
 vec2 screenWH = textureSize(imageHDR, 0);
 float near = 1.0f;
-float far = 10.0f;
+float far = 1000.0f;
 
 bool manualdof = false;
 

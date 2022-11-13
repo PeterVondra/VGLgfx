@@ -206,7 +206,6 @@ set(
 	${PROJECT_SOURCE_DIR}/libs/imgui/imgui.h
 	${PROJECT_SOURCE_DIR}/libs/imgui/imgui.cpp
 	${PROJECT_SOURCE_DIR}/libs/imgui/imconfig.h
-	${PROJECT_SOURCE_DIR}/libs/imgui/imgui_demo.cpp
 	${PROJECT_SOURCE_DIR}/libs/imgui/imgui_draw.cpp
 	${PROJECT_SOURCE_DIR}/libs/imgui/imgui_internal.h
 	${PROJECT_SOURCE_DIR}/libs/imgui/imgui_tables.cpp
@@ -228,6 +227,8 @@ set(
 	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImSequencer.h
 	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImSequencer.cpp
 )
+
+set(VGLGFX_DATA_DIRECTORY ${PROJECT_SOURCE_DIR}/data)
 
 find_package(Vulkan REQUIRED)
 find_package(OpenGL REQUIRED)
@@ -282,6 +283,7 @@ target_link_libraries(
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
+set(CMAKE_EXECUTABLE_PATH ${PROJECT_SOURCE_DIR}/test)
 
 add_executable(
 	VGLgfxTest
@@ -293,3 +295,7 @@ add_executable(
 target_include_directories(VGLgfxTest PRIVATE ${PROJECT_SOURCE_DIR}/include/)
 
 target_link_libraries(VGLgfxTest VGLgfx)
+
+enable_testing()
+
+file(COPY ${VGLGFX_DATA_DIRECTORY} DESTINATION "${PROJECT_SOURCE_DIR}/test")

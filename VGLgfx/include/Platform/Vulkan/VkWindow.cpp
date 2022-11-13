@@ -27,7 +27,7 @@ namespace vgl
 			//creating the surface for a render context
 			VkResult result = glfwCreateWindowSurface(m_ContextPtr->m_Instance, m_Window, nullptr, &m_Surface);
 			
-			VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS ,"[vk::Window]Failed to create window surface, VkResult: %i", result);
+			VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS ,"[vk::Window]Failed to create window surface, VkResult: %i", (uint64_t)result);
 			if (result != VK_SUCCESS) return;
 
 			VGL_INTERNAL_TRACE("[vk::Window]Succesfully created window surface");
@@ -120,7 +120,7 @@ namespace vgl
 				framebufferInfo.layers = 1;
 
 				VkResult result = vkCreateFramebuffer(m_ContextPtr->m_Device, &framebufferInfo, nullptr, &m_SwapchainFramebuffers[i]);
-				VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS, "[vk::Swapchain]Failed to create swapchain framebuffers, VkResult: %i", result);
+				VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS, "[vk::Swapchain]Failed to create swapchain framebuffers, VkResult: %i", (uint64_t)result);
 			}
 		}
 
@@ -170,7 +170,7 @@ namespace vgl
 			createInfo.oldSwapchain = VK_NULL_HANDLE;
 
 			VkResult result = vkCreateSwapchainKHR(m_ContextPtr->m_Device, &createInfo, nullptr, &m_Swapchain);
-			VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS, "[vk::Swapchain]Failed to create swapchain, VkResult: %i", result);
+			VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS, "[vk::Swapchain]Failed to create swapchain, VkResult: %i", (uint64_t)result);
 
 			if(result == VK_SUCCESS) VGL_INTERNAL_TRACE("[vk::Swapchain]Succesfully created swap chain");
 
@@ -209,7 +209,7 @@ namespace vgl
 				createInfo.subresourceRange.layerCount = 1;
 
 				VkResult result = vkCreateImageView(m_ContextPtr->m_Device, &createInfo, nullptr, &m_SwapchainImageViews[i]);
-				VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS, "[vk::Swapchain]Failed to create swapchain image views, VkResult: %i", result);
+				VGL_INTERNAL_ASSERT_FATAL(result == VK_SUCCESS, "[vk::Swapchain]Failed to create swapchain image views, VkResult: %i", (uint64_t)result);
 				if (result != VK_SUCCESS) success = false;
 				else if (success) success = true;
 			}

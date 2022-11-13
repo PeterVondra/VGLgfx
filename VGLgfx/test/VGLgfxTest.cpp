@@ -1,6 +1,5 @@
 #include <ostream>
 #define VGL_RENDER_API_VULKAN
-#define IMGUI_VK_IMPL
 #include <VGLgfx.h>
 
 class TestLayer : public vgl::Layer
@@ -18,28 +17,26 @@ public:
 		transform->transform.scale(1);
 		mesh->mesh = new vgl::MeshData();
 
-		vgl::OBJ_Loader::loadModel("projects/Global_Assets/3D_Models/Sponza/", "sponza.obj", mesh->mesh, false);
+		vgl::OBJ_Loader::loadModel("../../VGLgfxEditor/projects/Global_Assets/3D_Models/Sponza/", "sponza.obj", mesh->mesh, false);
+		mesh->mesh->getMaterial(19).config.m_Roughness = 0.1f;
 
 		auto point_light = new vgl::PointLight3DComponent;
-		point_light->Color = { 1.0f, 0.1f, 0.1f };
-		point_light->Position = { 0.0f, 200.0f, 0.0f };
+		point_light->Color = { 0.4f, 0.1f, 1.0f };
+		point_light->Position = { 0.0f, 800.0f, 0.0f };
+		point_light->Radius = 150;
+		point_light->ShadowMapID = 0;
 
 		auto directional_light = new vgl::DirectionalLight3DComponent;
 		directional_light->Color = { 7, 7, 7 };
 		directional_light->Direction = { 0.333, 1, 0.333 };
 
 		auto shadow_map = new vgl::DShadowMapComponent;
-		shadow_map->ShadowMap.m_Resolution = { int32_t(4096 * 1.5), int32_t(4096 * 1.5) };
 		shadow_map->ShadowMap.m_Projection = Matrix4f::orthoRH_ZO(-3000, 3000, -3000, 3000, 1, 4800);
-
-		// Create shadow map framebuffer
-		shadow_map->ShadowMap.m_Attachment.m_FramebufferAttachmentInfo.p_Size = shadow_map->ShadowMap.m_Resolution;
-		shadow_map->ShadowMap.m_Attachment.m_FramebufferAttachmentInfo.p_AttachmentDescriptors.emplace_back(
-			shadow_map->ShadowMap.m_Resolution,
-			vgl::ImageFormat::D32SF,
-			vgl::Layout::DepthR
-		);
-		shadow_map->ShadowMap.m_Attachment.create();
+		shadow_map->ShadowMap.create({ int32_t(4096 * 1.5), int32_t(4096 * 1.5) }, vgl::ImageFormat::D32SF);
+		
+		auto pshadow_map = new vgl::PShadowMapComponent;
+		pshadow_map->ShadowMap.m_Position = &point_light->Position;
+		pshadow_map->ShadowMap.create({ int32_t(512), int32_t(512) }, vgl::ImageFormat::C32SF_1C);
 
 		auto skybox = new vgl::SkyboxComponent;
 		skybox->_AtmosphericScatteringInfo = {};
@@ -47,8 +44,9 @@ public:
 		skybox->skybox = new vgl::Skybox();
 
 		m_Scene.addEntity(*mesh, *transform, *(new vgl::EntityNameComponent("Sponza")));
-		m_PointLightEntity = m_Scene.addEntity(*point_light, *(new vgl::EntityNameComponent("Point Light")));
-		//m_DirectionalLightEntity = m_Scene.addEntity(*directional_light, *shadow_map, *(new vgl::EntityNameComponent("Directional Light")));
+		//m_PointLightEntity = m_Scene.addEntity(*point_light, *pshadow_map, *(new vgl::EntityNameComponent("Point Light")));
+		//m_PointLightEntity = m_Scene.addEntity(*point_light2, *(new vgl::EntityNameComponent("Point Light")));
+		m_DirectionalLightEntity = m_Scene.addEntity(*directional_light, *shadow_map, *(new vgl::EntityNameComponent("Directional Light")));
 		m_SkyBoxEntity = m_Scene.addEntity(*skybox, *(new vgl::EntityNameComponent("SkyBox")));
 
 		//vgl::GraphicsContextSingleton::getInstance().generateAtmosphericScatteringCubeMap({ 1024, 1024 }, m_Scene.getComponent<SkyboxComponent>(m_SkyBoxEntity)->AtmosphericScatteringInfo);
@@ -486,6 +484,7 @@ int main()
 	config.DefaultWindowSize = { 1200, 700 };
 	config.MSAASamples = 8;
 	config.Title = "VGL";
+	config.ImGui_Font_Path = "../data/Fonts/OpenSans-Regular.ttf";
 	auto app = new TestApp(config);
 	//auto app = new vgl::Editor(config);
 

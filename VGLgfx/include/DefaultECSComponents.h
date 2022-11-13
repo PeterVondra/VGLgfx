@@ -49,10 +49,10 @@ namespace vgl
 
 	struct VGL_ECS_COMPONENT(SkyboxComponent)
 	{
-		Skybox* skybox;
+		Skybox* skybox = nullptr;
 		std::string HDR_Image_Path;
 		bool _AtmosphericScattering = false;
-		AtmosphericScatteringInfo _AtmosphericScatteringInfo;
+		AtmosphericScatteringInfo _AtmosphericScatteringInfo = {};
 	};
 
 	// Script component
@@ -64,13 +64,13 @@ namespace vgl
 	// Shadow map component, added to LightSource entity
 	struct VGL_ECS_COMPONENT(DShadowMapComponent)
 	{
-		D_ShadowMap ShadowMap;
+		DShadowMap ShadowMap;
 	};
 	
 	// Shadow map component, added to LightSource entity
 	struct VGL_ECS_COMPONENT(PShadowMapComponent)
 	{
-		//vk::P_ShadowMap ShadowMap;
+		vk::PShadowMap ShadowMap;
 	};
 	
 	// Directional Light 3D component, added to LightSource entity

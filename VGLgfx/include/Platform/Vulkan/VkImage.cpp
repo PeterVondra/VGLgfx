@@ -142,7 +142,7 @@ namespace vgl
 		{
 			m_IsValid = false;
 
-			VGL_INTERNAL_TRACE("[vk::Image]Destroyed Image: %i", m_VkImageHandle);
+			VGL_INTERNAL_TRACE("[vk::Image]Destroyed Image: %p", (void*)m_VkImageHandle);
 
 			m_ContextPtr->destroyImage(m_VkImageHandle, m_ImageAllocation);
 			
@@ -349,7 +349,7 @@ namespace vgl
 			samplerInfo.maxLod = static_cast<float>(m_MipLevels);
 
 			VkResult result = vkCreateSampler(m_ContextPtr->m_Device, &samplerInfo, nullptr, &m_Sampler);
-			VGL_INTERNAL_ASSERT_ERROR(result != nullptr, "[vk::Image]Failed to create Image sampler, VkResult: %i", result);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::Image]Failed to create Image sampler, VkResult: %i", (uint64_t)result);
 		}
 
 		void Image::generateMipMaps(VkImage p_Image, VkFormat p_Format, Vector2i p_Size, uint32_t mipLevels)
@@ -452,13 +452,13 @@ namespace vgl
 		}
 		bool ImageCube::isValid()
 		{
-			return false;
+			return m_IsValid;
 		}
 		void ImageCube::destroy()
 		{
 			m_IsValid = false;
 			
-			VGL_INTERNAL_TRACE("[vk::ImageCube]Destroyed Image: %i", m_VkImageHandle);
+			VGL_INTERNAL_TRACE("[vk::ImageCube]Destroyed Image: %p", (void*)m_VkImageHandle);
 
 			m_ContextPtr->destroyImage(m_VkImageHandle, m_ImageAllocation);
 			
@@ -474,7 +474,7 @@ namespace vgl
 
 				for (auto& channels : m_Channels){
 					if (m_CurrentChannels == channels.first){
-						imageSize = static_cast<size_t>(m_Size[0].x * m_Size[0].y * channels.second * 6); // 6 faces to the cubemap
+						imageSize = static_cast<size_t>(m_Size.x * m_Size.y * channels.second * 6); // 6 faces to the cubemap
 						imageLayerSize = imageSize/6; // 6 faces to the cubemap
 						break;
 					}
@@ -496,7 +496,7 @@ namespace vgl
 
 
 				m_ImageAllocation = m_ContextPtr->createImage(
-					m_Size[0].x, m_Size[0].y,
+					m_Size.x, m_Size.y,
 					format,
 					VK_IMAGE_TILING_OPTIMAL,
 					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -513,8 +513,8 @@ namespace vgl
 				m_ContextPtr->copyBufferToImage(
 					m_StagingBuffer,
 					m_VkImageHandle,
-					static_cast<uint32_t>(m_Size[0].x),
-					static_cast<uint32_t>(m_Size[0].y), 6
+					static_cast<uint32_t>(m_Size.x),
+					static_cast<uint32_t>(m_Size.y), 6
 				);
 				m_ContextPtr->transitionLayoutImage(
 					m_VkImageHandle,
@@ -530,7 +530,7 @@ namespace vgl
 		}
 		void ImageCube::createImageView()
 		{
-			m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, (VkFormat)m_CurrentChannels, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels, VK_IMAGE_VIEW_TYPE_CUBE);
+			m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, (VkFormat)m_CurrentChannels, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels, 6, VK_IMAGE_VIEW_TYPE_CUBE);
 		}
 		void ImageCube::createSampler(SamplerMode p_SamplerMode)
 		{
@@ -555,7 +555,7 @@ namespace vgl
 			samplerInfo.maxLod = static_cast<float>(m_MipLevels);
 
 			VkResult result = vkCreateSampler(m_ContextPtr->m_Device, &samplerInfo, nullptr, &m_Sampler);
-			VGL_INTERNAL_ASSERT_ERROR(result != nullptr, "[vk::ImageCube]Failed to create Image sampler, VkResult: %i", result);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::ImageCube]Failed to create Image sampler, VkResult: %i", (uint64_t)result);
 		}
 
 		bool ImageLoader::getImageFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
@@ -567,10 +567,10 @@ namespace vgl
 			p_Image.m_ImageData = (unsigned char*)SOIL_load_image(p_Path, &p_Image.m_Size.x, &p_Image.m_Size.y, &channels, SOIL_LOAD_RGBA);
 			p_Image.m_IsValid = false;
 
-			VGL_INTERNAL_ASSERT_WARNING(m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
+			VGL_INTERNAL_ASSERT_WARNING(p_Image.m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
 
 			if (!p_Image.m_ImageData){
-				VGL_INTERNAL_WARNING("[vk::ImageLoader]Failed to load image " + std::string(p_Path) + "");
+				VGL_INTERNAL_WARNING("[vk::ImageLoader]Failed to load image " + std::string(p_Path));
 				return false;
 			}
 
@@ -597,7 +597,7 @@ namespace vgl
 
 			p_Image.m_IsValid = false;
 
-			VGL_INTERNAL_ASSERT_WARNING(m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
+			VGL_INTERNAL_ASSERT_WARNING(p_Image.m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
 
 			if (!p_Image.m_ImageData) {
 				VGL_INTERNAL_WARNING("[vk::ImageLoader]Failed to load image " + std::string(p_Path) + "");
@@ -627,10 +627,10 @@ namespace vgl
 			p_Image.m_ImageData = (unsigned char*)SOIL_load_image(p_Path, &p_Image.m_Size.x, &p_Image.m_Size.y, &channels, SOIL_LOAD_RGBA);
 			p_Image.m_IsValid = false;
 
-			VGL_INTERNAL_ASSERT_WARNING(m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
+			VGL_INTERNAL_ASSERT_WARNING(p_Image.m_ImageData != nullptr, "[vk::Image]Attempted to create Image with 'p_ImageData' == nullptr, Image will be empty");
 
 			if (!p_Image.m_ImageData) {
-				VGL_INTERNAL_WARNING("[vk::ImageLoader]Failed to load image " + std::string(p_Path) + "");
+				VGL_INTERNAL_WARNING("[vk::ImageLoader]Failed to load image " + std::string(p_Path));
 				return false;
 			}
 
@@ -649,12 +649,12 @@ namespace vgl
 			p_ImageCube.m_ImageData.resize(6);
 
 			int channels;
-			p_ImageCube.m_ImageData[0] = (unsigned char*)SOIL_load_image(path[0].first, &p_ImageCube.m_Size[0].x, &p_ImageCube.m_Size[0].y, &channels, SOIL_LOAD_RGBA);
-			p_ImageCube.m_ImageData[1] = (unsigned char*)SOIL_load_image(path[1].first, &p_ImageCube.m_Size[1].x, &p_ImageCube.m_Size[1].y, &channels, SOIL_LOAD_RGBA);
-			p_ImageCube.m_ImageData[2] = (unsigned char*)SOIL_load_image(path[2].first, &p_ImageCube.m_Size[2].x, &p_ImageCube.m_Size[2].y, &channels, SOIL_LOAD_RGBA);
-			p_ImageCube.m_ImageData[3] = (unsigned char*)SOIL_load_image(path[3].first, &p_ImageCube.m_Size[3].x, &p_ImageCube.m_Size[3].y, &channels, SOIL_LOAD_RGBA);
-			p_ImageCube.m_ImageData[4] = (unsigned char*)SOIL_load_image(path[4].first, &p_ImageCube.m_Size[4].x, &p_ImageCube.m_Size[4].y, &channels, SOIL_LOAD_RGBA);
-			p_ImageCube.m_ImageData[5] = (unsigned char*)SOIL_load_image(path[5].first, &p_ImageCube.m_Size[5].x, &p_ImageCube.m_Size[5].y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[0] = (unsigned char*)SOIL_load_image(path[0].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[1] = (unsigned char*)SOIL_load_image(path[1].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[2] = (unsigned char*)SOIL_load_image(path[2].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[3] = (unsigned char*)SOIL_load_image(path[3].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[4] = (unsigned char*)SOIL_load_image(path[4].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[5] = (unsigned char*)SOIL_load_image(path[5].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
 
 			p_ImageCube.m_CurrentChannels = Channels::RGBA;
 
@@ -682,12 +682,12 @@ namespace vgl
 			p_Path.resize(6);
 			p_ImageCube.m_ImageData.resize(6);
 
-			p_ImageCube.m_ImageData[0] = (unsigned char*)SOIL_load_image(p_Path[0].first, &p_ImageCube.m_Size[0].x, &p_ImageCube.m_Size[0].y, &channels, SOIL_LOAD_RGBA);
-			p_ImageCube.m_ImageData[1] = (unsigned char*)SOIL_load_image(p_Path[1].first, &p_ImageCube.m_Size[1].x, &p_ImageCube.m_Size[1].y, &channels, SOIL_LOAD_RGBA);
-			p_ImageCube.m_ImageData[2] = (unsigned char*)SOIL_load_image(p_Path[2].first, &p_ImageCube.m_Size[2].x, &p_ImageCube.m_Size[2].y, &channels, SOIL_LOAD_RGBA);
-			p_ImageCube.m_ImageData[3] = (unsigned char*)SOIL_load_image(p_Path[3].first, &p_ImageCube.m_Size[3].x, &p_ImageCube.m_Size[3].y, &channels, SOIL_LOAD_RGBA);
-			p_ImageCube.m_ImageData[4] = (unsigned char*)SOIL_load_image(p_Path[4].first, &p_ImageCube.m_Size[4].x, &p_ImageCube.m_Size[4].y, &channels, SOIL_LOAD_RGBA);
-			p_ImageCube.m_ImageData[5] = (unsigned char*)SOIL_load_image(p_Path[5].first, &p_ImageCube.m_Size[5].x, &p_ImageCube.m_Size[5].y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[0] = (unsigned char*)SOIL_load_image(p_Path[0].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[1] = (unsigned char*)SOIL_load_image(p_Path[1].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[2] = (unsigned char*)SOIL_load_image(p_Path[2].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[3] = (unsigned char*)SOIL_load_image(p_Path[3].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[4] = (unsigned char*)SOIL_load_image(p_Path[4].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
+			p_ImageCube.m_ImageData[5] = (unsigned char*)SOIL_load_image(p_Path[5].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
 
 			p_ImageCube.m_CurrentChannels = Channels::RGBA;
 

@@ -59,12 +59,11 @@ namespace vgl
 
 			m_FrameBufferCreateInfo.width = m_Size.x;
 			m_FrameBufferCreateInfo.height = m_Size.y;
-			m_FrameBufferCreateInfo.layers = 1;
+			m_FrameBufferCreateInfo.layers = p_FramebufferInfo.p_ImageViewTypeCubeEnabled ? 6 : 1;
 
-			if (vkCreateFramebuffer(m_ContextPtr->m_Device, &m_FrameBufferCreateInfo, nullptr, &m_Framebuffer) != VK_SUCCESS){
-				VGL_LOG_MSG("Failed to create framebuffer", "VkFramebuffer", Utils::Severity::Error);
-				return false;
-			}
+			VkResult result = vkCreateFramebuffer(m_ContextPtr->m_Device, &m_FrameBufferCreateInfo, nullptr, &m_Framebuffer);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::Framebuffer]Failed to create Framebuffer, VkResult: %i", (uint64_t)result);
+			if (result == VK_SUCCESS) return false;
 
 			return true;
 		}
@@ -84,12 +83,9 @@ namespace vgl
 			m_FrameBufferCreateInfo.height = m_Size.y;
 			m_FrameBufferCreateInfo.layers = 1;
 
-			if (vkCreateFramebuffer(m_ContextPtr->m_Device, &m_FrameBufferCreateInfo, nullptr, &m_Framebuffer) != VK_SUCCESS){
-
-				VGL_LOG_MSG("Failed to create framebuffer", "VkFramebuffer", Utils::Severity::Error);
-#endif
-				return false;
-			}
+			VkResult result = vkCreateFramebuffer(m_ContextPtr->m_Device, &m_FrameBufferCreateInfo, nullptr, &m_Framebuffer);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::Framebuffer]Failed to create Framebuffer, VkResult: %i", (uint64_t)result);
+			if (result == VK_SUCCESS) return false;
 			return true;
 		}
 
@@ -106,18 +102,20 @@ namespace vgl
 		{
 			return m_ImageObj;
 		}
+		
+		ImageCube& ImageAttachment::getImageCube()
+		{
+			return m_ImageCubeObj;
+		}
 
 		bool ImageAttachment::create(ImageAttachmentInfo& p_ImageAttachmentInfo)
 		{
 			info = p_ImageAttachmentInfo;
-			if (p_ImageAttachmentInfo.p_AttachmentInfo == nullptr){
-
-				VGL_LOG_MSG("Failed to create image attachment, p_AttachmentInfo == nullptr", "VulkanImageAttachment", Utils::Severity::Error);
-#endif
-				return false;
-			}
+			VGL_INTERNAL_ASSERT_ERROR(p_ImageAttachmentInfo.p_AttachmentInfo != nullptr, "[vk::ImageAttachment]Failed to create image attachment, p_AttachmentInfo == nullptr");
+			if (p_ImageAttachmentInfo.p_AttachmentInfo == nullptr) return false;
 
 			VkImageUsageFlags usageFlag = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+			VkImageCreateFlags img_create_flags = 0;
 
 			m_MipLevels = 1;
 			if(p_ImageAttachmentInfo.p_AllowMipMapping)
@@ -125,30 +123,64 @@ namespace vgl
 
 			if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Depth)
 				usageFlag = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
 			if (p_ImageAttachmentInfo.p_CreateSampler)
 				usageFlag |= VK_IMAGE_USAGE_SAMPLED_BIT;
 			if (p_ImageAttachmentInfo.p_AllowMipMapping)
 				usageFlag |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-			m_ImageAllocation = m_ContextPtr->createImage
-			(
+			if (p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube) {
+				usageFlag |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+				img_create_flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+			}
+
+			m_ImageAllocation = m_ContextPtr->createImage(
 				p_ImageAttachmentInfo.p_Size.x, p_ImageAttachmentInfo.p_Size.y,
 				p_ImageAttachmentInfo.p_AttachmentInfo->p_Format,
 				VK_IMAGE_TILING_OPTIMAL,
-				usageFlag,
+				usageFlag, img_create_flags,
 				VMA_MEMORY_USAGE_GPU_ONLY,
-				m_VkImageHandle, m_MipLevels, 1, (VkSampleCountFlagBits)p_ImageAttachmentInfo.p_AttachmentInfo->p_SampleCount
+				m_VkImageHandle,
+				m_MipLevels,
+				p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1,
+				(VkSampleCountFlagBits)p_ImageAttachmentInfo.p_AttachmentInfo->p_SampleCount
 			).p_Alloc;
 
 			if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Depth) {
-				m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, p_ImageAttachmentInfo.p_AttachmentInfo->p_Format, VK_IMAGE_ASPECT_DEPTH_BIT, m_MipLevels);
-				m_ImageViewAttachment = m_ContextPtr->createImageView(m_VkImageHandle, p_ImageAttachmentInfo.p_AttachmentInfo->p_Format, VK_IMAGE_ASPECT_DEPTH_BIT);
+				m_ImageView = m_ContextPtr->createImageView(
+					m_VkImageHandle,
+					p_ImageAttachmentInfo.p_AttachmentInfo->p_Format,
+					VK_IMAGE_ASPECT_DEPTH_BIT,
+					m_MipLevels,
+					p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1,
+					(VkImageViewType)p_ImageAttachmentInfo.p_ViewType
+				);
+				m_ImageViewAttachment = m_ContextPtr->createImageView(
+					m_VkImageHandle,
+					p_ImageAttachmentInfo.p_AttachmentInfo->p_Format,
+					VK_IMAGE_ASPECT_DEPTH_BIT,
+					1,
+					p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1,
+					(VkImageViewType)p_ImageAttachmentInfo.p_ViewType);
 			}
-			else if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Color ||
-				p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Resolve) {
-				m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, p_ImageAttachmentInfo.p_AttachmentInfo->p_Format, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels);
-				m_ImageViewAttachment = m_ContextPtr->createImageView(m_VkImageHandle, p_ImageAttachmentInfo.p_AttachmentInfo->p_Format, VK_IMAGE_ASPECT_COLOR_BIT);
+			else if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Color || p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Resolve) {
+				// Image view used for sampling
+				m_ImageView = m_ContextPtr->createImageView(
+					m_VkImageHandle, 
+					p_ImageAttachmentInfo.p_AttachmentInfo->p_Format,
+					VK_IMAGE_ASPECT_COLOR_BIT, 
+					m_MipLevels,
+					p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1,
+					(VkImageViewType)p_ImageAttachmentInfo.p_ViewType
+				);
+				// Image view that is used in the framebuffer
+				m_ImageViewAttachment = m_ContextPtr->createImageView(
+					m_VkImageHandle, 
+					p_ImageAttachmentInfo.p_AttachmentInfo->p_Format, 
+					VK_IMAGE_ASPECT_COLOR_BIT, 
+					1,
+					p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1,
+					(VkImageViewType)p_ImageAttachmentInfo.p_ViewType
+				);
 			}
 
 			m_ImageObj.m_CurrentLayout = (VkImageLayout)info.p_AttachmentInfo->p_InitialLayout;
@@ -173,14 +205,17 @@ namespace vgl
 			else if (p_ImageAttachmentInfo.p_TransitionLayoutImage){
 				auto cmd = m_ContextPtr->beginSingleTimeCmds();
 				VkImageSubresourceRange range = {};
+
 				if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Depth)
 					range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 				else if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Color)
 					range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
 				range.baseMipLevel = 0;
 				range.levelCount = 1;
 				range.baseArrayLayer = 0;
-				range.layerCount = 1;
+				range.layerCount = p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1;
+
 				m_ContextPtr->setImageLayout(
 					cmd, m_VkImageHandle,
 					(VkImageLayout)p_ImageAttachmentInfo.p_AttachmentInfo->p_InitialLayout,
@@ -198,8 +233,14 @@ namespace vgl
 			m_ImageObj.m_Size = p_ImageAttachmentInfo.p_Size;
 			m_ImageObj.m_MipLevels = m_MipLevels;
 
-			if (p_ImageAttachmentInfo.p_CreateSampler)
-			{
+			m_ImageCubeObj.m_VkImageHandle = m_VkImageHandle;
+			m_ImageCubeObj.m_ImageAllocation = m_ImageAllocation;
+			m_ImageCubeObj.m_ImageView = m_ImageView;
+			m_ImageCubeObj.m_Layout = (VkImageLayout)info.p_AttachmentInfo->p_FinalLayout;
+			m_ImageCubeObj.m_Size = p_ImageAttachmentInfo.p_Size;
+			m_ImageCubeObj.m_MipLevels = m_MipLevels;
+
+			if (p_ImageAttachmentInfo.p_CreateSampler){
 				VkSamplerCreateInfo samplerCreateInfo = {};
 				samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 				samplerCreateInfo.maxAnisotropy = 1.0f;
@@ -221,18 +262,17 @@ namespace vgl
 					samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 				}
 
-				if (vkCreateSampler(m_ContextPtr->m_Device, &samplerCreateInfo, nullptr, &m_Sampler) != VK_SUCCESS){
-
-					VGL_LOG_MSG("Failed to create sampler for image attachment", "VulkanImageAttachment", Utils::Severity::Error);
-#endif
-				}
+				VkResult result = vkCreateSampler(m_ContextPtr->m_Device, &samplerCreateInfo, nullptr, &m_Sampler);
+				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::ImageAttachment]Failed to create sampler for image attachment");
 
 				m_ImageObj.m_Sampler = m_Sampler;
+				m_ImageCubeObj.m_Sampler = m_Sampler;
 				m_ImageObj.createDescriptors();
 			}
 
 			m_IsValid = true;
 			m_ImageObj.m_IsValid = m_IsValid;
+			m_ImageCubeObj.m_IsValid = m_IsValid;
 
 			m_AttachmentImageInfo = {};
 			m_AttachmentImageInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO;

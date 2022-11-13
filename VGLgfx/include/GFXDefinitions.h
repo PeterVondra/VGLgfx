@@ -15,8 +15,8 @@ namespace vgl
 		float FXAA_REDUCTION_MIN = 1.0f / 128.0f;
 		float FXAA_REDUCTION_BIAS = 1.0f / 8.0f;
 
-		float filmicScale = 1;
-		float filmicStrength = 1;
+		float filmicScale = 32;
+		float filmicStrength = 31;
 	};
 
 	// Atmosperic scattering

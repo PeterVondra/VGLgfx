@@ -145,9 +145,9 @@ namespace vgl
 					VkDescriptorSetLayout layout;
 					VkResult result = vkCreateDescriptorSetLayout(m_Device, info, nullptr, &layout);
 
-					VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[VkDescriptorLayoutCache]Failed to create descriptor set layout, VkResult: %i", result);
+					VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::DescriptorLayoutCache]Failed to create descriptor set layout, VkResult: %i", (uint64_t)result);
 
-					if (result == VK_SUCCESS) VGL_INTERNAL_DEBUG("[VkDescriptorLayoutCache]Created descriptor set layout");
+					if (result == VK_SUCCESS) VGL_INTERNAL_DEBUG("[vk::DescriptorLayoutCache]Created descriptor set layout");
 
 					m_LayoutCache[layoutInfo] = layout;
 					return layout;

@@ -15,7 +15,7 @@ namespace vgl
 		class GraphicsContext
 		{
 			public:
-				GraphicsContext() : m_DShadowMapRenderPass(RenderPassType::Graphics) {}
+				GraphicsContext() : m_DShadowMapRenderPass(RenderPassType::Graphics), m_PShadowMapRenderPass(RenderPassType::Graphics) {}
 
 				void init();
 
@@ -39,18 +39,26 @@ namespace vgl
 				g_Pipeline&				getSkyBoxPipeline();
 				Shader&					getSkyBoxShader();
 				Shader&					getAtmosphericScatteringShader();
+
 				Shader&					getDShadowMapShader();
 				Shader&					getDShadowMapAlbedoShader();
 				g_Pipeline&				getDShadowMapPipeline();
 				g_Pipeline&				getDShadowMapAlbedoPipeline();
 				RenderPass&				getDShadowMapRenderPass();
 				VkDescriptorSetLayout&	getDShadowMapDescriptorSetLayout();
-				VkDescriptorSetLayout&	getDShadowMapAlbedoDescriptorSetLayout();
+
+				Shader&					getPShadowMapShader();
+				Shader&					getPShadowMapAlbedoShader();
+				RenderPass&				getPShadowMapRenderPass();
+				g_Pipeline&				getPShadowMapAlbedoPipeline();
+				g_Pipeline&				getPShadowMapPipeline();
+				VkDescriptorSetLayout&	getPShadowMapDescriptorSetLayout();
+				VkDescriptorSetLayout&	getShadowMapAlbedoDescriptorSetLayout();
 
 			private:
 				friend class Renderer;
-				friend struct D_ShadowMap;
-				friend struct P_ShadowMap;
+				friend struct DShadowMap;
+				friend struct PShadowMap;
 
 				g_Pipeline m_TextBoxPipeline;
 				g_Pipeline m_Shape2DPipeline;
@@ -68,14 +76,22 @@ namespace vgl
 				Shader m_AtmosphericScatteringShader;
 				g_Pipeline m_AtmosphericScatteringPipeline;
 
-				g_Pipeline m_DShadowMapPipeline;
 				RenderPass m_DShadowMapRenderPass;
-				g_Pipeline m_DShadowMapAlbedoPipeline;
-
 				Shader m_DShadowMapShader;
 				Shader m_DShadowMapAlbedoShader;
+				g_Pipeline m_DShadowMapPipeline;
+				g_Pipeline m_DShadowMapAlbedoPipeline;
 				VkDescriptorSetLayout m_DShadowMapDescriptorSetLayout;
-				VkDescriptorSetLayout m_DShadowMapAlbedoDescriptorSetLayout;
+
+				Shader m_PShadowMapShader;
+				Shader m_PShadowMapAlbedoShader;
+				RenderPass m_PShadowMapRenderPass; // Vulkan MultiView extension enabled
+				g_Pipeline m_PShadowMapPipeline;
+				g_Pipeline m_PShadowMapAlbedoPipeline;
+				VkDescriptorSetLayout m_PShadowMapDescriptorSetLayout;
+				
+				VkDescriptorSetLayout m_ShadowMapAlbedoDescriptorSetLayout;
+
 
 				::std::vector<Vector2f> m_RecRawVertices;
 				VertexBuffer m_RecVertices;

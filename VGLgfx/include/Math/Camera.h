@@ -22,7 +22,7 @@ namespace vgl
 
 	/* 
 	Camera works for both 2D and 3D
-	(Yaw, Pitch, Roll) is in radians, use Math::DEG2RAD to convert to degrees
+	(Yaw, Pitch, Roll) is in degrees, use Math::DEG2RAD to convert to radians
 	*/
 	class Camera : public Transform3D
 	{
@@ -35,7 +35,7 @@ namespace vgl
 				m_AspectRatio(1.0f),
 				m_Yaw(0.0f), m_Pitch(0.0f), m_Roll(0.0f), 
 				m_ViewZModifier(1.0f),
-				m_NearPlane(1.0f), m_FarPlane(10.0f)
+				m_NearPlane(1.0f), m_FarPlane(1000.0f)
 			{
 				setView(View::Third_Person);
 			}

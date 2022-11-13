@@ -18,7 +18,7 @@ namespace vgl
 			void create(ImageCube& p_CubeMap);
 
 		private:
-			ImageCube* m_CubeMap;
+			ImageCube* m_CubeMap = nullptr;
       
       AtmosphericScatteringInfo m_AtmosphericScatteringInfo;
 

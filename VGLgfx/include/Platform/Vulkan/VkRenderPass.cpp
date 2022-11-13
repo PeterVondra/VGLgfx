@@ -43,11 +43,11 @@ namespace vgl
 			m_AttachmentInfo.push_back(p_AttachmentInfo);
 		}
 
-		bool RenderPass::create()
+		bool RenderPass::create(void* p_Next)
 		{
 			if (m_Attachments.empty())
 			{
-				VGL_INTERNAL_WARNING("[VKRenderPass]Failed to create render pass, no attachments submitted");
+				VGL_INTERNAL_WARNING("[vk::RenderPass]Failed to create render pass, no attachments submitted");
 				m_IsValid = false;
 				return false;
 			}
@@ -80,6 +80,7 @@ namespace vgl
 
 			VkRenderPassCreateInfo renderPassInfo = {};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+			renderPassInfo.pNext = p_Next;
 			renderPassInfo.attachmentCount = static_cast<uint32_t>(m_Attachments.size());
 			renderPassInfo.pAttachments = m_Attachments.data();
 			renderPassInfo.subpassCount = 1;
@@ -89,7 +90,7 @@ namespace vgl
 			renderPassInfo.pDependencies = m_Dependencies.data();
 
 			VkResult result = vkCreateRenderPass(m_ContextPtr->m_Device, &renderPassInfo, nullptr, &m_RenderPass);
-			VGL_INTERNAL_ASSERT_ERROR("[VkRenderPass]Failed to create Render pass, VkResult: %i", result);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS,"vk::kRenderPass]Failed to create Render pass, VkResult: %i", (uint64_t)result);
 
 			if (result != VK_SUCCESS){
 				m_IsValid = false;
@@ -97,7 +98,7 @@ namespace vgl
 			}
 
 
-			VGL_INTERNAL_TRACE("[VkRenderPass]Succesfully created renderpass");
+			VGL_INTERNAL_TRACE("[vk::RenderPass]Succesfully created renderpass");
 
 			m_IsValid = true;
 			return true;
@@ -316,9 +317,11 @@ namespace vgl
 
 			VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			if (p_PipelineInfo.p_DescriptorSetLayout != nullptr) {
-				pipelineLayoutInfo.setLayoutCount = 1;
-				pipelineLayoutInfo.pSetLayouts = &p_PipelineInfo.p_DescriptorSetLayout;
+			pipelineLayoutInfo.setLayoutCount = p_PipelineInfo.p_DescriptorSetLayouts.size();
+
+			std::vector<VkDescriptorSetLayout> desc_layouts(p_PipelineInfo.p_DescriptorSetLayouts.begin(), p_PipelineInfo.p_DescriptorSetLayouts.end());
+			if (p_PipelineInfo.p_DescriptorSetLayouts.size() > 0) {
+				pipelineLayoutInfo.pSetLayouts = desc_layouts.data();
 			}
 			else pipelineLayoutInfo.setLayoutCount = 0;
 			pipelineLayoutInfo.pushConstantRangeCount = 0;
@@ -331,7 +334,7 @@ namespace vgl
 
 			{
 				VkResult result = vkCreatePipelineLayout(m_ContextPtr->m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout);
-				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::g_Pipeline]Failed to create pipeline layout, VkResult: %i", result);
+				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::g_Pipeline]Failed to create pipeline layout, VkResult: %i", (uint64_t)result);
 
 				if (result != VK_SUCCESS) return false;
 			}
@@ -354,10 +357,10 @@ namespace vgl
 			pipelineInfo.basePipelineIndex = -1;
 			pipelineInfo.subpass = 0;
 
-			VGL_INTERNAL_ASSERT_ERROR(p_PipelineInfo.p_RenderPass == nullptr, "[vk::g_Pipeline]Failed to create graphics pipeline, p_RenderPass == nullptr");
+			VGL_INTERNAL_ASSERT_ERROR(p_PipelineInfo.p_RenderPass != nullptr, "[vk::g_Pipeline]Failed to create graphics pipeline, p_RenderPass == nullptr");
 			if (p_PipelineInfo.p_RenderPass == nullptr) return false;
 			VkResult result = vkCreateGraphicsPipelines(m_ContextPtr->m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline);
-			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::g_Pipeline]Failed to create graphics pipeline, VkResult: %i", result);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::g_Pipeline]Failed to create graphics pipeline, VkResult: %i", (uint64_t)result);
 			if (result != VK_SUCCESS) return false;
 
 			VGL_INTERNAL_TRACE("[vk::g_Pipeline]Succesfully created graphics pipeline");

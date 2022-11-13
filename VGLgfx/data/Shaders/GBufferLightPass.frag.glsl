@@ -71,9 +71,11 @@ float geoSmith(vec3 N, vec3 V, vec3 L, float k);
 vec3 fresnelSchlick(float costTheta, vec3 F0);
 
 vec2 PCSS_DirectionalLight();
+vec2 PCSS_PointLight(samplerCube p_ShadowCubeMap, vec3 p_LightPosition);
 
 vec3 lightDirPBR(vec3 p_Dir, vec3 p_Color);
 vec3 lightPointPBR(PointLight p_PointLight);
+vec3 lightPointPBR(PointLight p_PointLight, samplerCube p_ShadowCubeMap);
 
 vec4 fragPos;
 vec4 lightPosFrag;
@@ -120,7 +122,7 @@ float dither4x4(vec3 p_Color)
     return dot(vec3(0.2125, 0.7154, 0.0721), p_Color) < limit ? 0.0f : 1.0f;
 }
 
-vec3 volumetric_ligt();
+vec3 volumetric_light();
 #endif
 
 void main()
@@ -146,17 +148,19 @@ void main()
 	roughness = mraa.g;
 	ao = mraa.b;
     
+    #ifdef LIGHT_DIR
     #ifdef SHADOW_MAPPING
     s_bias = max(0.001 * (1.0 - dot(normal, normalize(ubo.directional_light.Direction.xyz))), 0.0001);
     lightPosFrag = bias*ubo.lightSpaceMat*vec4(fragPos.xyz, 1.0f);
     lightPosFrag /= lightPosFrag.w;
+    #endif
     #endif
     
     outColor = vec4(0);
     
     #ifdef LIGHT_DIR
     #ifdef SHADOW_MAPPING
-	outColor.rgb = lightDirPBR(-ubo.directional_light.Direction.xyz, ubo.directional_light.Color.rgb)+volumetric_ligt();
+	outColor.rgb = lightDirPBR(-ubo.directional_light.Direction.xyz, ubo.directional_light.Color.rgb) + volumetric_light();
     #else
     outColor.rgb = lightDirPBR(-ubo.directional_light.Direction.xyz, ubo.directional_light.Color.rgb);
     #endif
@@ -165,8 +169,14 @@ void main()
     float point_light_count = ubo.viewPos.w;
     
 	#ifdef MAX_POINT_LIGHTS
-    for(int i = 0; i < int(point_light_count); i++)
-	    outColor.rgb += lightPointPBR(ubo.point_lights[i]);
+    for(int i = 0; i < int(point_light_count); i++){
+        if(ubo.point_lights[i].ShadowMapID >= 0){
+        #ifdef OMNI_SHADOWMAP
+            outColor.rgb += lightPointPBR(ubo.point_lights[i], OMNI_SHADOWMAP);
+        #endif
+        }
+        else outColor.rgb += lightPointPBR(ubo.point_lights[i]);
+    }
 	#endif
     
 	outColor.r = min(max(0.0f, outColor.x), 1000);
@@ -302,7 +312,7 @@ vec3 lightDirPBR(vec3 p_Dir, vec3 p_Color)
 	vec3 color = ambient*gSSAO + (Lo + ((Kd * albedo / PI + specular * shadow.y) * radiance * NdotL)) * shadow.x;
 	#endif
     #ifndef SHADOW_MAPPING
-    vec3 color = ambient*texture(in_SSAO, UV).r + Lo + (Kd * albedo / PI + specular) * radiance * NdotL;
+    vec3 color = ambient*gSSAO + Lo + (Kd * albedo / PI + specular) * radiance * NdotL;
     #endif
 
 	return color;
@@ -372,19 +382,86 @@ vec3 lightPointPBR(PointLight p_PointLight)
 	vec3 ambient = normalize(lightColor) * albedo * ao * 0.025;
 	#endif
 
-	//#ifdef SHADOW_MAPPING
-    //vec2 shadow = PCSS_PointLight();
-	//vec3 color = ambient + (Lo + ((Kd * albedo / PI + specular * shadow.y) * radiance * NdotL)) * shadow.x;
-	//#endif
-    //#ifndef SHADOW_MAPPING
     vec3 color = ambient*gSSAO + Lo + ((Kd * albedo / PI + specular) * radiance * NdotL);
-    //#endif
 
 	return color;
 }
 
+#ifdef SHADOW_MAPPING
+vec3 lightPointPBR(PointLight p_PointLight, samplerCube p_ShadowCubeMap)
+{
+	vec3 lightColor = p_PointLight.Color.rgb;
+	vec3 lightPos = p_PointLight.Position.xyz;
+
+	vec3 V = normalize(ubo.viewPos.xyz - fragPos.xyz);
+
+	vec3 R = reflect(-V, normal);
+
+	#ifdef IBL
+    const float MAX_R_LOD = 4;
+	vec3 preFilteredColor = textureLod(preFilteredMap, R, roughness * MAX_R_LOD).rgb;
+	#endif
+
+	float dist = length(fragPos.xyz - lightPos);
+	float attenuation = pow(1.0 - pow(dist / (p_PointLight.Radius/2), 3.0), 2.0) / (dist * dist + 1.0);
+    vec3 radiance = lightColor / (attenuation);
+
+	vec3 Lo = vec3(0.0f);
+	vec3 L = normalize(lightPos - fragPos.xyz);
+	vec3 H = normalize(V + L);
+
+	float NdotL = max(dot(normal, L), 0.0f);
+	vec3 Ks;
+	vec3 Kd;
+
+	vec3 F0 = vec3(0.04);
+	F0 = mix(F0, albedo, metallic);
+	vec3 F = fresnelSchlick(max(dot(H, V), 0.0f), F0);	
+	#ifdef IBL
+	F = fresnelSchlickRoughness(max(dot(normal, V), 0.0f), F0, roughness);
+	vec2 envBRDF = texture(brdfMap, vec2(max(dot(normal, V), 0.0f), roughness)).rg;
+	#endif
+
+	float NDF = distGGX(normal, H, clamp(roughness, 0.003, 1.0f));
+	float G = geoSmith(normal, V, L, roughness);
+
+	vec3 numerator = NDF * G * F;
+	float denominator = 4.0f * max(dot(normal, V), 0.0f) * max(dot(normal, L), 0.0f);
+
+	vec3 specular = numerator / max(denominator, 0.001f);
+
+	#ifdef IBL
+	Ks = F;
+	Kd = vec3(1.0f) - Ks;
+	Kd *= 1.0f - metallic;
+	Lo += (Kd * albedo / PI + specular) * radiance * NdotL;
+	specular = preFilteredColor * (F * envBRDF.x + envBRDF.y);
+	#endif
+
+	#ifdef IBL
+	Ks = fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
+	Kd = vec3(1.0f) - Ks;
+	Kd *= 1.0f - metallic;
+	vec3 irradiance = texture(irradianceMap, normal).rgb;
+	vec3 diffuse = irradiance * albedo;
+	vec3 ambient = (Kd * diffuse + specular) * ao * 0.25;
+	#else
+	Ks = F;
+	Kd = vec3(1.0f) - Ks;
+	Kd *= 1.0f - metallic;
+	vec3 ambient = normalize(lightColor) * albedo * ao * 0.025;
+	#endif
+
+    vec2 shadow = PCSS_PointLight(p_ShadowCubeMap, p_PointLight.Position.xyz);
+	vec3 color = ambient*gSSAO + (Lo + ((Kd * albedo / PI + specular * shadow.y) * radiance * NdotL)) * shadow.x;
+
+	return color;
+}
+#endif
+
 
 #ifdef SHADOW_MAPPING
+#ifdef DIR_SHADOWMAP
 const vec2 Poisson25[25] = vec2[](
     vec2(-0.978698, -0.0884121),
     vec2(-0.841121, 0.521165),
@@ -868,8 +945,20 @@ vec2 PCSS_DirectionalLight()
 	// percentage-close filtering
 	return PCF_DirectionalLight(sc, ((sc.z - blockerDistance) / blockerDistance) * lightSize * NEAR / sc.z);
 }
+#endif
 
-vec3 volumetric_ligt()
+#ifdef OMNI_SHADOWMAP
+vec2 PCSS_PointLight(samplerCube p_ShadowCubeMap, vec3 p_LightPosition)
+{	
+	vec3 fragmentToLightPosition = fragPos.xyz - p_LightPosition;
+	float z = texture(p_ShadowCubeMap, fragmentToLightPosition).r;
+    float shadow = (z <= length(fragmentToLightPosition) - 0.0005) ? 0.0f : 1.0f;
+	return vec2(shadow);
+}
+#endif
+
+#ifdef DIR_SHADOWMAP
+vec3 volumetric_light()
 {
     vec3 ray = fragPos.xyz - ubo.viewPos.xyz;
 
@@ -895,4 +984,5 @@ vec3 volumetric_ligt()
     }
     return accum_fog/(NB_STEPS*NB_STEPS);
 }
+#endif
 #endif

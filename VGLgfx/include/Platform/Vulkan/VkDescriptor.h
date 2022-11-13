@@ -161,16 +161,16 @@ namespace vgl
 			UniformBuffer p_UniformBuffers[3];
 
 			void addImage(Image* p_Image, uint32_t p_Binding, int32_t p_FrameIndex = -1){
-				p_ImageDescriptors.emplace_back(SamplerDescriptorData(p_Image, p_Binding, p_FrameIndex));
+				p_ImageDescriptors.emplace_back(p_Image, p_Binding, p_FrameIndex);
 			}
 			void addImage(Image* p_Image, uint32_t p_Binding, Layout p_Layout, int32_t p_FrameIndex = -1){
-				p_ImageDescriptors.emplace_back(SamplerDescriptorData(p_Image, p_Binding, (VkImageLayout)p_Layout, p_FrameIndex));
+				p_ImageDescriptors.emplace_back(p_Image, p_Binding, (VkImageLayout)p_Layout, p_FrameIndex);
 			}
 			void addImageCube(ImageCube* p_Image, uint32_t p_Binding, int32_t p_FrameIndex = -1){
-				p_CubeMapDescriptors.emplace_back(SamplerDescriptorData(p_Image, p_Binding, p_FrameIndex));
+				p_CubeMapDescriptors.emplace_back(p_Image, p_Binding, p_FrameIndex);
 			}
 			void addImageArray(std::vector<Image>* p_Image, uint32_t p_Binding){
-				p_ImageArrayDescriptors.emplace_back(SamplerDescriptorData(p_Image, p_Binding));
+				p_ImageArrayDescriptors.emplace_back(p_Image, p_Binding);
 			}
 
 			std::vector<SamplerDescriptorData<Image>> p_ImageDescriptors;

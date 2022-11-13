@@ -8,8 +8,7 @@ namespace vgl
 
 	void Logger::init()
 	{
-		spdlog::set_pattern("%^^[%T] %n: %v%$");
-		spdlog::set_pattern("*** [%H:%M:%S %z] [thread %t] %l %v ***");
+		spdlog::set_pattern("%^[%T] [thread %t] %l %n: %v%$");
 		
 		s_InternalLogger = spdlog::stdout_color_mt("VGLgfx");
 		s_InternalLogger->set_level((spdlog::level::level_enum)VGL_INTERNAL_LOG_LEVEL);

@@ -32,6 +32,8 @@ namespace vgl
 					: CommandBuffer(p_Level) { m_FrameIndex = p_FrameIndex; }	
 				~CommandBuffer();
 
+				static void allocate(Level p_Level, uint32_t p_CommandBufferCount, std::vector<CommandBuffer>& p_CommandBuffers);
+
 				void cmdBegin();
 				void cmdBegin(VkCommandBufferInheritanceInfo& p_InheritanceInfo);
 				void cmdEnd();
@@ -87,7 +89,7 @@ namespace vgl
 				VkCommandBuffer m_CommandBuffer;	
 
 				uint8_t m_FrameIndex = 0;
-				const Level m_Level;
+				Level m_Level;
 				bool m_Allocated;
 				bool m_Recording;
 

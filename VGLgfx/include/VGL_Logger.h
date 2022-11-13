@@ -7,8 +7,6 @@
 
 #include "../libs/PPK_ASSERT/ppk_assert.h"
 
-#include <memory>
-
 namespace vgl
 {
 	enum class Level
@@ -24,7 +22,7 @@ namespace vgl
 	class Logger
 	{
 		public:
-			inline static void init();
+			static void init();
 			inline static std::shared_ptr<spdlog::logger>& getInternalLogger() { return s_InternalLogger; }
 			inline static std::shared_ptr<spdlog::logger>& getClientLogger() { return s_ClientLogger; }
 
@@ -65,6 +63,14 @@ namespace vgl
 #define NOP ((void)0)
 #define VGL_INTERNAL_LOG_LEVEL ::vgl::Level::Off
 #define VGL_CLIENT_LOG_LEVEL ::vgl::Level::Off
+
+#define VGL_INTERNAL_LOGGING_ENABLED
+#define VGL_INTERNAL_LOG_LEVEL_TRACE
+#define VGL_INTERNAL_ASSERT_ENABLED
+#define VGL_INTERNAL_ASSERT_LEVEL_FATAL
+#define VGL_INTERNAL_ASSERT_LEVEL_ERROR
+//#define VGL_INTERNAL_ASSERT_LEVEL_WARNING
+#define VGL_INTERNAL_ASSERT_LEVEL_TRACE
 
 #ifdef VGL_INTERNAL_LOGGING_ENABLED
 // Internal logging macros
@@ -161,13 +167,16 @@ namespace vgl
 #endif
 #ifdef VGL_INTERNAL_ASSERT_LEVEL_WARNING
 #define VGL_INTERNAL_ASSERT_WARNING(...)	PPK_ASSERT_WARNING(__VA_ARGS__)
-#else VGL_INTERNAL_ASSERT_WARNING(...)		NOP
+#else 
+#define VGL_INTERNAL_ASSERT_WARNING(...)		NOP
 #endif
 #ifdef VGL_INTERNAL_ASSERT_LEVEL_DEBUG
 #define VGL_INTERNAL_ASSERT_DEBUG(...)		PPK_ASSERT_DEBUG(__VA_ARGS__)
-#else VGL_INTERNAL_ASSERT_DEBUG(...)		NOP
+#else 
+#define VGL_INTERNAL_ASSERT_DEBUG(...)		NOP
 #endif
-#else
+#endif
+#ifndef VGL_INTERNAL_ASSERT_ENABLED
 #define PEMPEK_ASSERT_ENABLED 0
 #define VGL_INTERNAL_ASSERT_FATAL(...)		NOP
 #define VGL_INTERNAL_ASSERT_ERROR(...)		NOP

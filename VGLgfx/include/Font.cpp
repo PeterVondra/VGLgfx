@@ -17,15 +17,13 @@ namespace vgl
 		{
 			FT_Library ftlib;
 
-			if (FT_Init_FreeType(&ftlib))
-			{
-				VGL_LOG_MSG("Failed to initialize freetype\n", "Font", Utils::Severity::Error);
+			if (FT_Init_FreeType(&ftlib)){
+				VGL_INTERNAL_ERROR("[FontLoader]Failed to initialize freetype");
 				return false;
 			}
 
-			if (FT_New_Face(ftlib, p_Path, 0, &p_Font.face))
-			{
-				VGL_LOG_MSG("Failed to laod font file " + std::string(p_Path) + "\n", "Font", Utils::Severity::Error);
+			if (FT_New_Face(ftlib, p_Path, 0, &p_Font.face)){
+				VGL_INTERNAL_ERROR("[FontLoader]Failed to load font file" + std::string(p_Path));
 				return false;
 			}
 
@@ -34,9 +32,8 @@ namespace vgl
 
 			for (wchar_t c = 0; c < 128; c++)
 			{
-				if (FT_Load_Char(p_Font.face, c, FT_LOAD_RENDER))
-				{
-					VGL_LOG_MSG("Failed to load character: " + (char)c, "Font", Utils::Severity::Error);
+				if (FT_Load_Char(p_Font.face, c, FT_LOAD_RENDER)){
+					VGL_INTERNAL_ERROR("[FontLoader]Failed to load character: " + (char)c);
 					continue;
 				}
 				

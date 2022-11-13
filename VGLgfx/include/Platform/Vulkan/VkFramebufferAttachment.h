@@ -24,6 +24,7 @@ namespace vgl
 			bool p_ClearFrame = true;
 
 			// AttachmentInfo from RenderPass 
+			AttachmentViewType p_ViewType = AttachmentViewType::Image2D;
 			AttachmentInfo p_AttachmentInfo; 
 
 			BorderColor p_BorderColor = BorderColor::OpaqueBlack;
@@ -123,7 +124,7 @@ namespace vgl
 				Descriptor& getDescriptors(); 
 				void destroy();
 
-				AttachmentDescriptor addAttachment(
+				AttachmentDescriptor& addAttachment(
 					Vector2i p_Size,
 					ImageFormat p_ImageFormat,
 					Layout p_Layout,
@@ -151,6 +152,7 @@ namespace vgl
 				friend class GraphicsContext;
 
 				bool m_AllowMipMapping = false;
+				bool m_ImageViewTypeCubeEnabled = false;
 
 				void cmdBeginRenderPass(CommandBuffer& p_CommandBuffer, SubpassContents p_SubpassContents, const uint32_t p_ImageIndex);
 				void cmdEndRenderPass();

@@ -318,7 +318,7 @@ namespace vgl
 
 			VkShaderModule shaderModule;
 			VkResult result = vkCreateShaderModule(m_ContextPtr->m_Device, &createInfo, nullptr, &shaderModule);
-			VGL_INTERNAL_ASSERT_ERROR(resutl == VK_SUCCESS, "[vk::Shader]Failed to create shader module, VkResult: %i", result);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::Shader]Failed to create shader module, VkResult: %i", (uint64_t)result);
 
 			return shaderModule;
 		}
@@ -332,7 +332,7 @@ namespace vgl
 
 			VkShaderModule shaderModule;
 			VkResult result = vkCreateShaderModule(m_ContextPtr->m_Device, &createInfo, nullptr, &shaderModule);
-			VGL_INTERNAL_ASSERT_ERROR(resutl == VK_SUCCESS, "[vk::Shader]Failed to create shader module, VkResult: %i", result);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::Shader]Failed to create shader module, VkResult: %i", (uint64_t)result);
 
 			return shaderModule;
 		}

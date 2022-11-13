@@ -26,23 +26,72 @@ namespace vgl
 			}
 		};
 
-		D_ShadowMap::D_ShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_CommandBufferIdx(0) {
-			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
-				for (uint32_t j = 0; j < 500; j++) {
-					m_CommandBuffers[i].emplace_back(i, Level::Secondary);
-				}
-			}
+		DShadowMap::DShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_CommandBufferIdx(0), m_Resolution(0.0f) {
+			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
+				CommandBuffer::allocate(Level::Secondary, 500, m_CommandBuffers[i]);
 
 			m_Attachment.m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_RenderPass = &GraphicsContextSingleton::getInstance().getDShadowMapRenderPass();
 		}
-		P_ShadowMap::P_ShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_CommandBufferIdx(0) {
-			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
-				for (uint32_t j = 0; j < 500; j++) {
-					m_CommandBuffers[i].emplace_back(i, Level::Secondary);
-				}
-			}
+		void DShadowMap::create(Vector2i p_Resolution, ImageFormat p_ImageFormat)
+		{
+			// Create shadow map framebuffer
+			m_Attachment.m_FramebufferAttachmentInfo.p_Size = p_Resolution;
+			m_Attachment.addAttachment(p_Resolution, p_ImageFormat, vgl::Layout::DepthR);
+			m_Attachment.create();
 
-			m_Attachment.m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_RenderPass = &GraphicsContextSingleton::getInstance().getDShadowMapRenderPass();
+			m_Resolution = p_Resolution;
+		}
+		void DShadowMap::destroy()
+		{
+			m_Attachment.destroy();
+			for (auto& cmds : m_CommandBuffers)
+				for (auto& cmd : cmds)
+					cmd.destroy();
+		}
+		
+		PShadowMap::PShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_CommandBufferIdx(0), m_Resolution(0.0f) {
+			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
+				CommandBuffer::allocate(Level::Secondary, 500, m_CommandBuffers[i]);
+
+			m_Attachment.m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_RenderPass = &GraphicsContextSingleton::getInstance().getPShadowMapRenderPass();
+		}
+		void PShadowMap::create(Vector2i p_Resolution, ImageFormat p_ImageFormat)
+		{
+			// Create shadow map framebuffer
+			m_Attachment.m_FramebufferAttachmentInfo.p_Size = p_Resolution;
+			m_Attachment.addAttachment(p_Resolution, p_ImageFormat, vgl::Layout::ShaderR).p_ViewType = AttachmentViewType::ImageCube;
+			m_Attachment.addAttachment(p_Resolution, ImageFormat::D32SF, vgl::Layout::Depth).p_ViewType = AttachmentViewType::ImageCube;
+			m_Attachment.create();
+
+			m_Resolution = p_Resolution;
+
+			VGL_INTERNAL_ASSERT_WARNING(m_Position != nullptr, "[vk::PShadowMap]Position was nullptr, positon will be set to origin");
+
+			if (m_Position == nullptr)
+				m_PrevPosition = Vector3f(0.0f);
+			else m_PrevPosition = { m_Position->x, m_Position->y, m_Position->z };
+
+			m_Projection = Matrix4f::perspectiveRH_ZO(90.0f, p_Resolution.x / p_Resolution.y, 1.0f, 1000000.0f);
+
+			// Prepare view matrices
+			m_View[0] = Matrix4f::lookAtRH(m_PrevPosition, m_PrevPosition + Vector3f(1.0f,	0.0f,	0.0f), {0.0f, -1.0f,  0.0f})	*m_Projection;
+			m_View[1] = Matrix4f::lookAtRH(m_PrevPosition, m_PrevPosition + Vector3f(-1.0f, 0.0f,	0.0f), {0.0f, -1.0f,  0.0f})	*m_Projection;
+			m_View[2] = Matrix4f::lookAtRH(m_PrevPosition, m_PrevPosition + Vector3f(0.0f,	1.0f,	0.0f), {0.0f,  0.0f,  1.0f})	*m_Projection;
+			m_View[3] = Matrix4f::lookAtRH(m_PrevPosition, m_PrevPosition + Vector3f(0.0f, -1.0f,	0.0f), {0.0f,  0.0f, -1.0f})	*m_Projection;
+			m_View[4] = Matrix4f::lookAtRH(m_PrevPosition, m_PrevPosition + Vector3f(0.0f,	0.0f,	1.0f), {0.0f, -1.0f,  0.0f})	*m_Projection;
+			m_View[5] = Matrix4f::lookAtRH(m_PrevPosition, m_PrevPosition + Vector3f(0.0f,	0.0f,  -1.0f), {0.0f, -1.0f,  0.0f})	*m_Projection;
+
+			DescriptorSetInfo info = {};
+			info.p_VertexUniformBuffer = UniformBuffer(sizeof(Matrix4f) * 6, 0);
+			m_TransformDescriptor.create(info);
+			m_TransformDescriptor.copy(ShaderStage::VertexBit, m_View, sizeof(Matrix4f) * 6, 0);
+		}
+		void PShadowMap::destroy()
+		{
+			m_Attachment.destroy();
+			for (auto& cmds : m_CommandBuffers)
+				for (auto& cmd : cmds)
+					cmd.destroy();
 		}
 
 		Renderer::Renderer()
@@ -228,7 +277,7 @@ namespace vgl
 
 			m_RecordPrimaryCmdBuffersFunPtrs.emplace_back(&p_FramebufferAttachment, &Renderer::recordPCmdFun);
 		}
-		void Renderer::beginRenderPass(RenderInfo& p_RenderInfo, D_ShadowMap& p_ShadowMap)
+		void Renderer::beginRenderPass(RenderInfo& p_RenderInfo, DShadowMap& p_ShadowMap)
 		{
 			p_ShadowMap.m_CommandBufferIdx = 0;
 
@@ -239,21 +288,21 @@ namespace vgl
 
 			m_RecordMeshDataFun = &Renderer::recordMeshDataSMD;
 
-			m_RecordPrimaryCmdBuffersFunPtrs.emplace_back(&p_ShadowMap, &Renderer::recordPCmdSMAPFun);
+			m_RecordPrimaryCmdBuffersFunPtrs.emplace_back(&p_ShadowMap, &Renderer::recordPCmdSMAPFunDS);
 		}
 
-		void Renderer::beginRenderPass(RenderInfo& p_RenderInfo, P_ShadowMap& p_ShadowMap)
+		void Renderer::beginRenderPass(RenderInfo& p_RenderInfo, PShadowMap& p_ShadowMap)
 		{
 			p_ShadowMap.m_CommandBufferIdx = 0;
 
 			m_RenderInfo = p_RenderInfo;
 
 			m_FramebufferAttachmentPtr = &p_ShadowMap.m_Attachment;
-			m_PShadowMapPtr = &p_ShadowMap;
+			m_CurrentPShadowMapPtr = &p_ShadowMap;
 
 			m_RecordMeshDataFun = &Renderer::recordMeshDataSMP;
 
-			m_RecordPrimaryCmdBuffersFunPtrs.emplace_back(&p_ShadowMap, &Renderer::recordPCmdSMAPFun);
+			m_RecordPrimaryCmdBuffersFunPtrs.emplace_back(&p_ShadowMap, &Renderer::recordPCmdSMAPFunP);
 		}
 
 		void Renderer::submit(Camera& p_Camera)
@@ -318,6 +367,9 @@ namespace vgl
 		// Directional Shadow map
 		void Renderer::recordMeshDataSMD(MeshData& p_MeshData, Transform3D& p_Transform)
 		{
+			VGL_INTERNAL_ASSERT_WARNING(m_DShadowMapPtr != nullptr, "[vk::Renderer]No shadow map bound");
+			if (m_DShadowMapPtr == nullptr) return;
+
 			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
 				CommandBuffer& cmd = m_DShadowMapPtr->m_CommandBuffers[i][m_DShadowMapPtr->m_CommandBufferIdx];
 
@@ -393,6 +445,140 @@ namespace vgl
 
 		void Renderer::recordMeshDataSMP(MeshData& p_MeshData, Transform3D& p_Transform)
 		{
+			VGL_INTERNAL_ASSERT_WARNING(m_CurrentPShadowMapPtr != nullptr, "[vk::Renderer]No Omni-shadow map bound");
+			if (m_CurrentPShadowMapPtr == nullptr) return;
+
+			struct PSMT {
+				Matrix4f model;
+				// Light position
+				Vector3f position;
+			};
+
+			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+				CommandBuffer& cmd = m_CurrentPShadowMapPtr->m_CommandBuffers[i][m_CurrentPShadowMapPtr->m_CommandBufferIdx];
+
+				// Shadow map rendering
+				cmd.cmdBegin(m_CurrentPShadowMapPtr->m_Attachment.m_InheritanceInfo[i]);
+
+				cmd.cmdSetViewport(
+					Viewport({
+						int(m_CurrentPShadowMapPtr->m_Resolution.x), int(m_CurrentPShadowMapPtr->m_Resolution.y) },
+						Vector2i(0, 0)
+						)
+				);
+				cmd.cmdSetScissor(
+					Scissor({
+						int(m_CurrentPShadowMapPtr->m_Resolution.x),
+						int(m_CurrentPShadowMapPtr->m_Resolution.y) }, { 0, 0 }
+						)
+				);
+
+				// If light position is changed, update view matrices
+				if (*m_CurrentPShadowMapPtr->m_Position != m_CurrentPShadowMapPtr->m_PrevPosition) {
+					m_CurrentPShadowMapPtr->m_PrevPosition = *m_CurrentPShadowMapPtr->m_Position;
+#define CPSMPTR m_CurrentPShadowMapPtr
+					// Prepare view matrices
+					CPSMPTR->m_View[0] = Matrix4f::lookAtRH(
+						CPSMPTR->m_PrevPosition, 
+						CPSMPTR->m_PrevPosition + Vector3f(1.0f,  0.0f,  0.0f),
+						Vector3f(0.0f, -1.0f,  0.0f)
+					)*CPSMPTR->m_Projection;
+
+					CPSMPTR->m_View[1] = Matrix4f::lookAtRH(
+						CPSMPTR->m_PrevPosition,
+						CPSMPTR->m_PrevPosition + Vector3f(-1.0f, 0.0f,  0.0f),
+						Vector3f(0.0f, -1.0f,  0.0f)
+					)*CPSMPTR->m_Projection;
+
+					CPSMPTR->m_View[2] = Matrix4f::lookAtRH(
+						CPSMPTR->m_PrevPosition,
+						CPSMPTR->m_PrevPosition + Vector3f(0.0f,  1.0f,  0.0f),
+						Vector3f(0.0f,  0.0f,  1.0f)
+					)*CPSMPTR->m_Projection;
+
+					CPSMPTR->m_View[3] = Matrix4f::lookAtRH(
+						CPSMPTR->m_PrevPosition,
+						CPSMPTR->m_PrevPosition + Vector3f(0.0f, -1.0f,  0.0f),
+						Vector3f(0.0f,  0.0f, -1.0f)
+					)*CPSMPTR->m_Projection;
+
+					CPSMPTR->m_View[4] = Matrix4f::lookAtRH(
+						CPSMPTR->m_PrevPosition,
+						CPSMPTR->m_PrevPosition + Vector3f(0.0f,  0.0f,  1.0f),
+						Vector3f(0.0f, -1.0f,  0.0f)
+					)*CPSMPTR->m_Projection;
+
+					CPSMPTR->m_View[5] = Matrix4f::lookAtRH(
+						CPSMPTR->m_PrevPosition,
+						CPSMPTR->m_PrevPosition + Vector3f(0.0f,  0.0f, -1.0f),
+						Vector3f(0.0f, -1.0f,  0.0f)
+					)*CPSMPTR->m_Projection;
+#undef CPSMPTR
+				}
+
+				PSMT data = {};
+				data.model = p_Transform.model;
+				data.position = m_CurrentPShadowMapPtr->m_PrevPosition;
+
+				//vkCmdSetDepthBias
+				//(
+				//	cmd.m_CommandBuffer,
+				//	m_CurrentPShadowMapPtr->m_DepthBiasConstant,
+				//	0.0f,
+				//	m_CurrentPShadowMapPtr->m_DepthBiasSlope
+				//);
+
+				vkCmdBindDescriptorSets(
+					cmd.vkHandle(),
+					VK_PIPELINE_BIND_POINT_GRAPHICS,
+					m_GraphicsContextPtr->getPShadowMapAlbedoPipeline().m_PipelineLayout,
+					0, 1,
+					&m_CurrentPShadowMapPtr->m_TransformDescriptor.m_DescriptorSets[i].m_DescriptorSet,
+					0, nullptr
+				);
+
+				uint32_t albedo_concurrent = 0;
+				uint32_t default_concurrent = 0;
+				cmd.cmdBindVertexArray(p_MeshData.m_VertexArray);
+				uint32_t prevIndex = 0;
+				for (int j = 0; j < p_MeshData.m_Materials.size(); j++) {
+					// Should material be rendered?
+					if (!p_MeshData.m_Materials[j].config.render) {
+						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].first);
+						prevIndex = p_MeshData.m_SubMeshIndices[j].second;
+					}
+					else if (p_MeshData.m_Materials[j].m_AlbedoMap.isValid()) {
+						if (albedo_concurrent == 0) { // --> If pipeline is already bound, skip this step
+							cmd.cmdBindPipeline(m_GraphicsContextPtr->getPShadowMapAlbedoPipeline());
+							vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getPShadowMapAlbedoPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PSMT), &data);
+						}
+						vkCmdBindDescriptorSets(
+							cmd.vkHandle(),
+							VK_PIPELINE_BIND_POINT_GRAPHICS,
+							m_GraphicsContextPtr->getPShadowMapAlbedoPipeline().m_PipelineLayout,
+							1, 1,
+							&p_MeshData.m_Materials[j].m_AlbedoMap.m_DescriptorSet,
+							0, nullptr
+						);
+
+						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].second);
+						prevIndex = p_MeshData.m_SubMeshIndices[j].second;
+						albedo_concurrent++;
+						default_concurrent = 0;
+					}
+					else {
+						if (default_concurrent == 0) { // --> If pipeline is already bound, skip this step
+							cmd.cmdBindPipeline(m_GraphicsContextPtr->getPShadowMapPipeline());
+							vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getPShadowMapPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PSMT), &data);
+						}
+						cmd.cmdDrawIndexed(prevIndex, p_MeshData.indices.size());
+						albedo_concurrent = 0;
+						default_concurrent++;
+					}
+				}
+				cmd.cmdEnd();
+			}
+			m_CurrentPShadowMapPtr->m_CommandBufferIdx++;
 		}
 		
 		void Renderer::createPipelines(MeshData& p_MeshData, RenderInfo& p_RenderInfo, RenderPass& p_RenderPass)
@@ -432,7 +618,7 @@ namespace vgl
 
 				pipelineInfo.p_Shader = &m_ShaderData[m_ShaderData.size() - 1].p_Shader;
 
-				pipelineInfo.p_DescriptorSetLayout = p_MeshData.m_MTLDescriptors[i].m_DescriptorSetLayout;
+				pipelineInfo.p_DescriptorSetLayouts = { p_MeshData.m_MTLDescriptors[i].m_DescriptorSetLayout };
 				
 				m_ShaderData[m_ShaderData.size() - 1].p_Pipeline.create(pipelineInfo);
 
@@ -721,7 +907,7 @@ namespace vgl
 			);
 			m_PrimaryCommandBuffers[p_ImageIndex].cmdEndRenderPass();
 
-#ifdef IMGUI_VK_IMPL
+#ifdef VGL_IMGUI_VK_IMPL
 			m_PrimaryCommandBuffers[p_ImageIndex].cmdBeginRenderPass(
 				*m_ImGuiContext.m_RenderPass, 
 				SubpassContents::Inline, 
@@ -751,12 +937,23 @@ namespace vgl
 			}
 		}
 
-		void Renderer::recordPCmdSMAPFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex)
+		void Renderer::recordPCmdSMAPFunDS(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex)
 		{
-			D_ShadowMap* shadowPtr = (D_ShadowMap*)p_Ptr;
+			DShadowMap* shadowPtr = (DShadowMap*)p_Ptr;
 
 			if (shadowPtr)
 				if (!shadowPtr->m_CommandBuffers.empty()) {
+					shadowPtr->m_Attachment.cmdBeginRenderPass(p_PrimaryCommandBuffer, SubpassContents::Secondary, p_ImageIndex);
+					p_PrimaryCommandBuffer.cmdExecuteCommands(shadowPtr->m_CommandBuffers[p_ImageIndex], shadowPtr->m_CommandBufferIdx);
+					shadowPtr->m_Attachment.cmdEndRenderPass();
+				}
+		}
+		void Renderer::recordPCmdSMAPFunP(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex)
+		{
+			PShadowMap* shadowPtr = (PShadowMap*)p_Ptr;
+
+			if (shadowPtr)
+				if (!shadowPtr->m_CommandBuffers[0].empty()) {
 					shadowPtr->m_Attachment.cmdBeginRenderPass(p_PrimaryCommandBuffer, SubpassContents::Secondary, p_ImageIndex);
 					p_PrimaryCommandBuffer.cmdExecuteCommands(shadowPtr->m_CommandBuffers[p_ImageIndex], shadowPtr->m_CommandBufferIdx);
 					shadowPtr->m_Attachment.cmdEndRenderPass();
@@ -766,11 +963,11 @@ namespace vgl
 		void Renderer::GPUSubmit()
 		{
 			//float start = Utils::Logger::getTimePoint();
-#ifndef IMGUI_VK_IMPL
+#ifndef VGL_IMGUI_VK_IMPL
 			m_ImGuiContext.updateBuffers();
 			m_ImGuiContext.genCmdBuffers();
 #endif
-#ifdef IMGUI_VK_IMPL
+#ifdef VGL_IMGUI_VK_IMPL
 			//m_ImGuiContext.genCmdBuffers();
 			m_ImGuiContext.updateViewports();
 #endif
@@ -791,7 +988,7 @@ namespace vgl
 			if (result == VK_ERROR_OUT_OF_DATE_KHR)
 				recreateSwapChain();
 			else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-				VGL_LOG_MSG("Failed to acquire swap chain image", "vkAcquireNextImageKHR", Utils::Severity::Error);
+				VGL_INTERNAL_ERROR("[vk::Renderer]Failed to acquire swap chain image");
 
 			m_SubmitInfo.pWaitSemaphores = &m_ImageAvailableSemaphore[m_CurrentFrame];
 			m_SubmitInfo.pCommandBuffers = &m_PrimaryCommandBuffers[m_ImageIndex].m_CommandBuffer;
@@ -801,7 +998,7 @@ namespace vgl
 
 			// Submit the commands to the graphics queue
 			if (vkQueueSubmit(m_ContextPtr->m_GraphicsQueue, 1, &m_SubmitInfo, m_InFlightFences[m_CurrentFrame]) != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to submit command buffer", "vkQueueSubmit", Utils::Severity::Error);
+				VGL_INTERNAL_ERROR("[vk::Renderer]Failed to submit command buffer");
 
 			m_PresentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
 			m_PresentInfo.pImageIndices = &m_ImageIndex;
@@ -813,7 +1010,7 @@ namespace vgl
 				recreateSwapChain();
 
 			else if (result != VK_SUCCESS)
-				VGL_LOG_MSG("Failed to present swap chain image", "vkQueuePresentKHR", Utils::Severity::Error);
+				VGL_INTERNAL_ERROR("[vk::Renderer]Failed to present swap chain image");
 
 			//waitForFences();
 			//std::cout << 1000 * (Utils::Logger::getTimePoint() - start) << std::endl;
@@ -828,7 +1025,7 @@ namespace vgl
 
 		void Renderer::createDefaultRenderPass()
 		{
-			AttachmentInfo colorAttachment;
+			AttachmentInfo colorAttachment = {};
 			colorAttachment.p_AttachmentType = AttachmentType::Color;
 			colorAttachment.p_Format = m_WindowPtr->m_Swapchain.m_SwapchainImageFormat;
 			colorAttachment.p_SampleCount = m_WindowPtr->m_MSAASamples;
@@ -841,7 +1038,7 @@ namespace vgl
 
 			m_DefaultRenderPass.addAttachment(colorAttachment);
 
-			AttachmentInfo depthAttachment;
+			AttachmentInfo depthAttachment = {};
 			depthAttachment.p_AttachmentType = AttachmentType::Depth;
 			depthAttachment.p_Format = m_ContextPtr->findDepthFormat();
 			depthAttachment.p_SampleCount = m_WindowPtr->m_MSAASamples;
@@ -854,7 +1051,7 @@ namespace vgl
 
 			m_DefaultRenderPass.addAttachment(depthAttachment);
 
-			AttachmentInfo resolveAttachment;
+			AttachmentInfo resolveAttachment = {};
 			resolveAttachment.p_AttachmentType = AttachmentType::Resolve;
 			resolveAttachment.p_Format = m_WindowPtr->m_Swapchain.m_SwapchainImageFormat;
 			resolveAttachment.p_SampleCount = 1;
@@ -864,7 +1061,7 @@ namespace vgl
 			resolveAttachment.p_StencilStoreOp = StoreOp::Null;
 			resolveAttachment.p_InitialLayout = Layout::Undefined;
 			resolveAttachment.p_FinalLayout = Layout::Present;
-#ifdef IMGUI_VK_IMPL
+#ifdef VGL_IMGUI_VK_IMPL
 			resolveAttachment.p_FinalLayout = Layout::Color;
 #endif
 
@@ -902,7 +1099,7 @@ namespace vgl
 
 		void Renderer::createPostSwapchainRenderPass()
 		{
-			AttachmentInfo colorAttachment;
+			AttachmentInfo colorAttachment = {};
 			colorAttachment.p_AttachmentType = AttachmentType::Color;
 			colorAttachment.p_Format = m_WindowPtr->m_Swapchain.m_SwapchainImageFormat;
 			colorAttachment.p_SampleCount = VK_SAMPLE_COUNT_1_BIT;// m_WindowPtr->m_MSAASamples;
@@ -978,7 +1175,7 @@ namespace vgl
 
 			m_WindowPtr->m_DeltaTime = 0;
 			m_WindowPtr->m_PreviousTime = Utils::Logger::getTimePoint();
-#ifdef IMGUI_VK_IMPL
+#ifdef VGL_IMGUI_VK_IMPL
 			m_ImGuiContext.recreateSwapchain();
 #endif
 

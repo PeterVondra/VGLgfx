@@ -51,7 +51,7 @@ namespace vgl
 					for (int j = 0; j < p_ImageArrayDescriptors[i].p_Image->size(); j++) {
 						valid = p_ImageArrayDescriptors[i].p_Image->operator[](j).isValid();
 						if (!valid) {
-							VGL_INTERNAL_ERROR("[VkDescriptorSetInfo]Image[" + std::to_string(j) + "] in image array index " + std::to_string(i) + "is not valid/complete","Descriptor");
+							VGL_INTERNAL_ERROR("[VkDescriptorSetInfo]Image[" + std::to_string(j) + "] in image array index " + std::to_string(i) + "is not valid/complete");
 							return false;
 						}
 					}
@@ -120,8 +120,7 @@ namespace vgl
 			m_DescriptorSetInfo = &p_Info;
 
 			if (!p_Info.isValid()) {
-
-				VGL_INTERNAL_ERROR("[VkDescriptor]In function Descriptor::create(...): DescriptorSetInfo is not valid");
+				VGL_INTERNAL_ERROR("[vk::Descriptor]In function Descriptor::create(...): DescriptorSetInfo is not valid");
 				return;
 			}
 
@@ -263,6 +262,7 @@ namespace vgl
 								m_ImageDescriptorBindings.push_back(layoutBinding.binding);
 
 							m_LayoutBindings[s].push_back(layoutBinding);
+
 							continue;
 						}
 						ig++; // Duplicated binding was found (but with different frameindex)
@@ -391,17 +391,17 @@ namespace vgl
 				if (m_DescriptorSetInfo->p_VertexUniformBuffer.isValid()) {
 					m_DescriptorSetInfo->p_VertexUniformBuffer.destroy();
 
-					VGL_INTERNAL_TRACE("[VkDescriptor]Destroyed vertex stage uniform buffer");
+					VGL_INTERNAL_TRACE("[vk::Descriptor]Destroyed vertex stage uniform buffer");
 				}
 				if (m_DescriptorSetInfo->p_FragmentUniformBuffer.isValid()) {
 					m_DescriptorSetInfo->p_VertexUniformBuffer.destroy();
 
-					VGL_INTERNAL_TRACE("[VkDescriptor]Destroyed vertex stage uniform buffer");
+					VGL_INTERNAL_TRACE("[vk::Descriptor]Destroyed vertex stage uniform buffer");
 				}
 				if (m_DescriptorSetInfo->p_GeometryUniformBuffer.isValid()) {
 					m_DescriptorSetInfo->p_VertexUniformBuffer.destroy();
 
-					VGL_INTERNAL_TRACE("[VkDescriptor]Destroyed vertex stage uniform buffer");
+					VGL_INTERNAL_TRACE("[vk::Descriptor]Destroyed vertex stage uniform buffer");
 				}
 
 				//vkDestroyDescriptorPool(m_ContextPtr->m_Device, m_DescriptorPool, nullptr);
@@ -483,7 +483,7 @@ namespace vgl
 						dscWrite.pBufferInfo = &bufferInfo;
 
 						vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &dscWrite, 0, nullptr);
-						VGL_INTERNAL_DEBUG("[VkDescriptor]Updated descriptor sets: uniform buffer[" + std::to_string(i) + "]");
+						VGL_INTERNAL_DEBUG("[vk::Descriptor]Updated descriptor sets: uniform buffer[" + std::to_string(i) + "]");
 					}
 				}
 				if (m_DescriptorSetInfo->p_StorageBuffer.isValid()) {
@@ -502,7 +502,7 @@ namespace vgl
 					dscWrite.pBufferInfo = &bufferInfo;
 
 					vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &dscWrite, 0, nullptr);
-					VGL_INTERNAL_DEBUG("[VkDescriptor]Updated descriptor sets: storage buffer");
+					VGL_INTERNAL_DEBUG("[vk::Descriptor]Updated descriptor sets: storage buffer");
 				}
 
 				for (int32_t i = 0; i < m_ImageDescriptorInfo[j].size(); i++){
@@ -516,7 +516,7 @@ namespace vgl
 					imageDscWrite.descriptorCount = 1;
 					imageDscWrite.pImageInfo = &m_ImageDescriptorInfo[j][i];
 					vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &imageDscWrite, 0, nullptr);
-					VGL_INTERNAL_DEBUG("[VkDescriptor]Updated descriptor sets: image descriptor[" + std::to_string(j) + "][" + std::to_string(i) + "]");
+					VGL_INTERNAL_DEBUG("[vk::Descriptor]Updated descriptor sets: image descriptor[" + std::to_string(j) + "][" + std::to_string(i) + "]");
 				}
 				for(int32_t i = 0; i < m_DescriptorSetInfo->p_ImageArrayDescriptors.size(); i++){
 					//Send image data to uniform sampler
@@ -529,7 +529,7 @@ namespace vgl
 					imageDscWrite.descriptorCount = m_DescriptorSetInfo->p_ImageArrayDescriptors[i].m_ImageArrayDescriptorInfo.size();
 					imageDscWrite.pImageInfo = m_DescriptorSetInfo->p_ImageArrayDescriptors[i].m_ImageArrayDescriptorInfo.data();
 					vkUpdateDescriptorSets(m_ContextPtr->m_Device, 1, &imageDscWrite, 0, nullptr);
-					VGL_INTERNAL_DEBUG("[VkDescriptor]Updated descriptor sets: image array descriptor[" + std::to_string(j) + "][" + std::to_string(i) + "]");
+					VGL_INTERNAL_DEBUG("[vk::Descriptor]Updated descriptor sets: image array descriptor[" + std::to_string(j) + "][" + std::to_string(i) + "]");
 				}
 			}
 		}

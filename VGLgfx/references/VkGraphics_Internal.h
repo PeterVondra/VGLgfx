@@ -1,3 +1,9 @@
+#include "..\include\Platform\Vulkan\VkGraphics_Internal.h"
+#include "..\include\Platform\Vulkan\VkGraphics_Internal.h"
+#include "..\include\Platform\Vulkan\VkGraphics_Internal.h"
+#include "..\include\Platform\Vulkan\VkGraphics_Internal.h"
+#include "..\include\Platform\Vulkan\VkGraphics_Internal.h"
+#include "..\include\Platform\Vulkan\VkGraphics_Internal.h"
 #pragma once
 
 #include "VkImage.h"
@@ -140,6 +146,30 @@ namespace vgl
 					static VkDescriptorSetLayout m_DShadowMapDescriptorSetLayout = 
 						ContextSingleton::getInstance().m_DescriptorSetLayoutCache.createDescriptorSetLayout({ {0} });
 					return m_DShadowMapDescriptorSetLayout;
+				}
+				inline Shader& GraphicsContext::getPShadowMapShader()
+				{
+					// TODO: insert return statement here
+				}
+				inline Shader& GraphicsContext::getPShadowMapAlbedoShader()
+				{
+					// TODO: insert return statement here
+				}
+				inline RenderPass& GraphicsContext::getPShadowMapRenderPass()
+				{
+					// TODO: insert return statement here
+				}
+				inline g_Pipeline& GraphicsContext::getPShadowMapAlbedoPipeline()
+				{
+					// TODO: insert return statement here
+				}
+				inline g_Pipeline& GraphicsContext::getPShadowMapPipeline()
+				{
+					// TODO: insert return statement here
+				}
+				inline VkDescriptorSetLayout& GraphicsContext::getPShadowMapDescriptorSetLayout()
+				{
+					// TODO: insert return statement here
 				}
 				inline static VkDescriptorSetLayout& getDShadowMapAlbedoDescriptorSetLayout() {
 					static VkDescriptorSetLayout m_DShadowMapAlbedoDescriptorSetLayout =

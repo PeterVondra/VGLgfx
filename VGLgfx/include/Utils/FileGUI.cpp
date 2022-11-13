@@ -9,7 +9,6 @@ namespace Utils
 		std::ifstream file;
 		file.open(p_Path);
 		if (file.is_open()) {
-			std::cout << "Found " << p_Path << std::endl;
 			std::string line;
 			while (std::getline(file, line))
 				p_Data += line + "\n";
@@ -24,7 +23,6 @@ namespace Utils
 		std::ofstream file;
 		file.open(p_Path);
 		if (file.is_open()) {
-			std::cout << "Found " << p_Path << std::endl;
 			file << p_Data;
 			file.close();
 			return;

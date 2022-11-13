@@ -1,10 +1,5 @@
 #pragma once
 
-#define VGL_INTERNAL_LOGGING_ENABLED
-#ifdef VGL_INTERNAL_LOGGING_ENABLED
-#define VK_VALIDATION_LAYERS_ENABLED
-#endif
-
 #include "../../VGL_Logger.h"
 
 #define GLFW_INCLUDE_VULKAN
@@ -44,8 +39,13 @@ namespace vgl
 			VkPhysicalDeviceFeatures m_DeviceFeatures;
 			VkPhysicalDeviceFeatures2 m_DeviceFeatures2;
 			VkPhysicalDeviceProperties m_DeviceProperties;
-			VkPhysicalDeviceImagelessFramebufferFeatures m_ImagelessFramebufferFeatures;
-			VkPhysicalDeviceBufferDeviceAddressFeaturesEXT m_DeviceBufferAdressFeatures;
+			VkPhysicalDeviceProperties2 m_DeviceProperties2;
+
+			VkPhysicalDeviceImagelessFramebufferFeatures m_ImagelessFramebufferFeatures = {};
+			VkPhysicalDeviceBufferDeviceAddressFeaturesEXT m_DeviceBufferAdressFeatures = {};
+
+			VkPhysicalDeviceMultiviewFeatures m_MultiViewFeatures = {};
+			VkPhysicalDeviceMultiviewProperties m_MultiViewProperties = {};
 
 			std::string getDeviceType()
 			{
@@ -119,6 +119,9 @@ namespace vgl
 		class Context
 		{
 			public:
+				uint64_t TotalDrawCalls = 0;
+
+			public:
 				Context();
 				~Context();
 
@@ -173,7 +176,17 @@ namespace vgl
 				AllocationInfo createImage(
 					uint32_t p_Width, uint32_t p_Height,
 					VkFormat p_Format,
-					VkImageTiling p_Tiling, VkImageUsageFlags p_UsageFlags,
+					VkImageTiling p_Tiling, 
+					VkImageUsageFlags p_UsageFlags,
+					VmaMemoryUsage p_MemoryUsage,
+					VkImage& p_Image, uint32_t p_MipLevels = 1,
+					uint32_t p_ArrayLayers = 1, VkSampleCountFlagBits p_Samples = VK_SAMPLE_COUNT_1_BIT
+				);
+				AllocationInfo createImage(
+					uint32_t p_Width, uint32_t p_Height,
+					VkFormat p_Format,
+					VkImageTiling p_Tiling, 
+					VkImageUsageFlags p_UsageFlags, VkImageCreateFlags p_CreateFlags,
 					VmaMemoryUsage p_MemoryUsage,
 					VkImage& p_Image, uint32_t p_MipLevels = 1,
 					uint32_t p_ArrayLayers = 1, VkSampleCountFlagBits p_Samples = VK_SAMPLE_COUNT_1_BIT
@@ -187,7 +200,7 @@ namespace vgl
 					VkImage& p_Image, VkSampleCountFlagBits p_Samples
 				);
 
-				VkImageView createImageView(VkImage p_Image, VkFormat p_Format, VkImageAspectFlags p_AspectFlags, uint32_t p_MipLevels = 1, VkImageViewType p_ImageViewType = VK_IMAGE_VIEW_TYPE_2D);
+				VkImageView createImageView(VkImage p_Image, VkFormat p_Format, VkImageAspectFlags p_AspectFlags, uint32_t p_MipLevels = 1, uint32_t p_ArrayLayers = 1, VkImageViewType p_ImageViewType = VK_IMAGE_VIEW_TYPE_2D);
 
 				void destroyImage(VkImage& p_Image, VmaAllocation& p_BufferAlloc);
 

@@ -534,7 +534,7 @@ namespace vgl
 				vkDeviceWaitIdle(m_ContextPtr->m_Device);
 				if (m_Buffer != VK_NULL_HANDLE) {
 					m_ContextPtr->destroyBuffer(m_Buffer, m_AllocInfo.p_Alloc);
-					VGL_INTERNAL_TRACE("[Vk-VertexBuffer]Destroyed Vertex Buffer");
+					VGL_INTERNAL_TRACE("[vk::VertexBuffer]Destroyed Vertex Buffer");
 				}
 				m_IsValid = false;
 			}
@@ -704,9 +704,9 @@ namespace vgl
 			case ShaderDataType::Vec4i:		return VK_FORMAT_R32G32B32A32_SINT;
 			case ShaderDataType::Mat3f:		return VK_FORMAT_R32G32B32_SFLOAT;
 			case ShaderDataType::Mat4f:		return VK_FORMAT_R32G32B32A32_SFLOAT;
-			case ShaderDataType::Bool:		VGL_INTERNAL_WARNING("[Vk-VertexBuffer]Bool ShaderDataType not supported yet");
+			case ShaderDataType::Bool:		VGL_INTERNAL_WARNING("[vk::VertexBuffer]Bool ShaderDataType not supported yet");
 			}
-			VGL_INTERNAL_WARNING("[Vk-VertexBuffer]Unknown ShaderDataType");
+			VGL_INTERNAL_WARNING("[vk::VertexBuffer]Unknown ShaderDataType");
 		}
 
 		template<typename T>

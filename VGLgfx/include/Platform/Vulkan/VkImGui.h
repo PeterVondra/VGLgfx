@@ -1,12 +1,12 @@
 #pragma once
 
 #define NOMINMAX
-#define IMGUI_VK_IMPL
+#define VGL_IMGUI_VK_IMPL
 
-#include "../../../lib/imgui/imgui.h"
-#include "../../../lib/imgui/imgui_internal.h"
-#include "../../../lib/imgui/backends/imgui_impl_glfw.h"
-#include "../../../lib/imgui/backends/imgui_impl_vulkan.h"
+#include "../../../libs/imgui/imgui.h"
+#include "../../../libs/imgui/imgui_internal.h"
+#include "../../../libs/imgui/backends/imgui_impl_glfw.h"
+#include "../../../libs/imgui/backends/imgui_impl_vulkan.h"
 
 #include "VkRenderPass.h"
 #include "VkShader.h"
@@ -14,6 +14,7 @@
 #include "VkWindow.h"
 
 #include "../../VGL_Logger.h"
+#include "../../Utils/Logger.h"
 
 static uint32_t _ReverseInt(uint32_t i)
 {
@@ -266,7 +267,7 @@ namespace vgl
 			Vector2f translate;
 		};
 
-#ifdef IMGUI_VK_IMPL
+#ifdef VGL_IMGUI_VK_IMPL
 		class ImGuiContext
 		{
 			public:
@@ -378,10 +379,8 @@ namespace vgl
 					poolInfo.pPoolSizes = pool_sizes;
 					poolInfo.maxSets = static_cast<uint32_t>(2);
 
-					if (vkCreateDescriptorPool(m_ContextPtr->m_Device, &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
-						VGL_LOG_MSG("Failed to create descriptor pool\n", "VkImGui", Utils::Severity::Error);
-					else
-						VGL_LOG_MSG("success!, created descriptor pool\n", "VkImGui", Utils::Severity::Debug);
+					VkResult result = vkCreateDescriptorPool(m_ContextPtr->m_Device, &poolInfo, nullptr, &m_DescriptorPool);
+					VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::ImGuiContext]Failed to create descriptor pool, VkResult: ", result);
 
 					ImGui_ImplGlfw_InitForVulkan(m_WindowPtr->getGLFWWindow(), true);
 					ImGui_ImplVulkan_InitInfo init_info = {};
@@ -523,7 +522,7 @@ namespace vgl
 				RenderPass* m_RenderPass;
 		};
 #endif
-#ifndef IMGUI_VK_IMPL
+#ifndef VGL_IMGUI_VK_IMPL
 		class ImGuiContext
 		{
 		public:

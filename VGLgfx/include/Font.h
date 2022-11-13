@@ -1,11 +1,9 @@
 #pragma once
 
-#include <iostream>
 #include <ft2build.h>
 #include FT_FREETYPE_H  
 
 #include "VGL-2D/Rectangle.h"
-#include "VGL_Internal.h"
 
 namespace vgl
 {
@@ -13,7 +11,7 @@ namespace vgl
 	{
 		struct Character
 		{
-			Character()
+			Character() : advance(0)
 			{
 
 			}
@@ -35,7 +33,7 @@ namespace vgl
 
 				void setFontSize(const int p_FontSize);
 				std::vector<std::pair<wchar_t, Character>> characters;
-				std::vector<vk::Image> glyphs;
+				std::vector<Image> glyphs;
 			protected:
 			private:
 				friend class FontLoader;

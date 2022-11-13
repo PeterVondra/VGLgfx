@@ -2,8 +2,14 @@ VGLgfx/.vs/
 VGLgfx/.vscode/
 VGLgfx/.local-history/
 VGLgfx/.history/
+VGLgfx/cloc.exe
 VGLgfx/out/
 VGLgfx/build/
+VGLgfx/test/VGLgfxTest.exe
+VGLgfx/test/VGLgfxTest.ilk
+VGLgfx/test/VGLgfxTest.pdb
+VGLgfx/test/data
+VGLgfx/test/.vs
 VGLgfxEditor/build/
 VGLgfxEditor/projects/Global_Assets/
 Example/build

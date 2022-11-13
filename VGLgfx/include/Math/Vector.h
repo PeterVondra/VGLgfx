@@ -175,6 +175,8 @@ class Vector4f
         Vector4f() : x(0), y(0), z(0), w(0) {};
 
         Vector4f(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {};
+        Vector4f(Vector3f p_Vec3, float w) : x(p_Vec3.x), y(p_Vec3.y), z(p_Vec3.z), w(w) {};
+        Vector4f(Vector2f p_Vec2_1, Vector2f p_Vec2_2) : x(p_Vec2_1.x), y(p_Vec2_1.y), z(p_Vec2_2.x), w(p_Vec2_2.y) {};
 
         void set(float x, float y, float z, float w);
         float* get() { return &x; };

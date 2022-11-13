@@ -19,7 +19,8 @@ namespace vgl
 		class ImageCube;
 		class ImageLoader;
 		class ImGuiContext;
-		class D_ShadowMap;
+		class DShadowMap;
+		class PShadowMap;
 	}
 
 	typedef vk::Window Window;
@@ -39,7 +40,8 @@ namespace vgl
 	typedef vk::ImageCube ImageCube;
 	typedef vk::ImageLoader ImageLoader;
 	typedef vk::ImGuiContext ImGuiContext;
-	typedef vk::D_ShadowMap D_ShadowMap;
+	typedef vk::DShadowMap DShadowMap;
+	typedef vk::PShadowMap PShadowMap;
 }
 
 #elif defined VGL_RENDER_API_OPENGL

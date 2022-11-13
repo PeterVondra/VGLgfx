@@ -44,7 +44,7 @@ float checker(vec2 uv, float repeats)
 float linearDepth(float depth)
 {
 	//float z = depth * 2.0f - 1.0f; 
-	return (1.0f * 10.0f) / (10.0f + 1.0f - depth * (10.0f - 1.0f));	
+	return (1.0f * 1000.0f) / (1000.0f + 1.0f - depth * (1000.0f - 1.0f));	
 }
 
 void main()
@@ -62,6 +62,8 @@ void main()
 	#else
 	out_Albedo = vec4(ubo.albedo.rgb, 1.0f);
 	#endif
+
+	if(isinf(out_Albedo.r) || isinf(out_Albedo.g) || isinf(out_Albedo.b) || isnan(out_Albedo.r) || isnan(out_Albedo.g) || isnan(out_Albedo.b)){ out_Albedo = vec4(0.0f, 0.0f, 0.0f, 1.0f); }
 
 	out_Position = vec4(in_FragPosition, 1.0f);
 

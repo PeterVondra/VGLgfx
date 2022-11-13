@@ -88,9 +88,9 @@ namespace vgl
 			FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_Shader = FBAinfo.p_Shader;
 			
 			if(FBAinfo.p_Descriptors)
-				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_DescriptorSetLayout = FBAinfo.p_Descriptors->m_DescriptorSetLayout;
+				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_DescriptorSetLayouts = { FBAinfo.p_Descriptors->m_DescriptorSetLayout };
 			else if (m_Descriptors.isValid())
-				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_DescriptorSetLayout = m_Descriptors.m_DescriptorSetLayout;
+				FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_DescriptorSetLayouts = { m_Descriptors.m_DescriptorSetLayout };
 
 			FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_AttributeDescription = m_RecVao.getAttributeDescriptions();
 			FBAinfo.p_RenderPipelineInfo.p_GraphicsPipelineInfo.p_BindingDescription = m_RecVao.getBindingDescription();
@@ -110,12 +110,17 @@ namespace vgl
 					attachmentInfo.p_BorderColor = FBAinfo.p_AttachmentDescriptors[j].p_BorderColor;
 					attachmentInfo.p_SamplerMode = FBAinfo.p_AttachmentDescriptors[j].p_SamplerMode;
 					attachmentInfo.p_Size = FBAinfo.p_Size;
+					attachmentInfo.p_ViewType = FBAinfo.p_AttachmentDescriptors[j].p_ViewType;
 					attachmentInfo.p_TransitionLayoutImage = true;
 					m_ImageAttachments[i][j].create(attachmentInfo);
 
 					if (FBAinfo.p_AttachmentDescriptors[j].p_AllowMipMapping) {
 						framebufferInfo.p_AllowMipMapping = true;
 						m_AllowMipMapping = true;
+					}
+					if (FBAinfo.p_AttachmentDescriptors[j].p_ViewType == AttachmentViewType::ImageCube) {
+						framebufferInfo.p_ImageViewTypeCubeEnabled = true;
+						m_ImageViewTypeCubeEnabled = true;
 					}
 				}
 				

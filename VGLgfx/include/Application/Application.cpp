@@ -3,7 +3,8 @@
 namespace vgl
 {
 	Application::Application(AppConfig& p_AppConfig)
-		: m_AppConfig(&p_AppConfig),
+		: log_init(),
+		m_AppConfig(&p_AppConfig),
 		m_Window(p_AppConfig.DefaultWindowSize, p_AppConfig.Title.c_str(), p_AppConfig.MSAASamples),
 		m_Renderer(m_Window, p_AppConfig.RenderResolution)
 	{

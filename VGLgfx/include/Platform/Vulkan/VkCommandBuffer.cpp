@@ -16,14 +16,14 @@ namespace vgl
 
 			if (p_Level == Level::Primary){
 				VkResult result = vkAllocateCommandBuffers(m_ContextPtr->m_Device, &m_AllocationInfo, &m_CommandBuffer);
-				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to allocate PRIMARY command buffer, VkResult: %i", result);
+				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to allocate PRIMARY command buffer, VkResult: %i", (uint64_t)result);
 				if (result != VK_SUCCESS) m_Allocated = false;
 				else m_Allocated = true;
 				return;
 			}
 
 			VkResult result = vkAllocateCommandBuffers(m_ContextPtr->m_Device, &m_AllocationInfo, &m_CommandBuffer);
-			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to allocate SECONDARY command buffer, VkResult: %i", result);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to allocate SECONDARY command buffer, VkResult: %i", (uint64_t)result);
 
 			if (result != VK_SUCCESS) m_Allocated = false;
 			else m_Allocated = true;
@@ -31,6 +31,53 @@ namespace vgl
 		CommandBuffer::~CommandBuffer()
 		{
 			//destroy();
+		}
+
+		void CommandBuffer::allocate(Level p_Level, uint32_t p_CommandBufferCount, std::vector<CommandBuffer>& p_CommandBuffers)
+		{
+			Context* context_ptr = &ContextSingleton::getInstance();
+
+			bool allocated = false;
+
+			VkCommandBufferAllocateInfo alloc_info = {};
+			alloc_info = {};
+			alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			alloc_info.commandPool = context_ptr->m_DefaultCommandPool;
+			alloc_info.level = (VkCommandBufferLevel)p_Level;
+			alloc_info.commandBufferCount = p_CommandBufferCount;
+
+			std::vector<VkCommandBuffer> command_buffers(p_CommandBufferCount);
+			p_CommandBuffers.resize(p_CommandBufferCount);
+
+			if (p_Level == Level::Primary) {
+				VkResult result = vkAllocateCommandBuffers(context_ptr->m_Device, &alloc_info, command_buffers.data());
+				VGL_INTERNAL_ASSERT_ERROR(
+					result == VK_SUCCESS,
+					"[vk::CommandBuffer]Failed to allocate PRIMARY command buffers, buffer_count == %i, VkResult: %i",
+					p_CommandBufferCount,
+					(uint64_t)result
+				);
+				if (result != VK_SUCCESS) return;
+			}
+			else if (p_Level == Level::Secondary) {
+				VkResult result = vkAllocateCommandBuffers(context_ptr->m_Device, &alloc_info, command_buffers.data());
+				VGL_INTERNAL_ASSERT_ERROR(
+					result == VK_SUCCESS,
+					"[vk::CommandBuffer]Failed to allocate SECONDARY command buffers, buffer_count == %i, VkResult: %i",
+					p_CommandBufferCount,
+					(uint64_t)result
+				);
+				if (result != VK_SUCCESS) return;
+			}
+
+			for (uint32_t i = 0; i < p_CommandBufferCount; i++) {
+				p_CommandBuffers[i].m_Level = p_Level;
+				p_CommandBuffers[i].m_Allocated = true;
+				p_CommandBuffers[i].m_AllocationInfo = alloc_info;
+				p_CommandBuffers[i].m_CommandBuffer = command_buffers[i];
+				p_CommandBuffers[i].m_ContextPtr = context_ptr;
+				p_CommandBuffers[i].m_Recording = false;
+			}
 		}
 
 		void CommandBuffer::cmdBegin()
@@ -43,7 +90,7 @@ namespace vgl
 					m_BeginInfo.pInheritanceInfo = nullptr;
 
 					VkResult result = vkBeginCommandBuffer(m_CommandBuffer, &m_BeginInfo);
-					VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to begin command buffer recording, VkResult: %i", result);
+					VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to begin command buffer recording, VkResult: %i", (uint64_t)result);
 
 					if (result == VK_SUCCESS) m_Recording = true;
 				}else VGL_INTERNAL_WARNING("[vk::CommandBuffer]Cannot record SECONDARY command buffer without inheritance info, command buffer did not begin recording");
@@ -64,7 +111,7 @@ namespace vgl
 					VGL_INTERNAL_WARNING("[vk::CommandBuffer]Passed inheritance info when recording PRIMARY command buffer, recording will continue without it");
 
 				VkResult result = vkBeginCommandBuffer(m_CommandBuffer, &m_BeginInfo);
-				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to begin command buffer recording, VkResult: %i", result);
+				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to begin command buffer recording, VkResult: %i", (uint64_t)result);
 				if(result == VK_SUCCESS) m_Recording = true;
 			}
 		}
@@ -74,7 +121,7 @@ namespace vgl
 			m_PipelinePtr = nullptr;
 
 			VkResult result = vkEndCommandBuffer(m_CommandBuffer);
-			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to end command buffer recording, VkResult: %i", result);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::CommandBuffer]Failed to end command buffer recording, VkResult: %i", (uint64_t)result);
 
 			if (result == VK_SUCCESS) m_Recording = false;
 		}

@@ -4,7 +4,6 @@ namespace vgl
 {
 	namespace vk
 	{
-
 		BaseRenderer::BaseRenderer()
 			: m_DefaultRenderPass(RenderPassType::Graphics),
 			m_CurrentWindowSize({ 0, 0 })

@@ -26,23 +26,23 @@ namespace vgl
 			m_RecIndices.fill(m_RecRawIndices);
 			m_RecVao.fill(m_RecVertices, m_RecIndices);
 
-			getDShadowMapShader().setShader("data/Shaders/SM3D/vert.spv", "data/Shaders/SM3D/frag.spv");
-			getDShadowMapAlbedoShader().setShader("data/Shaders/SM3D/Alpha/vert.spv", "data/Shaders/SM3D/Alpha/frag.spv");
+			m_DShadowMapShader.setShader("data/Shaders/SM3D/vert.spv", "data/Shaders/SM3D/frag.spv");
+			m_DShadowMapAlbedoShader.setShader("data/Shaders/SM3D/Alpha/vert.spv", "data/Shaders/SM3D/Alpha/frag.spv");
+			
+			m_PShadowMapShader.setShader("data/Shaders/SMP3D/vert.spv", "data/Shaders/SMP3D/frag.spv");
+			m_PShadowMapAlbedoShader.setShader("data/Shaders/SMP3D/Alpha/vert.spv", "data/Shaders/SMP3D/Alpha/frag.spv");
 
 			//m_DShadowMapDescriptorSetLayout = ContextSingleton::getInstance().m_DescriptorSetLayoutCache.createLayout({
 			//		DLC::Binding(DLC::DescriptorType::Uniform_Buffer, ShaderStage::VertexBit, 0)
 			//	}
 			//);
 
-			m_DShadowMapAlbedoDescriptorSetLayout = ContextSingleton::getInstance().m_DescriptorSetLayoutCache.createLayout({
-				//DLC::Binding(DLC::DescriptorType::Uniform_Buffer, ShaderStage::VertexBit, 0),
+			m_ShadowMapAlbedoDescriptorSetLayout = ContextSingleton::getInstance().m_DescriptorSetLayoutCache.createLayout({
 				DLC::Binding(DLC::DescriptorType::Combined_Image_Sampler, ShaderStage::FragmentBit, 0)
 				}
 			);
 
-			vgl::BufferLayout layout =
-			{
-				{
+			vgl::BufferLayout layout = {{
 					{ vgl::ShaderDataType::Vec2f, 0, "in_Position"  },
 					{ vgl::ShaderDataType::Vec2f, 1, "in_TexCoords" }
 				},0
@@ -65,7 +65,7 @@ namespace vgl
 				colorAttachment.p_InitialLayout = Layout::Undefined;
 				colorAttachment.p_FinalLayout = Layout::DepthR;
 
-				getDShadowMapRenderPass().addAttachment(colorAttachment);
+				m_DShadowMapRenderPass.addAttachment(colorAttachment);
 
 				VkSubpassDependency dependency = {};
 				dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -76,7 +76,7 @@ namespace vgl
 				dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 				dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-				getDShadowMapRenderPass().m_Dependencies.push_back(dependency);
+				m_DShadowMapRenderPass.m_Dependencies.push_back(dependency);
 
 				dependency.srcSubpass = 0;
 				dependency.dstSubpass = VK_SUBPASS_EXTERNAL;
@@ -86,9 +86,9 @@ namespace vgl
 				dependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 				dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-				getDShadowMapRenderPass().m_Dependencies.push_back(dependency);
+				m_DShadowMapRenderPass.m_Dependencies.push_back(dependency);
 
-				getDShadowMapRenderPass().create();
+				m_DShadowMapRenderPass.create();
 
 				g_PipelineInfo pipelineInfo;
 				pipelineInfo.p_FrontFace = FrontFace::CounterClockwise;
@@ -97,7 +97,7 @@ namespace vgl
 				pipelineInfo.p_CullMode = CullMode::BackBit;
 				pipelineInfo.p_DepthBias = true;
 				pipelineInfo.p_DepthBiasClamp = 0.0f;
-				pipelineInfo.p_RenderPass = &getDShadowMapRenderPass();
+				pipelineInfo.p_RenderPass = &m_DShadowMapRenderPass;
 				pipelineInfo.p_DepthBuffering = true;
 				pipelineInfo.p_MSAASamples = 1;
 				pipelineInfo.p_PushConstantShaderStage = getShaderStageVkH(ShaderStage::VertexBit);
@@ -113,17 +113,120 @@ namespace vgl
 					},0
 				};
 
-				pipelineInfo.p_Shader = &getDShadowMapShader();
+				pipelineInfo.p_Shader = &m_DShadowMapShader;
 				//pipelineInfo.p_DescriptorSetLayout = getDShadowMapDescriptorSetLayout();
 				pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_ShadowDepthMapLayout).first);
 				pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_ShadowDepthMapLayout).second);
 
-				getDShadowMapPipeline().create(pipelineInfo);
+				m_DShadowMapPipeline.create(pipelineInfo);
 
-				pipelineInfo.p_Shader = &getDShadowMapAlbedoShader();
-				pipelineInfo.p_DescriptorSetLayout = getDShadowMapAlbedoDescriptorSetLayout();
+				pipelineInfo.p_Shader = &m_DShadowMapAlbedoShader;
+				pipelineInfo.p_DescriptorSetLayouts = { m_ShadowMapAlbedoDescriptorSetLayout };
 
-				getDShadowMapAlbedoPipeline().create(pipelineInfo);
+				m_DShadowMapAlbedoPipeline.create(pipelineInfo);
+			}
+
+			// Omni-directional shadow mapping
+			{
+				AttachmentInfo colorAttachment;
+				colorAttachment.p_AttachmentType = AttachmentType::Color;
+				colorAttachment.p_Format = VK_FORMAT_R32_SFLOAT;
+				colorAttachment.p_SampleCount = 1;
+				colorAttachment.p_LoadOp = LoadOp::Clear;
+				colorAttachment.p_StoreOp = StoreOp::Store;
+				colorAttachment.p_StencilLoadOp = LoadOp::Null;
+				colorAttachment.p_StencilStoreOp = StoreOp::Null;
+				colorAttachment.p_InitialLayout = Layout::Undefined;
+				colorAttachment.p_FinalLayout = Layout::ShaderR;
+
+				m_PShadowMapRenderPass.addAttachment(colorAttachment);
+
+				AttachmentInfo depthAttachment = {};
+				depthAttachment.p_AttachmentType = AttachmentType::Depth;
+				depthAttachment.p_Format = ContextSingleton::getInstance().findDepthFormat();
+				depthAttachment.p_SampleCount = 1;
+				depthAttachment.p_LoadOp = LoadOp::Clear;
+				depthAttachment.p_StoreOp = StoreOp::Null;
+				depthAttachment.p_StencilLoadOp = LoadOp::Null;
+				depthAttachment.p_StencilStoreOp = StoreOp::Null;
+				depthAttachment.p_InitialLayout = Layout::Undefined;
+				depthAttachment.p_FinalLayout = Layout::Depth;
+
+				m_PShadowMapRenderPass.addAttachment(depthAttachment);
+
+				VkSubpassDependency dependency = {};
+				dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+				dependency.dstSubpass = 0;
+				dependency.srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+				dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				dependency.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+				dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+				m_PShadowMapRenderPass.m_Dependencies.push_back(dependency);
+
+				dependency.srcSubpass = 0;
+				dependency.dstSubpass = VK_SUBPASS_EXTERNAL;
+				dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				dependency.dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+				dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				dependency.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+				dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+				m_PShadowMapRenderPass.m_Dependencies.push_back(dependency);
+
+				uint32_t view_mask = 0b00111111; // Use 6 layers, each bit corresponds to a layer
+				uint32_t correlation_mask = 0b00000000;
+
+				VkRenderPassMultiviewCreateInfo multi_view_info = {};
+				multi_view_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO;
+				multi_view_info.subpassCount = 1;
+				multi_view_info.pViewMasks = &view_mask;
+				//multi_view_info.dependencyCount = 2;
+				multi_view_info.correlationMaskCount = 1;
+				multi_view_info.pCorrelationMasks = &correlation_mask;
+
+				m_PShadowMapRenderPass.create(&multi_view_info);
+
+				g_PipelineInfo pipelineInfo;
+				pipelineInfo.p_FrontFace = FrontFace::CounterClockwise;
+				pipelineInfo.p_SampleRateShading = false;
+				pipelineInfo.p_AlphaBlending = false;
+				pipelineInfo.p_CullMode = CullMode::BackBit;
+				pipelineInfo.p_DepthBias = false;
+				pipelineInfo.p_DepthBiasClamp = 0.0f;
+				pipelineInfo.p_RenderPass = &m_PShadowMapRenderPass;
+				pipelineInfo.p_DepthBuffering = true;
+				pipelineInfo.p_MSAASamples = 1;
+				pipelineInfo.p_PushConstantShaderStage = getShaderStageVkH(ShaderStage::VertexBit);
+				pipelineInfo.p_PushConstantSize = sizeof(Matrix4f) + sizeof(Vector3f);
+				pipelineInfo.p_UsePushConstants = true;
+
+				BufferLayout m_ShadowDepthMapLayout = { {
+						{ ShaderDataType::Vec3f, 0, "in_Position"  },
+						{ ShaderDataType::Vec2f, 1, "in_Uv"		},
+						{ ShaderDataType::Vec3f, 2, "in_Normal"    },
+						{ ShaderDataType::Vec3f, 3, "in_Tangent"   },
+						{ ShaderDataType::Vec3f, 4, "in_Bitangent" }
+					},0
+				};
+
+				m_PShadowMapDescriptorSetLayout = ContextSingleton::getInstance().m_DescriptorSetLayoutCache.createLayout({
+					DLC::Binding(DLC::DescriptorType::Uniform_Buffer, ShaderStage::VertexBit, 0)
+					}
+				);
+
+				pipelineInfo.p_Shader = &m_PShadowMapShader;
+				pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_ShadowDepthMapLayout).first);
+				pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_ShadowDepthMapLayout).second);
+				pipelineInfo.p_DescriptorSetLayouts = { m_PShadowMapDescriptorSetLayout };
+
+				m_PShadowMapPipeline.create(pipelineInfo);
+
+				pipelineInfo.p_Shader = &m_PShadowMapAlbedoShader;
+				pipelineInfo.p_DescriptorSetLayouts = { m_PShadowMapDescriptorSetLayout, m_ShadowMapAlbedoDescriptorSetLayout };
+
+				m_PShadowMapAlbedoPipeline.create(pipelineInfo);
 			}
 		}
 
@@ -173,8 +276,33 @@ namespace vgl
 		VkDescriptorSetLayout& GraphicsContext::getDShadowMapDescriptorSetLayout() {
 			return m_DShadowMapDescriptorSetLayout;
 		}
-		VkDescriptorSetLayout& GraphicsContext::getDShadowMapAlbedoDescriptorSetLayout() {
-			return m_DShadowMapAlbedoDescriptorSetLayout;
+		VkDescriptorSetLayout& GraphicsContext::getShadowMapAlbedoDescriptorSetLayout() {
+			return m_ShadowMapAlbedoDescriptorSetLayout;
+		}
+
+		Shader& GraphicsContext::getPShadowMapShader()
+		{
+			return m_PShadowMapShader;
+		}
+		Shader& GraphicsContext::getPShadowMapAlbedoShader()
+		{
+			return m_PShadowMapAlbedoShader;
+		}
+		RenderPass& GraphicsContext::getPShadowMapRenderPass()
+		{
+			return m_PShadowMapRenderPass;
+		}
+		g_Pipeline& GraphicsContext::getPShadowMapAlbedoPipeline()
+		{
+			return m_PShadowMapAlbedoPipeline;
+		}
+		g_Pipeline& GraphicsContext::getPShadowMapPipeline()
+		{
+			return m_PShadowMapPipeline;
+		}
+		VkDescriptorSetLayout& GraphicsContext::getPShadowMapDescriptorSetLayout()
+		{
+			return m_PShadowMapDescriptorSetLayout;
 		}
 
 		VertexArray& GraphicsContext::getRecVao()
@@ -227,7 +355,7 @@ namespace vgl
 				DLC::Binding(DLC::DescriptorType::Combined_Image_Sampler, ShaderStage::FragmentBit, 1)
 				}
 			);
-			pipelineInfo.p_DescriptorSetLayout = layout;
+			pipelineInfo.p_DescriptorSetLayouts = { layout };
 
 			pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&_SkyBoxLayout).first);
 			pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&_SkyBoxLayout).second);
@@ -243,7 +371,7 @@ namespace vgl
 				DLC::Binding(DLC::DescriptorType::Uniform_Buffer, ShaderStage::VertexBit, 0)
 				}
 			);
-			pipelineInfo.p_DescriptorSetLayout = layout;
+			pipelineInfo.p_DescriptorSetLayouts = { layout };
 			pipelineInfo.p_Shader = &getAtmosphericScatteringShader();
 			pipelineInfo.p_PushConstantSize = sizeof(AtmosphericScatteringInfo);
 			pipelineInfo.p_PushConstantShaderStage = getShaderStageVkH(ShaderStage::FragmentBit);
@@ -463,7 +591,7 @@ namespace vgl
 				DLC::Binding(DLC::DescriptorType::Uniform_Buffer, ShaderStage::VertexBit, 0)
 				}
 			);
-			pipelineInfo.p_DescriptorSetLayout = layout;
+			pipelineInfo.p_DescriptorSetLayouts = { layout };
 			pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).first);
 			pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).second);
 
@@ -718,7 +846,7 @@ namespace vgl
 				DLC::Binding(DLC::DescriptorType::Combined_Image_Sampler, ShaderStage::FragmentBit, 0)
 				}
 			);
-			pipelineInfo.p_DescriptorSetLayout = layout;
+			pipelineInfo.p_DescriptorSetLayouts = { layout };
 			pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).first);
 			pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).second);
 
@@ -976,7 +1104,7 @@ namespace vgl
 				DLC::Binding(DLC::DescriptorType::Combined_Image_Sampler, ShaderStage::FragmentBit, 0)
 				}
 			);
-			pipelineInfo.p_DescriptorSetLayout = layout;
+			pipelineInfo.p_DescriptorSetLayouts = { layout };
 			pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).first);
 			pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).second);
 
@@ -1240,7 +1368,7 @@ namespace vgl
 				DLC::Binding(DLC::DescriptorType::Combined_Image_Sampler, ShaderStage::FragmentBit, 0)
 				}
 			);
-			pipelineInfo.p_DescriptorSetLayout = layout;
+			pipelineInfo.p_DescriptorSetLayouts = { layout };
 			pipelineInfo.p_AttributeDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).first);
 			pipelineInfo.p_BindingDescription.push_back(VertexBuffer::getAttributes(&m_RecLayout).second);
 

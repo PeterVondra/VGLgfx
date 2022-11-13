@@ -27,7 +27,7 @@ namespace vgl
 			case ShaderDataType::Vec3f:		return sizeof(float) * 3;
 			case ShaderDataType::Vec4f:		return sizeof(float) * 4;
 			case ShaderDataType::ImVec2f:	return sizeof(ImVec2);
-			case ShaderDataType::ImVec4f:	return sizeof(ImU32);
+			case ShaderDataType::ImVec4f:	return sizeof(ImVec4);
 			case ShaderDataType::Int:		return sizeof(int);
 			case ShaderDataType::Vec2i:		return sizeof(int) * 2;
 			case ShaderDataType::Vec3i:		return sizeof(int) * 3;

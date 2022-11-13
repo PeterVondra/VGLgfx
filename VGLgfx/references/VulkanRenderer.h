@@ -5,8 +5,8 @@
 #include<iostream>
 #define GLFW_INCLUDE_VULKAN
 #include<GLFW/glfw3.h>
-#include "../../../lib/imgui/imgui.h"
-#include "../../../lib/imgui/examples/imgui_impl_glfw.h"
+#include "../../../libs/imgui/imgui.h"
+#include "../../../libs/imgui/examples/imgui_impl_glfw.h"
 
 #include "VulkanPipeline.h"
 #include "VulkanRenderPass.h"

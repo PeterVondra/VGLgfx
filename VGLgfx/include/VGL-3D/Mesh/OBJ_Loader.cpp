@@ -97,9 +97,9 @@ namespace vgl
 	{
 		FILE* file = fopen(((std::string)p_Directory + (std::string)p_FileName).c_str(), "r");
 
-		VGL_INTERNAL_ASSERT_WARNING(file != NULL, "[VGL/OBJ_LOADER]OBJ File not found: " + (std::string)p_Directory + (std::string)p_FileName);
+		VGL_INTERNAL_ASSERT_WARNING(file != NULL, "[VGL/OBJ_LOADER]OBJ File not found: %s%s", p_Directory, p_FileName);
 
-		if (file == NULL) return false;
+		if (file == nullptr) return false;
 		else VGL_INTERNAL_INFO("[VGL/OBJ_LOADER]OBJ File found: " + Utils::to_string(p_FileName));
 
 		int read_size = 0;

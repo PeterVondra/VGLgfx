@@ -13,6 +13,7 @@ namespace vgl
 		Vector2i DefaultWindowSize;
 		float RenderResolution;
 		unsigned int MSAASamples;
+		std::string ImGui_Font_Path;
 	};
 
 	struct GraphicsConfig
@@ -40,6 +41,16 @@ namespace vgl
 			void popLayer(Layer* p_Layer);
 			void popOverlay(Layer* p_Overlay);
 
+		private:
+			AppConfig* m_AppConfig;
+
+			bool m_Running;
+
+			bool onEvent(Event::Event& p_Event);
+
+			struct Init_Logger{ Init_Logger() { vgl::Logger::init(); }};
+			Init_Logger log_init;
+
 		protected:
 			LayerStack m_Layers;
 
@@ -48,11 +59,5 @@ namespace vgl
 			Renderer m_Renderer;
 
 			GraphicsConfig gConfig;
-		private:
-			AppConfig* m_AppConfig;
-
-			bool m_Running;
-
-			bool onEvent(Event::Event& p_Event);
 	};
 }

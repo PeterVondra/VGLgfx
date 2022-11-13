@@ -318,18 +318,18 @@ namespace vgl
 
 		YAML::Node data = YAML::Load(sstream.str());
 		if (!data["Scene"]) {
-			VGL_LOG_MSG("No Scene Found in " + p_FilePath, "Scene", Utils::Severity::Warning);
+			VGL_INTERNAL_ERROR("No Scene Found in " + p_FilePath);
 			return false;
 		}
 
 		std::string scene_name = data["Scene"].as<std::string>();
-    VGL_LOG_MSG("Deserialized Scene: " + scene_name, "Scene", Utils::Severity::Info);
+		VGL_INTERNAL_TRACE("Deserialized Scene: " + scene_name);
 
 		auto entities = data["Entities"];
 		if (entities) {
 			for (auto entity : entities) {
 				std::string uuid = entity["Entity"].as<std::string>();
-				VGL_LOG_MSG("Deserialized Entity: " + uuid, "Scene", Utils::Severity::Info);
+				VGL_INTERNAL_TRACE("Deserialized Entity: " + uuid);
 
 				ecs::EntityHandle handle = addEntity(*(new EntityNameComponent(uuid.c_str())));
 

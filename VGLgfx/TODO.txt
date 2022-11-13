@@ -1,4 +1,5 @@
--Add deletion queue for vulkan handles
--Make descriptor addImage(...) frameindex independent
+-Add deletion queue for vulkan handles.
+-Make descriptor addImage(...) frameindex independent.
 -Make a separate render thread, render thread will query for commands very frame, while Application thread will submit render commands to a render command queue.
 The render thread will execute the commands from the render command queue.
+-Use vk MultiView extension for omni-directional shadow mapping.

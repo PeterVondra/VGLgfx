@@ -2,10 +2,10 @@
 
 #define NOMINMAX
 
-#include "../../../lib/imgui/imgui.h"
-#include "../../../lib/imgui/imgui_internal.h"
-#include "../../../lib/imgui/examples/imgui_impl_glfw.h"
-#include "../../../lib/imgui/examples/imgui_impl_vulkan.h"
+#include "../../../libs/imgui/imgui.h"
+#include "../../../libs/imgui/imgui_internal.h"
+#include "../../../libs/imgui/examples/imgui_impl_glfw.h"
+#include "../../../libs/imgui/examples/imgui_impl_vulkan.h"
 
 #include "VkPipeline.h"
 #include "VkRenderPass.h"

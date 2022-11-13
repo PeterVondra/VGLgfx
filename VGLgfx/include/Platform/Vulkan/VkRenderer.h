@@ -18,12 +18,13 @@ namespace vgl
 		#define MAX_FRAMES_IN_FLIGHT 2
 		#define GET_CURRENT_IMAGE_INDEX(imgidx) (imgidx + 1) % 2;
 
-		struct D_ShadowMap
+		// Directional shadow map
+		struct DShadowMap
 		{
-			D_ShadowMap();
-			~D_ShadowMap() {}
+			DShadowMap();
+			~DShadowMap() {}
 
-			FramebufferAttachment m_Attachment;
+			void create(Vector2i p_Resolution, ImageFormat p_ImageFormat);
 
 			Matrix4f m_View;
 			Matrix4f m_Projection;
@@ -32,12 +33,9 @@ namespace vgl
 			float m_DepthBiasConstant = 1.25f;
 			float m_DepthBiasSlope = 1.75f;
 
-			void destroy() {
-				m_Attachment.destroy();
-				for (auto& cmds : m_CommandBuffers)
-					for (auto& cmd : cmds)
-						cmd.destroy();
-			}
+			void destroy();
+			
+			FramebufferAttachment m_Attachment;
 
 		private:
 			friend class Renderer;
@@ -48,33 +46,38 @@ namespace vgl
 			std::vector<std::vector<CommandBuffer>> m_CommandBuffers; // Per swapchain image
 		};
 		
-		struct P_ShadowMap
+		// Point/Omni directional shadow map
+		struct PShadowMap
 		{
-			P_ShadowMap();
-			~P_ShadowMap() {}
+			PShadowMap();
+			~PShadowMap() {}
 
-			FramebufferAttachment m_Attachment;
+			void create(Vector2i p_Resolution, ImageFormat p_ImageFormat);
 
-			Vector3f m_Position;
 			Vector2i m_Resolution;
+			Vector3f* m_Position = nullptr;
 
 			float m_DepthBiasConstant = 1.25f;
 			float m_DepthBiasSlope = 1.75f;
 
-			void destroy() {
-				m_Attachment.destroy();
-				for (auto& cmds : m_CommandBuffers)
-					for (auto& cmd : cmds)
-						cmd.destroy();
-			}
+			void destroy();
+
+			FramebufferAttachment m_Attachment;
+		private:
+			Matrix4f m_View[6];
+			Matrix4f m_Projection;
+
+			Vector3f m_PrevPosition;
 
 		private:
 			friend class Renderer;
 
 			Context* m_ContextPtr;
 
+			Descriptor m_TransformDescriptor;
+
 			uint32_t m_CommandBufferIdx;
-			std::vector<std::vector<CommandBuffer>> m_CommandBuffers; // Per swapchain image
+			std::vector<std::vector<CommandBuffer>> m_CommandBuffers; // Per swapchain image and per face
 		};
 
 		// Submits data to gpu for graphical rendering
@@ -97,8 +100,8 @@ namespace vgl
 				// If not called, will use default frambuffer/swapchain
 				void beginRenderPass(RenderInfo& p_RenderInfo, FramebufferAttachment& p_FramebufferAttachment);
 				// Renders into the shadow map
-				void beginRenderPass(RenderInfo& p_RenderInfo, D_ShadowMap& p_ShadowMap);
-				void beginRenderPass(RenderInfo& p_RenderInfo, P_ShadowMap& p_ShadowMap);
+				void beginRenderPass(RenderInfo& p_RenderInfo, DShadowMap& p_ShadowMap);
+				void beginRenderPass(RenderInfo& p_RenderInfo, PShadowMap& p_ShadowMap);
 
 				void submit(Camera& p_Camera);
 
@@ -156,8 +159,8 @@ namespace vgl
 
 				static RenderInfo m_DefaultRenderInfo;
 
-				D_ShadowMap* m_DShadowMapPtr = nullptr;
-				P_ShadowMap* m_PShadowMapPtr = nullptr;
+				DShadowMap* m_DShadowMapPtr = nullptr;
+				PShadowMap* m_CurrentPShadowMapPtr = nullptr;
 
 				AtmosphericScatteringInfo* m_AtmosphericScatteringInfoPtr = nullptr;
 
@@ -186,8 +189,9 @@ namespace vgl
 				void blitImageFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
 				// Render into current framebuffer
 				void recordPCmdFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
-				// Render into shadow map framebuffer
-				void recordPCmdSMAPFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
+				// Render into directional/spot shadow map framebuffer
+				void recordPCmdSMAPFunDS(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
+				void recordPCmdSMAPFunP(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
 
 			private:
 				friend class vgl::Application;

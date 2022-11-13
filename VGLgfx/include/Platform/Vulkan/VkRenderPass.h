@@ -42,7 +42,7 @@ namespace vgl
 
 				void addAttachment(AttachmentInfo& p_AttachmentInfo);
 
-				bool create();
+				bool create(void* p_Next = nullptr);
 				void destroy();
 
 				const bool& isValid() { return m_IsValid; }
@@ -96,7 +96,6 @@ namespace vgl
 				p_AlphaBlending(false),
 				p_DepthBuffering(true),
 				p_DepthBias(false),
-				p_DescriptorSetLayout(VK_NULL_HANDLE),
 				p_UsePushConstants(false),
 				p_PushConstantOffset(0),
 				p_PushConstantSize(0),
@@ -130,7 +129,7 @@ namespace vgl
 			float p_DepthBiasClamp;
 			float p_DepthBiasSlopeFactor;
 
-			VkDescriptorSetLayout							p_DescriptorSetLayout;
+			std::initializer_list<VkDescriptorSetLayout>					p_DescriptorSetLayouts;
 			std::vector<VkVertexInputBindingDescription>					p_BindingDescription;
 			std::vector<std::vector<VkVertexInputAttributeDescription>> 	p_AttributeDescription;
 		};

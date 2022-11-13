@@ -100,9 +100,18 @@ namespace vgl
 		// Create main color framebuffer
 		ShaderInfo shader_info;
 		shader_info.p_LightingType = (uint32_t)LightingType::PBR;
-		for (auto& entity : m_ScenePtr->getEntities()) {
-			auto directional_light = m_ScenePtr->getComponent<DirectionalLight3DComponent>(entity);
-			shader_info.p_DirectionalLight = directional_light != nullptr;
+
+		{
+			P_Light plight;
+			for (auto& entity : m_ScenePtr->getEntities()) {
+				auto directional_light = m_ScenePtr->getComponent<DirectionalLight3DComponent>(entity);
+				auto point_light = m_ScenePtr->getComponent<PointLight3DComponent>(entity);
+				if (directional_light) shader_info.p_DirectionalLight = true;
+				if (point_light) {
+					plight.m_ShadowMapID = point_light->ShadowMapID;
+					shader_info.p_PointLights.push_back(plight);
+				}
+			}
 		}
 
 		m_LightPassFramebuffer.m_FramebufferAttachmentInfo.p_Size = p_Window->getWindowSize();
@@ -127,6 +136,15 @@ namespace vgl
 				auto d_shadow_map = m_ScenePtr->getComponent<DShadowMapComponent>(entity);
 				if (d_shadow_map) {
 					infoLightPass.addImage(&d_shadow_map->ShadowMap.m_Attachment.getImageAttachments()[i][0].getImage(), 6, i);
+					shader_info.p_Effects |= (uint32_t)Effects::ShadowMapping;
+				}
+			}
+			for (auto& entity : m_ScenePtr->getEntities()) {
+				auto point_light = m_ScenePtr->getComponent<PointLight3DComponent>(entity);
+				auto p_shadow_map = m_ScenePtr->getComponent<PShadowMapComponent>(entity);
+
+				if (point_light && p_shadow_map) {
+					infoLightPass.addImageCube(&p_shadow_map->ShadowMap.m_Attachment.getImageAttachments()[i][0].getImageCube(), 7, i);
 					shader_info.p_Effects |= (uint32_t)Effects::ShadowMapping;
 				}
 			}
@@ -236,6 +254,23 @@ namespace vgl
 		// Render into shadow map
 		for (auto& entity : m_ScenePtr->getEntities()) {
 			auto shadow_map = m_ScenePtr->getComponent<DShadowMapComponent>(entity);
+			if (shadow_map) {
+				m_RendererPtr->beginRenderPass(p_RenderInfo, shadow_map->ShadowMap);
+				for (auto& entity : m_ScenePtr->getEntities()) {
+					auto mesh = m_ScenePtr->getComponent<Mesh3DComponent>(entity);
+					auto transform = m_ScenePtr->getComponent<Transform3DComponent>(entity);
+					if (!mesh) continue;
+					if (!transform) continue;
+					if (mesh->mesh)
+						m_RendererPtr->submit(*mesh->mesh, transform->transform);
+				}
+				m_RendererPtr->endRenderPass();
+				break;
+			}
+		}
+		// Render into omni shadow map
+		for (auto& entity : m_ScenePtr->getEntities()) {
+			auto shadow_map = m_ScenePtr->getComponent<PShadowMapComponent>(entity);
 			if (shadow_map) {
 				m_RendererPtr->beginRenderPass(p_RenderInfo, shadow_map->ShadowMap);
 				for (auto& entity : m_ScenePtr->getEntities()) {

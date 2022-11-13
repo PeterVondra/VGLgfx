@@ -9,8 +9,16 @@ namespace vgl
 {
 	namespace vk
 	{
+		enum class AttachmentViewType
+		{
+			Image2D = VK_IMAGE_VIEW_TYPE_2D,
+			Image3D = VK_IMAGE_VIEW_TYPE_3D,
+			ImageCube = VK_IMAGE_VIEW_TYPE_CUBE
+		};
+
 		struct ImageAttachmentInfo
 		{
+			AttachmentViewType p_ViewType = AttachmentViewType::Image2D;
 			AttachmentInfo* p_AttachmentInfo;
 			BorderColor p_BorderColor;
 			SamplerMode p_SamplerMode;
@@ -36,6 +44,7 @@ namespace vgl
 			
 			// Get Image attachment as image to be used for descriptors
 			Image& getImage();
+			ImageCube& getImageCube();
 			void destroy();
 
 			bool isValid() { return m_IsValid; }
@@ -51,7 +60,9 @@ namespace vgl
 			uint32_t m_AttachmentId;
 			ImageAttachmentInfo info;
 			bool m_IsValid = false;
+
 			Image m_ImageObj;
+			ImageCube m_ImageCubeObj;
 
 			Context* m_ContextPtr;
 
@@ -72,6 +83,8 @@ namespace vgl
 		struct FramebufferInfo
 		{
 			bool p_AllowMipMapping = false;
+			bool p_ImageViewTypeCubeEnabled = false;
+
 			Vector2i p_Size;
 			RenderPass* p_RenderPass;
 			std::vector<ImageAttachment> p_ImageAttachments;

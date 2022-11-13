@@ -114,6 +114,7 @@ namespace vgl
 			friend class ImageLoader;
 			template<typename ImageType> friend class SamplerDescriptorData;
 			friend class Descriptor;
+			friend class ImageAttachment;
 			friend class Framebuffer;
 			friend class GraphicsContext;
 
@@ -122,7 +123,7 @@ namespace vgl
 			bool m_IsValid = false;
 
 			std::vector<unsigned char*> m_ImageData;
-			Vector2i m_Size[6];
+			Vector2i m_Size;
 			uint32_t m_MipLevels;
 
 			VkBuffer m_StagingBuffer;
