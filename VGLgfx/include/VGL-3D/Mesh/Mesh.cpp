@@ -50,16 +50,9 @@ namespace vgl
 
 			m_SubMeshIndices[0].first = 0;
 			m_SubMeshIndices[0].second = indices.size();
-
-			m_Materials[0].config.m_Albedo = Vector3f(1.0f);
-			m_Materials[0].config.m_Metallic = 1.0f;
-			m_Materials[0].config.m_Roughness = 1.0f;
-			m_Materials[0].config.m_Ambient = 1.0f;
 		}
 
 		for (int i = 0; i < m_Materials.size(); i++){
-			m_Materials[i].config.m_Ambient = 1.0f;
-
 			// Plus 16 for alignment
 			m_MTLDescriptorInfo[i].p_VertexUniformBuffer = UniformBuffer(3 * sizeof(Matrix4f) + 16 + sizeof(Vector3f), 0);
 			m_MTLDescriptorInfo[i].p_FragmentUniformBuffer = UniformBuffer(10 * sizeof(float), 1);
@@ -107,34 +100,6 @@ namespace vgl
 				info.p_Effects |= (uint32_t)Effects::POM;
 				binding++;
 			}
-
-			// Directional light shadow map
-			//for(int32_t k = 0; k < p_EnvData.p_DShadowMap.size(); k++) // k = swapchain image index
-			//	if (p_EnvData.p_DShadowMap[k]->isComplete()) {
-			//		m_MtlUniformInfos[i].p_ImageDescriptors.emplace_back(k, p_EnvData.p_DShadowMap[k], binding, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
-			//		info.p_Effects |= (uint32_t)Effects::ShadowMapping;
-			//	}
-			//binding++;
-			//
-			//// Spot light shadow maps
-			//for (auto& shadow_map : p_EnvData.p_SShadowMap) {
-			//	for (int32_t k = 0; k < shadow_map.size(); k++) // k = swapchain image index
-			//		if (shadow_map[k]->isComplete()) {
-			//			m_MtlUniformInfos[i].p_ImageDescriptors.emplace_back(k, shadow_map[k], binding, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
-			//			info.p_Effects |= (uint32_t)Effects::ShadowMapping;
-			//		}
-			//	binding++;
-			//}
-			//
-			//// Point light shadow maps
-			//for (auto& shadow_cubemap : p_EnvData.p_PShadowMap) {
-			//	for (int32_t k = 0; k < shadow_cubemap.size(); k++) // k = swapchain image index
-			//		if (shadow_cubemap[k]->isComplete()) {
-			//			m_MtlUniformInfos[i].p_CubeMapDescriptors.emplace_back(k, shadow_cubemap[k], binding, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
-			//			info.p_Effects |= (uint32_t)Effects::ShadowMapping;
-			//		}
-			//	binding++;
-			//}
 			
 			/*if(p_EnvData.p_IrradianceMap && p_EnvData.p_PrefilteredMap && p_EnvData.p_BRDFLut)
 				if (p_EnvData.p_IrradianceMap->isValid() && p_EnvData.p_PrefilteredMap->isValid() && p_EnvData.p_BRDFLut->isValid()) {

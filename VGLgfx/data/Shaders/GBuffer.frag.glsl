@@ -24,8 +24,6 @@ layout(binding = 1) uniform UniformBufferObject
 {
 	vec4 albedo;
 	vec4 mrao;
-	float pdmDepth;
-	float lumaThreshold;
 }ubo;
 
 // Parallax Mapping
@@ -74,19 +72,19 @@ void main()
 	#endif
 
 	#ifdef METALLIC_MAP
-	out_MRAA.r = texture(metallicMap, uv).r * ubo.mrao.r;
+	out_MRAA.r = min(texture(metallicMap, uv).r, 1.0f);
 	#else
 	out_MRAA.r = ubo.mrao.r;
 	#endif
 
 	#ifdef ROUGHNESS_MAP
-	out_MRAA.g = texture(roughnessMap, uv).r * ubo.mrao.g;
+	out_MRAA.g = min(texture(roughnessMap, uv).r * ubo.mrao.g, 1.0f);
 	#else
 	out_MRAA.g = ubo.mrao.g;
 	#endif
 
 	#ifdef AO_MAP
-	out_MRAA.b = texture(aoMap, uv).r * ubo.mrao.b;
+	out_MRAA.b = min(texture(aoMap, uv).r * ubo.mrao.b, 1.0f);
 	#else
 	out_MRAA.b = ubo.mrao.b;
 	#endif
@@ -104,7 +102,7 @@ vec2 ParallaxMapping(vec2 texCoords)
 	const float maxLayers = 128;
 
 	const float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0f), viewDir)));
-	float layerDepth = ubo.pdmDepth / numLayers;
+	float layerDepth = ubo.albedo.a / numLayers;
 	float currentLayerDepth = 0.0f;
 
 	vec2 P = viewDir.xy * 0.02;

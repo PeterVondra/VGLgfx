@@ -129,7 +129,7 @@ namespace vgl
 			float p_DepthBiasClamp;
 			float p_DepthBiasSlopeFactor;
 
-			std::initializer_list<VkDescriptorSetLayout>					p_DescriptorSetLayouts;
+			std::vector<VkDescriptorSetLayout>					p_DescriptorSetLayouts;
 			std::vector<VkVertexInputBindingDescription>					p_BindingDescription;
 			std::vector<std::vector<VkVertexInputAttributeDescription>> 	p_AttributeDescription;
 		};

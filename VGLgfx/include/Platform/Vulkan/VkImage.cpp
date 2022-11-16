@@ -13,36 +13,21 @@ namespace vgl
 	{
 		Image::Image() : m_ContextPtr(&ContextSingleton::getInstance())
 		{
-			m_Channels.resize(4);
-			m_Channels[0].first = Channels::R; m_Channels[0].second = 1;
-			m_Channels[1].first = Channels::RG; m_Channels[1].second = 2;
-			m_Channels[2].first = Channels::RGB; m_Channels[2].second = 3;
-			m_Channels[3].first = Channels::RGBA; m_Channels[3].second = 4;
 		}
 
-		Image::Image(Vector2i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
+		Image::Image(Vector2i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
 			: m_ContextPtr(&ContextSingleton::getInstance())
 		{
-			m_Channels.resize(4);
-			m_Channels[0].first = Channels::R; m_Channels[0].second = 1;
-			m_Channels[1].first = Channels::RG; m_Channels[1].second = 2;
-			m_Channels[2].first = Channels::RGB; m_Channels[2].second = 3;
-			m_Channels[3].first = Channels::RGBA; m_Channels[3].second = 4;
 
 		}
 
-		Image::Image(Vector3i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
+		Image::Image(Vector3i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
 			: m_ContextPtr(&ContextSingleton::getInstance())
 		{
-			m_Channels.resize(4);
-			m_Channels[0].first = Channels::R; m_Channels[0].second = 1;
-			m_Channels[1].first = Channels::RG; m_Channels[1].second = 2;
-			m_Channels[2].first = Channels::RGB; m_Channels[2].second = 3;
-			m_Channels[3].first = Channels::RGBA; m_Channels[3].second = 4;
 
 		}
 
-		void Image::create(Vector2i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, bool p_CalcMipLevels, Filter p_MagFilter, Filter p_MinFilter)
+		void Image::create(Vector2i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode, bool p_CalcMipLevels, Filter p_MagFilter, Filter p_MinFilter)
 		{
 			m_IsValid = false;
 
@@ -57,8 +42,9 @@ namespace vgl
 
 			if (!m_ImageData) m_IsValid = false;
 
-			m_CurrentChannels = p_Channels;
-
+			m_ColorSpace = p_ColorSpace;
+			m_Channels = p_Channels;
+			m_ImageFormat = getImageFormat(m_ColorSpace, m_Channels);
 
 			createImage();
 			createImageView();
@@ -95,7 +81,7 @@ namespace vgl
 			m_IsValid = true;
 		}*/
 
-		void Image::create(Vector2i p_Size, std::vector<std::pair<unsigned char*, unsigned int>>& p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
+		void Image::create(Vector2i p_Size, std::vector<std::pair<unsigned char*, unsigned int>>& p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
 		{
 			m_IsValid = false;
 			m_MipLevels = 1;
@@ -108,7 +94,9 @@ namespace vgl
 
 			if (!m_ImageData) m_IsValid = false;
 
-			m_CurrentChannels = p_Channels;
+			m_ColorSpace = p_ColorSpace;
+			m_Channels = p_Channels;
+			m_ImageFormat = getImageFormat(m_ColorSpace, m_Channels);
 
 			createImage(p_ImageData);
 			createImageView();
@@ -197,133 +185,105 @@ namespace vgl
 
 		void Image::createImage()
 		{
-			if (m_CurrentChannels != Channels::None)
-			{
-				VkDeviceSize imageSize = 0;
+			VkDeviceSize imageSize = static_cast<size_t>(m_Size.x * m_Size.y * (uint32_t)m_Channels);
 
-				for (auto& channels : m_Channels)
-				{
-					if (m_CurrentChannels == channels.first)
-					{
-						imageSize = static_cast<size_t>(m_Size.x * m_Size.y * channels.second);
-						break;
-					}
-				}
+			auto alloc = m_ContextPtr->createBuffer(
+				imageSize,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VMA_MEMORY_USAGE_CPU_ONLY,
+				m_StagingBuffer
+			).p_Alloc;
 
-				VkFormat format = (VkFormat)m_CurrentChannels;
-
-				auto alloc = m_ContextPtr->createBuffer(
-					imageSize,
-					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-					VMA_MEMORY_USAGE_CPU_ONLY,
-					m_StagingBuffer
-				).p_Alloc;
-
-				m_Mapped = m_ContextPtr->mapMemory(alloc);
-				memcpy(m_Mapped, m_ImageData, static_cast<size_t>(imageSize));
-				m_ContextPtr->unmapMemory(alloc);
+			m_Mapped = m_ContextPtr->mapMemory(alloc);
+			memcpy(m_Mapped, m_ImageData, static_cast<size_t>(imageSize));
+			m_ContextPtr->unmapMemory(alloc);
 
 
-				m_ImageAllocation = m_ContextPtr->createImage
-				(
-					m_Size.x, m_Size.y,
-					format,
-					VK_IMAGE_TILING_OPTIMAL,
-					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-					VMA_MEMORY_USAGE_GPU_ONLY,
-					m_VkImageHandle, m_MipLevels
-				).p_Alloc;
+			m_ImageAllocation = m_ContextPtr->createImage
+			(
+				m_Size.x, m_Size.y,
+				m_ImageFormat,
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				VMA_MEMORY_USAGE_GPU_ONLY,
+				m_VkImageHandle, m_MipLevels
+			).p_Alloc;
 
-				m_ContextPtr->transitionLayoutImage
-				(
-					m_VkImageHandle,
-					format,
-					VK_IMAGE_LAYOUT_UNDEFINED,
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_MipLevels
-				);
-				m_ContextPtr->copyBufferToImage
-				(
-					m_StagingBuffer,
-					m_VkImageHandle,
-					static_cast<uint32_t>(m_Size.x),
-					static_cast<uint32_t>(m_Size.y)
-				);
+			m_ContextPtr->transitionLayoutImage
+			(
+				m_VkImageHandle,
+				m_ImageFormat,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_MipLevels
+			);
+			m_ContextPtr->copyBufferToImage
+			(
+				m_StagingBuffer,
+				m_VkImageHandle,
+				static_cast<uint32_t>(m_Size.x),
+				static_cast<uint32_t>(m_Size.y)
+			);
 
-				generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size, m_MipLevels);
+			generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size, m_MipLevels);
 
-				m_CurrentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				m_FinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			m_CurrentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			m_FinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-				m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
-			}
+			m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
 		}
 
 		void Image::createImage(std::vector<std::pair<unsigned char*, unsigned int>>& p_ImageData)
 		{
-			if (m_CurrentChannels != Channels::None){
-				int numChannels = 0;
+			VkDeviceSize imageSize = static_cast<size_t>(m_Size.x * m_Size.y * (uint32_t)m_Channels);
 
-				VkDeviceSize imageSize = 0;
+			auto alloc = m_ContextPtr->createBuffer(
+				imageSize,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VMA_MEMORY_USAGE_CPU_ONLY,
+				m_StagingBuffer
+			).p_Alloc;
 
-				for (auto& channels : m_Channels){
-					if (m_CurrentChannels == channels.first){
-						imageSize = static_cast<size_t>(m_Size.x * m_Size.y * channels.second);
-						numChannels = channels.second;
-						break;
-					}
-				}
-
-				VkFormat format = (VkFormat)m_CurrentChannels;
-
-				auto alloc = m_ContextPtr->createBuffer(
-					imageSize,
-					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-					VMA_MEMORY_USAGE_CPU_ONLY,
-					m_StagingBuffer
-				).p_Alloc;
-
-				unsigned int offset = 0;
-				m_Mapped = m_ContextPtr->mapMemory(alloc);
-				for (auto& data : p_ImageData){
-					memcpy((char*)m_Mapped + offset, data.first, static_cast<size_t>(data.second * numChannels));
-					offset += data.second;
-				}
-				m_ContextPtr->unmapMemory(alloc);
-
-				m_ImageAllocation = m_ContextPtr->createImage(
-					m_Size.x, m_Size.y,
-					format,
-					VK_IMAGE_TILING_OPTIMAL,
-					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-					VMA_MEMORY_USAGE_GPU_ONLY,
-					m_VkImageHandle, m_MipLevels
-				).p_Alloc;
-
-				m_ContextPtr->transitionLayoutImage(
-					m_VkImageHandle,
-					format,
-					VK_IMAGE_LAYOUT_UNDEFINED,
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_MipLevels
-				);
-				m_ContextPtr->copyBufferToImage(
-					m_StagingBuffer,
-					m_VkImageHandle,
-					static_cast<uint32_t>(m_Size.x),
-					static_cast<uint32_t>(m_Size.y)
-				);
-
-				generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size, m_MipLevels);
-
-				m_CurrentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				m_FinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-				m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
+			unsigned int offset = 0;
+			m_Mapped = m_ContextPtr->mapMemory(alloc);
+			for (auto& data : p_ImageData){
+				memcpy((char*)m_Mapped + offset, data.first, static_cast<size_t>(data.second * ((uint32_t)m_Channels)));
+				offset += data.second;
 			}
+			m_ContextPtr->unmapMemory(alloc);
+
+			m_ImageAllocation = m_ContextPtr->createImage(
+				m_Size.x, m_Size.y,
+				m_ImageFormat,
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				VMA_MEMORY_USAGE_GPU_ONLY,
+				m_VkImageHandle, m_MipLevels
+			).p_Alloc;
+
+			m_ContextPtr->transitionLayoutImage(
+				m_VkImageHandle,
+				m_ImageFormat,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_MipLevels
+			);
+			m_ContextPtr->copyBufferToImage(
+				m_StagingBuffer,
+				m_VkImageHandle,
+				static_cast<uint32_t>(m_Size.x),
+				static_cast<uint32_t>(m_Size.y)
+			);
+
+			generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size, m_MipLevels);
+
+			m_CurrentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			m_FinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
 		}
 
 		void Image::createImageView()
 		{
-			m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, (VkFormat)m_CurrentChannels, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels);
+			m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels);
 		}
 
 		void Image::createSampler(SamplerMode p_SamplerMode)
@@ -468,69 +428,60 @@ namespace vgl
 		}
 		void ImageCube::createImage()
 		{
-			if (m_CurrentChannels != Channels::None){
-				VkDeviceSize imageSize = 0;
-				VkDeviceSize imageLayerSize = 0;
+			m_ImageFormat = getImageFormat(m_ColorSpace, m_Channels);
+			VkDeviceSize imageSize = 0;
+			VkDeviceSize imageLayerSize = 0;
+			imageSize = static_cast<size_t>(m_Size.x * m_Size.y * (uint32_t)m_Channels * 6); // 6 faces to the cubemap
+			imageLayerSize = imageSize/6;
 
-				for (auto& channels : m_Channels){
-					if (m_CurrentChannels == channels.first){
-						imageSize = static_cast<size_t>(m_Size.x * m_Size.y * channels.second * 6); // 6 faces to the cubemap
-						imageLayerSize = imageSize/6; // 6 faces to the cubemap
-						break;
-					}
-				}
+			auto alloc = m_ContextPtr->createBuffer(
+				imageSize,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VMA_MEMORY_USAGE_CPU_ONLY,
+				m_StagingBuffer
+			).p_Alloc;
 
-				VkFormat format = (VkFormat)m_CurrentChannels;
-
-				auto alloc = m_ContextPtr->createBuffer(
-					imageSize,
-					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-					VMA_MEMORY_USAGE_CPU_ONLY,
-					m_StagingBuffer
-				).p_Alloc;
-
-				m_Mapped = m_ContextPtr->mapMemory(alloc);
-				for(uint8_t i = 0; i < 6; i++)
-					memcpy((void*)((int64_t)m_Mapped + imageLayerSize * i), m_ImageData[i], static_cast<size_t>(imageSize));
-				m_ContextPtr->unmapMemory(alloc);
+			m_Mapped = m_ContextPtr->mapMemory(alloc);
+			for(uint8_t i = 0; i < 6; i++)
+				memcpy((void*)((int64_t)m_Mapped + imageLayerSize * i), m_ImageData[i], static_cast<size_t>(imageSize));
+			m_ContextPtr->unmapMemory(alloc);
 
 
-				m_ImageAllocation = m_ContextPtr->createImage(
-					m_Size.x, m_Size.y,
-					format,
-					VK_IMAGE_TILING_OPTIMAL,
-					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-					VMA_MEMORY_USAGE_GPU_ONLY,
-					m_VkImageHandle, m_MipLevels, 6
-				).p_Alloc;
+			m_ImageAllocation = m_ContextPtr->createImage(
+				m_Size.x, m_Size.y,
+				m_ImageFormat,
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				VMA_MEMORY_USAGE_GPU_ONLY,
+				m_VkImageHandle, m_MipLevels, 6
+			).p_Alloc;
 
-				m_ContextPtr->transitionLayoutImage(
-					m_VkImageHandle,
-					format,
-					VK_IMAGE_LAYOUT_UNDEFINED,
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_MipLevels, 6
-				);
-				m_ContextPtr->copyBufferToImage(
-					m_StagingBuffer,
-					m_VkImageHandle,
-					static_cast<uint32_t>(m_Size.x),
-					static_cast<uint32_t>(m_Size.y), 6
-				);
-				m_ContextPtr->transitionLayoutImage(
-					m_VkImageHandle,
-					format,
-					VK_IMAGE_LAYOUT_UNDEFINED,
-					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_MipLevels
-				);
+			m_ContextPtr->transitionLayoutImage(
+				m_VkImageHandle,
+				m_ImageFormat,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_MipLevels, 6
+			);
+			m_ContextPtr->copyBufferToImage(
+				m_StagingBuffer,
+				m_VkImageHandle,
+				static_cast<uint32_t>(m_Size.x),
+				static_cast<uint32_t>(m_Size.y), 6
+			);
+			m_ContextPtr->transitionLayoutImage(
+				m_VkImageHandle,
+				m_ImageFormat,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_MipLevels
+			);
 
-				m_Layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			m_Layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-				m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
-			}
+			m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
 		}
 		void ImageCube::createImageView()
 		{
-			m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, (VkFormat)m_CurrentChannels, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels, 6, VK_IMAGE_VIEW_TYPE_CUBE);
+			m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels, 6, VK_IMAGE_VIEW_TYPE_CUBE);
 		}
 		void ImageCube::createSampler(SamplerMode p_SamplerMode)
 		{
@@ -558,7 +509,7 @@ namespace vgl
 			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::ImageCube]Failed to create Image sampler, VkResult: %i", (uint64_t)result);
 		}
 
-		bool ImageLoader::getImageFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
+		bool ImageLoader::getImageFromPath(Image& p_Image, const char* p_Path, ColorSpace p_ColorSpace, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
 		{
 			int channels;
 
@@ -574,7 +525,9 @@ namespace vgl
 				return false;
 			}
 
-			p_Image.m_CurrentChannels = Channels::RGBA;
+			p_Image.m_ColorSpace = p_ColorSpace;
+			p_Image.m_Channels = Channels::RGBA;
+			p_Image.m_ImageFormat = getImageFormat(p_Image.m_ColorSpace, p_Image.m_Channels);
 
 			// Calculate mip levels
 			p_Image.m_MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(p_Image.m_Size.x, p_Image.m_Size.y)))) + 1;
@@ -590,7 +543,7 @@ namespace vgl
 
 			return true;
 		}
-		bool ImageLoader::getImageFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode, const uint32_t p_MipLevels)
+		bool ImageLoader::getImageFromPath(Image& p_Image, const char* p_Path, ColorSpace p_ColorSpace, SamplerMode p_SamplerMode, const uint32_t p_MipLevels)
 		{
 			int channels;
 			p_Image.m_ImageData = (unsigned char*)SOIL_load_image(p_Path, &p_Image.m_Size.x, &p_Image.m_Size.y, &channels, SOIL_LOAD_RGBA);
@@ -604,7 +557,10 @@ namespace vgl
 				return false;
 			}
 
-			p_Image.m_CurrentChannels = Channels::RGBA;
+			p_Image.m_ColorSpace = p_ColorSpace;
+			p_Image.m_Channels = Channels::RGBA;
+			p_Image.m_ImageFormat = getImageFormat(p_Image.m_ColorSpace, p_Image.m_Channels);
+
 			p_Image.m_MipLevels = p_MipLevels;
 			p_Image.m_IsValid = true;
 			p_Image.m_SamplerMode = p_SamplerMode;
@@ -618,7 +574,7 @@ namespace vgl
 
 			return true;
 		}
-		unsigned char* ImageLoader::getImageDataFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
+		unsigned char* ImageLoader::getImageDataFromPath(Image& p_Image, const char* p_Path, ColorSpace p_ColorSpace, SamplerMode p_SamplerMode, Filter p_MagFilter, Filter p_MinFilter)
 		{
 			int channels;
 
@@ -634,7 +590,9 @@ namespace vgl
 				return false;
 			}
 
-			p_Image.m_CurrentChannels = Channels::RGBA;
+			p_Image.m_ColorSpace = p_ColorSpace;
+			p_Image.m_Channels = Channels::RGBA;
+			p_Image.m_ImageFormat = getImageFormat(p_Image.m_ColorSpace, p_Image.m_Channels);
 
 			// Calculate mip levels
 			p_Image.m_MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(p_Image.m_Size.x, p_Image.m_Size.y)))) + 1;
@@ -642,7 +600,7 @@ namespace vgl
 
 			return p_Image.m_ImageData;
 		}
-		bool ImageLoader::getImageFromPath(ImageCube& p_ImageCube, std::initializer_list<std::pair<const char*, Vector3f>> p_Path, SamplerMode p_SamplerMode)
+		bool ImageLoader::getImageFromPath(ImageCube& p_ImageCube, std::initializer_list<std::pair<const char*, Vector3f>> p_Path, ColorSpace p_ColorSpace, SamplerMode p_SamplerMode)
 		{
 			std::vector<std::pair<const char*, Vector3f>> path(p_Path.begin(), p_Path.end());
 			path.resize(6);
@@ -656,7 +614,9 @@ namespace vgl
 			p_ImageCube.m_ImageData[4] = (unsigned char*)SOIL_load_image(path[4].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
 			p_ImageCube.m_ImageData[5] = (unsigned char*)SOIL_load_image(path[5].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
 
-			p_ImageCube.m_CurrentChannels = Channels::RGBA;
+			p_ImageCube.m_ColorSpace = p_ColorSpace;
+			p_ImageCube.m_Channels = Channels::RGBA;
+			p_ImageCube.m_ImageFormat = getImageFormat(p_ImageCube.m_ColorSpace, p_ImageCube.m_Channels);
 
 			// Calculate mip levels
 			p_ImageCube.m_MipLevels = 1;
@@ -676,7 +636,7 @@ namespace vgl
 
 			return true;
 		}
-		bool ImageLoader::getImageFromPath(ImageCube& p_ImageCube, std::vector<std::pair<const char*, Vector3f>> p_Path, SamplerMode p_SamplerMode)
+		bool ImageLoader::getImageFromPath(ImageCube& p_ImageCube, std::vector<std::pair<const char*, Vector3f>> p_Path, ColorSpace p_ColorSpace, SamplerMode p_SamplerMode)
 		{
 			int channels;
 			p_Path.resize(6);
@@ -689,7 +649,9 @@ namespace vgl
 			p_ImageCube.m_ImageData[4] = (unsigned char*)SOIL_load_image(p_Path[4].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
 			p_ImageCube.m_ImageData[5] = (unsigned char*)SOIL_load_image(p_Path[5].first, &p_ImageCube.m_Size.x, &p_ImageCube.m_Size.y, &channels, SOIL_LOAD_RGBA);
 
-			p_ImageCube.m_CurrentChannels = Channels::RGBA;
+			p_ImageCube.m_ColorSpace = p_ColorSpace;
+			p_ImageCube.m_Channels = Channels::RGBA;
+			p_ImageCube.m_ImageFormat = getImageFormat(p_ImageCube.m_ColorSpace, p_ImageCube.m_Channels);
 
 			// Calculate mip levels
 			p_ImageCube.m_MipLevels = 1;

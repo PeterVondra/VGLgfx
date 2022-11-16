@@ -12,4 +12,5 @@ VGLgfx/test/data
 VGLgfx/test/.vs
 VGLgfxEditor/build/
 VGLgfxEditor/projects/Global_Assets/
-Example/build
+Example/build/
+references/

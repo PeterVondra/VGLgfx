@@ -4,7 +4,7 @@
 #include "../../Utils/Logger.h"
 
 #ifdef VGL_INTERNAL_LOGGING_ENABLED
-//#define VGL_VK_VALIDATION_LAYERS_ENABLED
+#define VGL_VK_VALIDATION_LAYERS_ENABLED
 #endif
 
 namespace vgl

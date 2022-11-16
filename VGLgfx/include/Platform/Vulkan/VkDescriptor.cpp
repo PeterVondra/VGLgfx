@@ -81,7 +81,8 @@ namespace vgl
 		void Descriptor::copy(ShaderStage p_ShaderStage, void* p_Data, uint64_t p_Size, uint64_t p_Offset)
 		{
 			if (!m_DescriptorSetInfo->p_UniformBuffers[(int)p_ShaderStage].m_MappedData.empty()){
-				if (m_ContextPtr->m_ImageIndex >= m_ContextPtr->m_SwapchainImageCount || m_ContextPtr->m_ImageIndex == UINT32_MAX) {
+				m_ContextPtr->waitForFences();
+				if (m_ContextPtr->m_CurrentFrame >= m_ContextPtr->m_SwapchainImageCount || m_ContextPtr->m_CurrentFrame == UINT32_MAX) {
 					// Rendering has not yet begun, copy data to all(-->m_SwapchainImageCount) buffer offset partitions
 					for (int i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
 						m_ContextPtr->waitForFences();
@@ -90,8 +91,8 @@ namespace vgl
 					}
 					return;
 				}
-				m_ContextPtr->waitForFences();
-				void* mapped = (char*)(m_DescriptorSetInfo->p_UniformBuffers[(int)p_ShaderStage].m_MappedData[m_ContextPtr->m_ImageIndex]) + p_Offset;
+
+				void* mapped = (char*)(m_DescriptorSetInfo->p_UniformBuffers[(int)p_ShaderStage].m_MappedData[m_ContextPtr->m_CurrentFrame]) + p_Offset;
 				memcpy(mapped, p_Data, p_Size);
 			}
 		}
@@ -99,13 +100,20 @@ namespace vgl
 		{
 			if (!m_DescriptorSetInfo)
 				return;
-			for(int i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
-				if (!m_DescriptorSetInfo->p_StorageBuffer.m_MappedData.empty())
-				{
-					m_ContextPtr->waitForFences();
-					void* mapped = (char*)(m_DescriptorSetInfo->p_StorageBuffer.m_MappedData[i]) + p_Offset;
-					memcpy(mapped, p_Data, p_Size);
+			if (!m_DescriptorSetInfo->p_StorageBuffer.m_MappedData.empty()) {
+				m_ContextPtr->waitForFences();
+				if (m_ContextPtr->m_CurrentFrame >= m_ContextPtr->m_SwapchainImageCount || m_ContextPtr->m_CurrentFrame == UINT32_MAX) {
+					// Rendering has not yet begun, copy data to all(-->m_SwapchainImageCount) buffer offset partitions
+					for (int i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+						void* mapped = (char*)(m_DescriptorSetInfo->p_StorageBuffer.m_MappedData[i]) + p_Offset;
+						memcpy(mapped, p_Data, p_Size);
+					}
+					return;
 				}
+				
+				void* mapped = (char*)(m_DescriptorSetInfo->p_StorageBuffer.m_MappedData[m_ContextPtr->m_CurrentFrame]) + p_Offset;
+				memcpy(mapped, p_Data, p_Size);
+			}
 		}
 		void Descriptor::update()
 		{

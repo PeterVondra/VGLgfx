@@ -26,7 +26,7 @@ namespace vgl
 			}
 		};
 
-		DShadowMap::DShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_CommandBufferIdx(0), m_Resolution(0.0f) {
+		DShadowMap::DShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_Resolution(0.0f) {
 			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
 				CommandBuffer::allocate(Level::Secondary, 500, m_CommandBuffers[i]);
 
@@ -49,7 +49,7 @@ namespace vgl
 					cmd.destroy();
 		}
 		
-		PShadowMap::PShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_CommandBufferIdx(0), m_Resolution(0.0f) {
+		PShadowMap::PShadowMap() : m_ContextPtr(&ContextSingleton::getInstance()), m_CommandBuffers(m_ContextPtr->m_SwapchainImageCount), m_Resolution(0.0f) {
 			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
 				CommandBuffer::allocate(Level::Secondary, 500, m_CommandBuffers[i]);
 
@@ -279,7 +279,8 @@ namespace vgl
 		}
 		void Renderer::beginRenderPass(RenderInfo& p_RenderInfo, DShadowMap& p_ShadowMap)
 		{
-			p_ShadowMap.m_CommandBufferIdx = 0;
+			p_ShadowMap.m_CommandBufferIdx[0] = 0;
+			p_ShadowMap.m_CommandBufferIdx[1] = 0;
 
 			m_RenderInfo = p_RenderInfo;
 
@@ -293,7 +294,8 @@ namespace vgl
 
 		void Renderer::beginRenderPass(RenderInfo& p_RenderInfo, PShadowMap& p_ShadowMap)
 		{
-			p_ShadowMap.m_CommandBufferIdx = 0;
+			p_ShadowMap.m_CommandBufferIdx[0] = 0;
+			p_ShadowMap.m_CommandBufferIdx[1] = 0;
 
 			m_RenderInfo = p_RenderInfo;
 
@@ -370,77 +372,78 @@ namespace vgl
 			VGL_INTERNAL_ASSERT_WARNING(m_DShadowMapPtr != nullptr, "[vk::Renderer]No shadow map bound");
 			if (m_DShadowMapPtr == nullptr) return;
 
-			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
-				CommandBuffer& cmd = m_DShadowMapPtr->m_CommandBuffers[i][m_DShadowMapPtr->m_CommandBufferIdx];
+			static Matrix4f data;
+			data = p_Transform.model * m_DShadowMapPtr->m_View * m_DShadowMapPtr->m_Projection;
 
-				// Shadow map rendering
-				cmd.cmdBegin(m_DShadowMapPtr->m_Attachment.m_InheritanceInfo[i]);
+			CommandBuffer& cmd = m_DShadowMapPtr->m_CommandBuffers[m_CurrentFrame][m_DShadowMapPtr->m_CommandBufferIdx[m_CurrentFrame]];
 
-				cmd.cmdSetViewport(
-					Viewport({
-						int(m_DShadowMapPtr->m_Resolution.x), int(-m_DShadowMapPtr->m_Resolution.y) },
-						Vector2i(0, m_DShadowMapPtr->m_Resolution.y)
-						)
-				);
-				cmd.cmdSetScissor(
-					Scissor({
-						int(m_DShadowMapPtr->m_Resolution.x),
-						int(m_DShadowMapPtr->m_Resolution.y) }, { 0, 0 }
-						)
-				);
+			// Shadow map rendering
+			cmd.cmdBegin(m_DShadowMapPtr->m_Attachment.m_InheritanceInfo[m_ImageIndex]);
 
-				Matrix4f data = p_Transform.model * m_DShadowMapPtr->m_View * m_DShadowMapPtr->m_Projection;
+			cmd.cmdSetViewport(
+				Viewport({
+					int(m_DShadowMapPtr->m_Resolution.x), int(-m_DShadowMapPtr->m_Resolution.y) },
+					Vector2i(0, m_DShadowMapPtr->m_Resolution.y)
+					)
+			);
+			cmd.cmdSetScissor(
+				Scissor({
+					int(m_DShadowMapPtr->m_Resolution.x),
+					int(m_DShadowMapPtr->m_Resolution.y) }, { 0, 0 }
+					)
+			);
 
-				vkCmdSetDepthBias
-				(
-					cmd.m_CommandBuffer,
-					m_DShadowMapPtr->m_DepthBiasConstant,
-					0.0f,
-					m_DShadowMapPtr->m_DepthBiasSlope
-				);
+			vkCmdSetDepthBias
+			(
+				cmd.m_CommandBuffer,
+				m_DShadowMapPtr->m_DepthBiasConstant,
+				0.0f,
+				m_DShadowMapPtr->m_DepthBiasSlope
+			);
 
-				uint32_t albedo_concurrent = 0;
-				uint32_t default_concurrent = 0;
-				cmd.cmdBindVertexArray(p_MeshData.m_VertexArray);
-				uint32_t prevIndex = 0;
-				for (int j = 0; j < p_MeshData.m_Materials.size(); j++) {
-					// Should material be rendered?
-					if (!p_MeshData.m_Materials[j].config.render) {
-						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].first);
-						prevIndex = p_MeshData.m_SubMeshIndices[j].second;
-					}
-					else if (p_MeshData.m_Materials[j].m_AlbedoMap.isValid()) {
-						if (albedo_concurrent == 0) { // --> If pipeline is already bound, skip this step
-							cmd.cmdBindPipeline(m_GraphicsContextPtr->getDShadowMapAlbedoPipeline());
-							vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getDShadowMapAlbedoPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Matrix4f), &data);
-						}
-						vkCmdBindDescriptorSets(
-							cmd.vkHandle(),
-							VK_PIPELINE_BIND_POINT_GRAPHICS,
-							m_GraphicsContextPtr->getDShadowMapAlbedoPipeline().m_PipelineLayout,
-							0, 1,
-							&p_MeshData.m_Materials[j].m_AlbedoMap.m_DescriptorSet,
-							0, nullptr
-						);
+			cmd.cmdBindVertexArray(p_MeshData.m_VertexArray);
 
-						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].second);
-						prevIndex = p_MeshData.m_SubMeshIndices[j].second;
-						albedo_concurrent++;
-						default_concurrent = 0;
-					}
-					else {
-						if (default_concurrent == 0) { // --> If pipeline is already bound, skip this step
-							cmd.cmdBindPipeline(m_GraphicsContextPtr->getDShadowMapPipeline());
-							vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getDShadowMapPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Matrix4f), &data);
-						}
-						cmd.cmdDrawIndexed(prevIndex, p_MeshData.indices.size());
-						albedo_concurrent = 0;
-						default_concurrent++;
-					}
+			uint32_t albedo_concurrent = 0;
+			uint32_t default_concurrent = 0;
+			uint32_t prevIndex = 0;
+			for (int j = 0; j < p_MeshData.m_Materials.size(); j++) {
+				// Should material be rendered?
+				if (!p_MeshData.m_Materials[j].config.render) {
+					cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].first);
+					prevIndex = p_MeshData.m_SubMeshIndices[j].second;
 				}
-				cmd.cmdEnd();
+				else if (p_MeshData.m_Materials[j].m_AlbedoMap.isValid()) {
+					if (albedo_concurrent == 0) { // --> If pipeline is already bound, skip this step
+						cmd.cmdBindPipeline(m_GraphicsContextPtr->getDShadowMapAlbedoPipeline());
+						vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getDShadowMapAlbedoPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Matrix4f), &data);
+					}
+					vkCmdBindDescriptorSets(
+						cmd.vkHandle(),
+						VK_PIPELINE_BIND_POINT_GRAPHICS,
+						m_GraphicsContextPtr->getDShadowMapAlbedoPipeline().m_PipelineLayout,
+						0, 1,
+						&p_MeshData.m_Materials[j].m_AlbedoMap.m_DescriptorSet,
+						0, nullptr
+					);
+
+					cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].second);
+					prevIndex = p_MeshData.m_SubMeshIndices[j].second;
+					albedo_concurrent++;
+					default_concurrent = 0;
+				}
+				else {
+					if (default_concurrent == 0) { // --> If pipeline is already bound, skip this step
+						cmd.cmdBindPipeline(m_GraphicsContextPtr->getDShadowMapPipeline());
+						vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getDShadowMapPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Matrix4f), &data);
+					}
+					cmd.cmdDrawIndexed(prevIndex, p_MeshData.indices.size());
+					albedo_concurrent = 0;
+					default_concurrent++;
+				}
 			}
-			m_DShadowMapPtr->m_CommandBufferIdx++;
+			cmd.cmdEnd();
+
+			m_DShadowMapPtr->m_CommandBufferIdx[m_CurrentFrame]++;
 		}
 
 		void Renderer::recordMeshDataSMP(MeshData& p_MeshData, Transform3D& p_Transform)
@@ -454,131 +457,130 @@ namespace vgl
 				Vector3f position;
 			};
 
-			for (uint32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
-				CommandBuffer& cmd = m_CurrentPShadowMapPtr->m_CommandBuffers[i][m_CurrentPShadowMapPtr->m_CommandBufferIdx];
+			CommandBuffer& cmd = m_CurrentPShadowMapPtr->m_CommandBuffers[m_CurrentFrame][m_CurrentPShadowMapPtr->m_CommandBufferIdx[m_CurrentFrame]];
 
-				// Shadow map rendering
-				cmd.cmdBegin(m_CurrentPShadowMapPtr->m_Attachment.m_InheritanceInfo[i]);
+			// Shadow map rendering
+			cmd.cmdBegin(m_CurrentPShadowMapPtr->m_Attachment.m_InheritanceInfo[m_ImageIndex]);
 
-				cmd.cmdSetViewport(
-					Viewport({
-						int(m_CurrentPShadowMapPtr->m_Resolution.x), int(m_CurrentPShadowMapPtr->m_Resolution.y) },
-						Vector2i(0, 0)
-						)
-				);
-				cmd.cmdSetScissor(
-					Scissor({
-						int(m_CurrentPShadowMapPtr->m_Resolution.x),
-						int(m_CurrentPShadowMapPtr->m_Resolution.y) }, { 0, 0 }
-						)
-				);
+			cmd.cmdSetViewport(
+				Viewport({
+					int(m_CurrentPShadowMapPtr->m_Resolution.x), int(m_CurrentPShadowMapPtr->m_Resolution.y) },
+					Vector2i(0, 0)
+					)
+			);
+			cmd.cmdSetScissor(
+				Scissor({
+					int(m_CurrentPShadowMapPtr->m_Resolution.x),
+					int(m_CurrentPShadowMapPtr->m_Resolution.y) }, { 0, 0 }
+					)
+			);
 
-				// If light position is changed, update view matrices
-				if (*m_CurrentPShadowMapPtr->m_Position != m_CurrentPShadowMapPtr->m_PrevPosition) {
-					m_CurrentPShadowMapPtr->m_PrevPosition = *m_CurrentPShadowMapPtr->m_Position;
+			// If light position is changed, update view matrices
+			if (*m_CurrentPShadowMapPtr->m_Position != m_CurrentPShadowMapPtr->m_PrevPosition) {
+				m_CurrentPShadowMapPtr->m_PrevPosition = *m_CurrentPShadowMapPtr->m_Position;
 #define CPSMPTR m_CurrentPShadowMapPtr
-					// Prepare view matrices
-					CPSMPTR->m_View[0] = Matrix4f::lookAtRH(
-						CPSMPTR->m_PrevPosition, 
-						CPSMPTR->m_PrevPosition + Vector3f(1.0f,  0.0f,  0.0f),
-						Vector3f(0.0f, -1.0f,  0.0f)
-					)*CPSMPTR->m_Projection;
+				// Prepare view matrices
+				CPSMPTR->m_View[0] = Matrix4f::lookAtRH(
+					CPSMPTR->m_PrevPosition, 
+					CPSMPTR->m_PrevPosition + Vector3f(1.0f,  0.0f,  0.0f),
+					Vector3f(0.0f, -1.0f,  0.0f)
+				)*CPSMPTR->m_Projection;
 
-					CPSMPTR->m_View[1] = Matrix4f::lookAtRH(
-						CPSMPTR->m_PrevPosition,
-						CPSMPTR->m_PrevPosition + Vector3f(-1.0f, 0.0f,  0.0f),
-						Vector3f(0.0f, -1.0f,  0.0f)
-					)*CPSMPTR->m_Projection;
+				CPSMPTR->m_View[1] = Matrix4f::lookAtRH(
+					CPSMPTR->m_PrevPosition,
+					CPSMPTR->m_PrevPosition + Vector3f(-1.0f, 0.0f,  0.0f),
+					Vector3f(0.0f, -1.0f,  0.0f)
+				)*CPSMPTR->m_Projection;
 
-					CPSMPTR->m_View[2] = Matrix4f::lookAtRH(
-						CPSMPTR->m_PrevPosition,
-						CPSMPTR->m_PrevPosition + Vector3f(0.0f,  1.0f,  0.0f),
-						Vector3f(0.0f,  0.0f,  1.0f)
-					)*CPSMPTR->m_Projection;
+				CPSMPTR->m_View[2] = Matrix4f::lookAtRH(
+					CPSMPTR->m_PrevPosition,
+					CPSMPTR->m_PrevPosition + Vector3f(0.0f,  1.0f,  0.0f),
+					Vector3f(0.0f,  0.0f,  1.0f)
+				)*CPSMPTR->m_Projection;
 
-					CPSMPTR->m_View[3] = Matrix4f::lookAtRH(
-						CPSMPTR->m_PrevPosition,
-						CPSMPTR->m_PrevPosition + Vector3f(0.0f, -1.0f,  0.0f),
-						Vector3f(0.0f,  0.0f, -1.0f)
-					)*CPSMPTR->m_Projection;
+				CPSMPTR->m_View[3] = Matrix4f::lookAtRH(
+					CPSMPTR->m_PrevPosition,
+					CPSMPTR->m_PrevPosition + Vector3f(0.0f, -1.0f,  0.0f),
+					Vector3f(0.0f,  0.0f, -1.0f)
+				)*CPSMPTR->m_Projection;
 
-					CPSMPTR->m_View[4] = Matrix4f::lookAtRH(
-						CPSMPTR->m_PrevPosition,
-						CPSMPTR->m_PrevPosition + Vector3f(0.0f,  0.0f,  1.0f),
-						Vector3f(0.0f, -1.0f,  0.0f)
-					)*CPSMPTR->m_Projection;
+				CPSMPTR->m_View[4] = Matrix4f::lookAtRH(
+					CPSMPTR->m_PrevPosition,
+					CPSMPTR->m_PrevPosition + Vector3f(0.0f,  0.0f,  1.0f),
+					Vector3f(0.0f, -1.0f,  0.0f)
+				)*CPSMPTR->m_Projection;
 
-					CPSMPTR->m_View[5] = Matrix4f::lookAtRH(
-						CPSMPTR->m_PrevPosition,
-						CPSMPTR->m_PrevPosition + Vector3f(0.0f,  0.0f, -1.0f),
-						Vector3f(0.0f, -1.0f,  0.0f)
-					)*CPSMPTR->m_Projection;
+				CPSMPTR->m_View[5] = Matrix4f::lookAtRH(
+					CPSMPTR->m_PrevPosition,
+					CPSMPTR->m_PrevPosition + Vector3f(0.0f,  0.0f, -1.0f),
+					Vector3f(0.0f, -1.0f,  0.0f)
+				)*CPSMPTR->m_Projection;
 #undef CPSMPTR
-				}
-
-				PSMT data = {};
-				data.model = p_Transform.model;
-				data.position = m_CurrentPShadowMapPtr->m_PrevPosition;
-
-				//vkCmdSetDepthBias
-				//(
-				//	cmd.m_CommandBuffer,
-				//	m_CurrentPShadowMapPtr->m_DepthBiasConstant,
-				//	0.0f,
-				//	m_CurrentPShadowMapPtr->m_DepthBiasSlope
-				//);
-
-				vkCmdBindDescriptorSets(
-					cmd.vkHandle(),
-					VK_PIPELINE_BIND_POINT_GRAPHICS,
-					m_GraphicsContextPtr->getPShadowMapAlbedoPipeline().m_PipelineLayout,
-					0, 1,
-					&m_CurrentPShadowMapPtr->m_TransformDescriptor.m_DescriptorSets[i].m_DescriptorSet,
-					0, nullptr
-				);
-
-				uint32_t albedo_concurrent = 0;
-				uint32_t default_concurrent = 0;
-				cmd.cmdBindVertexArray(p_MeshData.m_VertexArray);
-				uint32_t prevIndex = 0;
-				for (int j = 0; j < p_MeshData.m_Materials.size(); j++) {
-					// Should material be rendered?
-					if (!p_MeshData.m_Materials[j].config.render) {
-						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].first);
-						prevIndex = p_MeshData.m_SubMeshIndices[j].second;
-					}
-					else if (p_MeshData.m_Materials[j].m_AlbedoMap.isValid()) {
-						if (albedo_concurrent == 0) { // --> If pipeline is already bound, skip this step
-							cmd.cmdBindPipeline(m_GraphicsContextPtr->getPShadowMapAlbedoPipeline());
-							vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getPShadowMapAlbedoPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PSMT), &data);
-						}
-						vkCmdBindDescriptorSets(
-							cmd.vkHandle(),
-							VK_PIPELINE_BIND_POINT_GRAPHICS,
-							m_GraphicsContextPtr->getPShadowMapAlbedoPipeline().m_PipelineLayout,
-							1, 1,
-							&p_MeshData.m_Materials[j].m_AlbedoMap.m_DescriptorSet,
-							0, nullptr
-						);
-
-						cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].second);
-						prevIndex = p_MeshData.m_SubMeshIndices[j].second;
-						albedo_concurrent++;
-						default_concurrent = 0;
-					}
-					else {
-						if (default_concurrent == 0) { // --> If pipeline is already bound, skip this step
-							cmd.cmdBindPipeline(m_GraphicsContextPtr->getPShadowMapPipeline());
-							vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getPShadowMapPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PSMT), &data);
-						}
-						cmd.cmdDrawIndexed(prevIndex, p_MeshData.indices.size());
-						albedo_concurrent = 0;
-						default_concurrent++;
-					}
-				}
-				cmd.cmdEnd();
 			}
-			m_CurrentPShadowMapPtr->m_CommandBufferIdx++;
+
+			PSMT data = {};
+			data.model = p_Transform.model;
+			data.position = m_CurrentPShadowMapPtr->m_PrevPosition;
+
+			//vkCmdSetDepthBias
+			//(
+			//	cmd.m_CommandBuffer,
+			//	m_CurrentPShadowMapPtr->m_DepthBiasConstant,
+			//	0.0f,
+			//	m_CurrentPShadowMapPtr->m_DepthBiasSlope
+			//);
+
+			vkCmdBindDescriptorSets(
+				cmd.vkHandle(),
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				m_GraphicsContextPtr->getPShadowMapAlbedoPipeline().m_PipelineLayout,
+				0, 1,
+				&m_CurrentPShadowMapPtr->m_TransformDescriptor.m_DescriptorSets[m_ImageIndex].m_DescriptorSet,
+				0, nullptr
+			);
+
+			uint32_t albedo_concurrent = 0;
+			uint32_t default_concurrent = 0;
+			cmd.cmdBindVertexArray(p_MeshData.m_VertexArray);
+			uint32_t prevIndex = 0;
+			for (int j = 0; j < p_MeshData.m_Materials.size(); j++) {
+				// Should material be rendered?
+				if (!p_MeshData.m_Materials[j].config.render) {
+					cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].first);
+					prevIndex = p_MeshData.m_SubMeshIndices[j].second;
+				}
+				else if (p_MeshData.m_Materials[j].m_AlbedoMap.isValid()) {
+					if (albedo_concurrent == 0) { // --> If pipeline is already bound, skip this step
+						cmd.cmdBindPipeline(m_GraphicsContextPtr->getPShadowMapAlbedoPipeline());
+						vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getPShadowMapAlbedoPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PSMT), &data);
+					}
+					vkCmdBindDescriptorSets(
+						cmd.vkHandle(),
+						VK_PIPELINE_BIND_POINT_GRAPHICS,
+						m_GraphicsContextPtr->getPShadowMapAlbedoPipeline().m_PipelineLayout,
+						1, 1,
+						&p_MeshData.m_Materials[j].m_AlbedoMap.m_DescriptorSet,
+						0, nullptr
+					);
+
+					cmd.cmdDrawIndexed(prevIndex, p_MeshData.m_SubMeshIndices[j].second);
+					prevIndex = p_MeshData.m_SubMeshIndices[j].second;
+					albedo_concurrent++;
+					default_concurrent = 0;
+				}
+				else {
+					if (default_concurrent == 0) { // --> If pipeline is already bound, skip this step
+						cmd.cmdBindPipeline(m_GraphicsContextPtr->getPShadowMapPipeline());
+						vkCmdPushConstants(cmd.vkHandle(), m_GraphicsContextPtr->getPShadowMapPipeline().m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PSMT), &data);
+					}
+					cmd.cmdDrawIndexed(prevIndex, p_MeshData.indices.size());
+					albedo_concurrent = 0;
+					default_concurrent++;
+				}
+			}
+			cmd.cmdEnd();
+
+			m_CurrentPShadowMapPtr->m_CommandBufferIdx[m_CurrentFrame]++;
 		}
 		
 		void Renderer::createPipelines(MeshData& p_MeshData, RenderInfo& p_RenderInfo, RenderPass& p_RenderPass)
@@ -648,10 +650,8 @@ namespace vgl
 				p_MeshData.m_MTLRecreateFlag = false;
 			}
 
-			for (int16_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
-				recordMeshCmdBuffer(p_MeshData, *m_FramebufferAttachmentPtr, m_CommandBuffers[i][m_CommandBufferIdx], i);
-
-			float lumaThreshold = 2.532f;
+			//for (int16_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
+				recordMeshCmdBuffer(p_MeshData, *m_FramebufferAttachmentPtr, m_CommandBuffers[m_CurrentFrame][m_CommandBufferIdx[m_CurrentFrame]], m_ImageIndex);
 
 			for (int i = 0; i < p_MeshData.m_Materials.size(); i++)
 			{
@@ -665,18 +665,15 @@ namespace vgl
 						p_MeshData.m_Materials[i].config.m_Albedo.b,
 						p_MeshData.m_Materials[i].config.m_PDMDepth), 0);
 					p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::FragmentBit,
-						Vector4f(
+						Vector3f(
 							p_MeshData.m_Materials[i].config.m_Metallic,
 							p_MeshData.m_Materials[i].config.m_Roughness,
-							p_MeshData.m_Materials[i].config.m_Ambient, lumaThreshold
+							p_MeshData.m_Materials[i].config.m_Ambient
 						), 4 * sizeof(float)
 					);
-				//}
 
-				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::FragmentBit, Vector3f(3, 3, 3), 12 * sizeof(float));
-				for(int k = 0; k < p_MeshData.m_Materials.size(); k++)
-					for(int j = 0; j < p_MeshData.m_Materials[k].m_ShaderInfo.p_PointLights.size(); j++)
-						p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::FragmentBit, p_MeshData.m_Materials[k].m_ShaderInfo.p_PointLights[j], 16 * sizeof(float) + sizeof(P_Light)*j);
+					p_MeshData.m_Materials[i].m_PrevConfig = p_MeshData.m_Materials[i].config;
+				//}
 
 				// MVP Matrix
 				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, p_Transform.model * m_ViewProjection, 0);
@@ -686,16 +683,14 @@ namespace vgl
 				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, m_Camera->getViewMatrix(), 2*sizeof(Matrix4f));
 				// Camera position
 				p_MeshData.m_MTLDescriptors[i].copy(ShaderStage::VertexBit, m_Camera->getPosition(), 3*sizeof(Matrix4f));
-
-				p_MeshData.m_Materials[i].m_PrevConfig = p_MeshData.m_Materials[i].config;
 			}
 
-			m_CommandBufferIdx++;
+			m_CommandBufferIdx[m_CurrentFrame]++;
 		}
 
 		void Renderer::recordMeshCmdBuffer(MeshData& p_MeshData, FramebufferAttachment& p_FramebufferAttachment, CommandBuffer& p_CommandBuffer, const uint32_t p_ImageIndex)
 		{
-			p_CommandBuffer.cmdBegin(p_FramebufferAttachment.m_InheritanceInfo[p_ImageIndex]);
+			p_CommandBuffer.cmdBegin(p_FramebufferAttachment.m_InheritanceInfo[m_ImageIndex]);
 			setCmdViewport(p_CommandBuffer, p_FramebufferAttachment.m_FramebufferAttachmentInfo.p_Size);
 
 			for (int i = 0; i < p_MeshData.m_Materials.size(); i++)
@@ -716,34 +711,33 @@ namespace vgl
 		{
 			waitForFences();
 
-			for (int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++) {
-				m_CommandBuffers[i][m_CommandBufferIdx].cmdBegin(m_FramebufferAttachmentPtr->m_InheritanceInfo[i]);
-				setCmdViewport(m_CommandBuffers[i][m_CommandBufferIdx], m_FramebufferAttachmentPtr->m_FramebufferAttachmentInfo.p_Size);
+			CommandBuffer& cmd = m_CommandBuffers[m_CurrentFrame][m_CommandBufferIdx[m_CurrentFrame]];
+				cmd.cmdBegin(m_FramebufferAttachmentPtr->m_InheritanceInfo[m_ImageIndex]);
+				setCmdViewport(cmd, m_FramebufferAttachmentPtr->m_FramebufferAttachmentInfo.p_Size);
 			
 				if(m_AtmosphericScatteringInfoPtr)
-					m_CommandBuffers[i][m_CommandBufferIdx].cmdBindPipeline(m_GraphicsContextPtr->getAtmosphericScatteringPipeline());
+					cmd.cmdBindPipeline(m_GraphicsContextPtr->getAtmosphericScatteringPipeline());
 				else 
-					m_CommandBuffers[i][m_CommandBufferIdx].cmdBindPipeline(m_GraphicsContextPtr->getSkyBoxPipeline());
+					cmd.cmdBindPipeline(m_GraphicsContextPtr->getSkyBoxPipeline());
 
-				m_CommandBuffers[i][m_CommandBufferIdx].cmdBindDescriptorSets(p_MeshData.m_MTLDescriptors[0], 0);
+				cmd.cmdBindDescriptorSets(p_MeshData.m_MTLDescriptors[0], 0);
 			
 				if(m_AtmosphericScatteringInfoPtr)
 					vkCmdPushConstants(
-						m_CommandBuffers[i][m_CommandBufferIdx].m_CommandBuffer,
+						cmd.m_CommandBuffer,
 						m_GraphicsContextPtr->getAtmosphericScatteringPipeline().m_PipelineLayout,
 						getShaderStageVkH(ShaderStage::FragmentBit),
 						0, sizeof(AtmosphericScatteringInfo), m_AtmosphericScatteringInfoPtr
 					);
 
-				m_CommandBuffers[i][m_CommandBufferIdx].cmdBindVertexArray(p_MeshData.m_VertexArray);
-				m_CommandBuffers[i][m_CommandBufferIdx].cmdDrawIndexed(p_MeshData.m_SubMeshIndices[0].first, p_MeshData.m_SubMeshIndices[0].second);
+				cmd.cmdBindVertexArray(p_MeshData.m_VertexArray);
+				cmd.cmdDrawIndexed(p_MeshData.m_SubMeshIndices[0].first, p_MeshData.m_SubMeshIndices[0].second);
 			
-				m_CommandBuffers[i][m_CommandBufferIdx].cmdEnd();
+				cmd.cmdEnd();
 
-			}
 			p_MeshData.m_MTLDescriptors[0].copy(ShaderStage::VertexBit, p_Transform.model * m_ViewProjection, 0);
 			
-			m_CommandBufferIdx++;
+			m_CommandBufferIdx[m_CurrentFrame]++;
 		}
 		
 		void Renderer::setCmdDefaultViewport(CommandBuffer& p_CommandBuffer)
@@ -886,39 +880,38 @@ namespace vgl
 		
 		void Renderer::recordPrimaryCommandBuffers(uint32_t p_ImageIndex)
 		{
-			waitForFences();
-			m_PrimaryCommandBuffers[p_ImageIndex].cmdBegin();
+			m_PrimaryCommandBuffers[m_CurrentFrame].cmdBegin();
 
 			// Record all submitted renderpasses
 			for (auto& cmdFun : m_RecordPrimaryCmdBuffersFunPtrs)
-				(this->*cmdFun.pcmdRecFun)(cmdFun.ptr, m_PrimaryCommandBuffers[p_ImageIndex], p_ImageIndex);
+				(this->*cmdFun.pcmdRecFun)(cmdFun.ptr, m_PrimaryCommandBuffers[m_CurrentFrame], p_ImageIndex);
 
-			if (p_ImageIndex == m_ContextPtr->m_SwapchainImageCount - 1) {
+			//if (p_ImageIndex == m_ContextPtr->m_SwapchainImageCount - 1) {
 				m_RecordPrimaryCmdBuffersFunPtrs.clear();
-				m_CommandBufferIdx = 0;
-			}
+				m_CommandBufferIdx[m_CurrentFrame] = 0;
+			//}
 
 			// Default
-			m_PrimaryCommandBuffers[p_ImageIndex].cmdBeginRenderPass(
+			m_PrimaryCommandBuffers[m_CurrentFrame].cmdBeginRenderPass(
 				m_DefaultRenderPass,
 				SubpassContents::Secondary, 
 				m_WindowPtr->m_Swapchain.m_SwapchainFramebuffers[p_ImageIndex], 
 				m_Viewport.m_Size
 			);
-			m_PrimaryCommandBuffers[p_ImageIndex].cmdEndRenderPass();
+			m_PrimaryCommandBuffers[m_CurrentFrame].cmdEndRenderPass();
 
 #ifdef VGL_IMGUI_VK_IMPL
-			m_PrimaryCommandBuffers[p_ImageIndex].cmdBeginRenderPass(
+			m_PrimaryCommandBuffers[m_CurrentFrame].cmdBeginRenderPass(
 				*m_ImGuiContext.m_RenderPass, 
 				SubpassContents::Inline, 
 				m_ImGuiContext.m_Framebuffers[p_ImageIndex], 
 				m_Viewport.m_Size
 			);
 			//m_PrimaryCommandBuffers[p_ImageIndex].cmdExecuteCommands(m_ImGuiContext.m_CommandBuffer);
-			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_PrimaryCommandBuffers[p_ImageIndex].vkHandle());
-			m_PrimaryCommandBuffers[p_ImageIndex].cmdEndRenderPass();
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_PrimaryCommandBuffers[m_CurrentFrame].vkHandle());
+			m_PrimaryCommandBuffers[m_CurrentFrame].cmdEndRenderPass();
 #endif
-			m_PrimaryCommandBuffers[p_ImageIndex].cmdEnd();
+			m_PrimaryCommandBuffers[m_CurrentFrame].cmdEnd();
 		}
 
 		void Renderer::recordPCmdFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex)
@@ -931,7 +924,7 @@ namespace vgl
 				else{
 
 					framebufferPtr->cmdBeginRenderPass(p_PrimaryCommandBuffer, SubpassContents::Secondary, p_ImageIndex);
-					p_PrimaryCommandBuffer.cmdExecuteCommands(m_CommandBuffers[p_ImageIndex], m_CommandBufferIdx);
+					p_PrimaryCommandBuffer.cmdExecuteCommands(m_CommandBuffers[m_CurrentFrame], m_CommandBufferIdx[m_CurrentFrame]);
 					framebufferPtr->cmdEndRenderPass();
 				}
 			}
@@ -944,7 +937,7 @@ namespace vgl
 			if (shadowPtr)
 				if (!shadowPtr->m_CommandBuffers.empty()) {
 					shadowPtr->m_Attachment.cmdBeginRenderPass(p_PrimaryCommandBuffer, SubpassContents::Secondary, p_ImageIndex);
-					p_PrimaryCommandBuffer.cmdExecuteCommands(shadowPtr->m_CommandBuffers[p_ImageIndex], shadowPtr->m_CommandBufferIdx);
+					p_PrimaryCommandBuffer.cmdExecuteCommands(shadowPtr->m_CommandBuffers[m_CurrentFrame], shadowPtr->m_CommandBufferIdx[m_CurrentFrame]);
 					shadowPtr->m_Attachment.cmdEndRenderPass();
 				}
 		}
@@ -955,9 +948,36 @@ namespace vgl
 			if (shadowPtr)
 				if (!shadowPtr->m_CommandBuffers[0].empty()) {
 					shadowPtr->m_Attachment.cmdBeginRenderPass(p_PrimaryCommandBuffer, SubpassContents::Secondary, p_ImageIndex);
-					p_PrimaryCommandBuffer.cmdExecuteCommands(shadowPtr->m_CommandBuffers[p_ImageIndex], shadowPtr->m_CommandBufferIdx);
+					p_PrimaryCommandBuffer.cmdExecuteCommands(shadowPtr->m_CommandBuffers[m_CurrentFrame], shadowPtr->m_CommandBufferIdx[m_CurrentFrame]);
 					shadowPtr->m_Attachment.cmdEndRenderPass();
 				}
+		}
+
+		void Renderer::begin()
+		{
+			waitForFences();
+			VkResult result = vkAcquireNextImageKHR(m_ContextPtr->m_Device, m_WindowPtr->m_Swapchain.m_Swapchain, UINT64_MAX,
+				m_ImageAvailableSemaphore[m_CurrentFrame], VK_NULL_HANDLE, &m_ImageIndex);
+
+
+			//Check if a previous frame is using this image (i.e. there is its fence to wait on)
+			//if (m_ImagesInFlight[m_ImageIndex] != VK_NULL_HANDLE)
+			//	vkWaitForFences(m_ContextPtr->m_Device, 1, &m_ImagesInFlight[m_ImageIndex], VK_TRUE, UINT64_MAX);
+			//
+			//m_ImagesInFlight[m_ImageIndex] = m_InFlightFences[m_CurrentFrame];
+
+			// If swapchain needs recreation
+			if (result == VK_ERROR_OUT_OF_DATE_KHR)
+				recreateSwapChain();
+			else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+				VGL_INTERNAL_ERROR("[vk::Renderer]Failed to acquire swap chain image");
+
+			m_ContextPtr->m_ImageIndex = m_ImageIndex;
+			m_ContextPtr->m_CurrentFrame = m_CurrentFrame;
+		}
+		void Renderer::end()
+		{
+			GPUSubmit();
 		}
 
 		void Renderer::GPUSubmit()
@@ -971,30 +991,15 @@ namespace vgl
 			//m_ImGuiContext.genCmdBuffers();
 			m_ImGuiContext.updateViewports();
 #endif
-
-			for (size_t i = 0; i < m_PrimaryCommandBuffers.size(); i++) recordPrimaryCommandBuffers(i);
-
-			waitForFences();
-			VkResult result = vkAcquireNextImageKHR(m_ContextPtr->m_Device, m_WindowPtr->m_Swapchain.m_Swapchain, UINT64_MAX,
-				m_ImageAvailableSemaphore[m_CurrentFrame], VK_NULL_HANDLE, &m_ImageIndex);
-
-			//Check if a previous frame is using this image (i.e. there is its fence to wait on)
-			if (m_ImagesInFlight[m_ImageIndex] != VK_NULL_HANDLE)
-				vkWaitForFences(m_ContextPtr->m_Device, 1, &m_ImagesInFlight[m_ImageIndex], VK_TRUE, UINT64_MAX);
-
-			m_ImagesInFlight[m_ImageIndex] = m_InFlightFences[m_CurrentFrame];
-
-			// If swapchain needs recreation
-			if (result == VK_ERROR_OUT_OF_DATE_KHR)
-				recreateSwapChain();
-			else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-				VGL_INTERNAL_ERROR("[vk::Renderer]Failed to acquire swap chain image");
-
-			m_SubmitInfo.pWaitSemaphores = &m_ImageAvailableSemaphore[m_CurrentFrame];
-			m_SubmitInfo.pCommandBuffers = &m_PrimaryCommandBuffers[m_ImageIndex].m_CommandBuffer;
-			m_SubmitInfo.pSignalSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
+			//for (size_t i = 0; i < m_PrimaryCommandBuffers.size(); i++)
 
 			vkResetFences(m_ContextPtr->m_Device, 1, &m_InFlightFences[m_CurrentFrame]);
+
+			recordPrimaryCommandBuffers(m_ImageIndex);	
+
+			m_SubmitInfo.pWaitSemaphores = &m_ImageAvailableSemaphore[m_CurrentFrame];
+			m_SubmitInfo.pCommandBuffers = &m_PrimaryCommandBuffers[m_CurrentFrame].m_CommandBuffer;
+			m_SubmitInfo.pSignalSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
 
 			// Submit the commands to the graphics queue
 			if (vkQueueSubmit(m_ContextPtr->m_GraphicsQueue, 1, &m_SubmitInfo, m_InFlightFences[m_CurrentFrame]) != VK_SUCCESS)
@@ -1003,7 +1008,7 @@ namespace vgl
 			m_PresentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
 			m_PresentInfo.pImageIndices = &m_ImageIndex;
 
-			result = vkQueuePresentKHR(m_ContextPtr->m_PresentQueue, &m_PresentInfo);
+			VkResult result = vkQueuePresentKHR(m_ContextPtr->m_PresentQueue, &m_PresentInfo);
 
 			// If swapchain needs recreation
 			if (result == VK_ERROR_OUT_OF_DATE_KHR || m_WindowPtr->windowResized())
@@ -1020,7 +1025,7 @@ namespace vgl
 			m_ContextPtr->m_ImageIndex = m_ImageIndex;
 			m_ContextPtr->m_CurrentFrame = m_CurrentFrame;
 
-			vkWaitForFences(m_ContextPtr->m_Device, 1, &m_ImagesInFlight[m_ImageIndex], VK_TRUE, UINT64_MAX);
+			//vkWaitForFences(m_ContextPtr->m_Device, 1, &m_ImagesInFlight[m_ImageIndex], VK_TRUE, UINT64_MAX);
 		}
 
 		void Renderer::createDefaultRenderPass()

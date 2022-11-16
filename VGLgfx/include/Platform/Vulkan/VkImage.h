@@ -8,21 +8,42 @@ namespace vgl
 {
 	namespace vk
 	{
+		namespace {
+			VkFormat getImageFormat(ColorSpace p_ColorSpace, Channels p_Channels)
+			{
+				if (p_ColorSpace == ColorSpace::RGB) {
+					switch (p_Channels) {
+						case Channels::R: return VK_FORMAT_R8_UNORM;
+						case Channels::RG: return VK_FORMAT_R8G8_UNORM;
+						case Channels::RGB: return VK_FORMAT_R8G8B8_UNORM;
+						case Channels::RGBA: return VK_FORMAT_R8G8B8A8_UNORM;
+					}
+				}
+				else if (p_ColorSpace == ColorSpace::SRGB) {
+					switch (p_Channels) {
+					case Channels::R: return VK_FORMAT_R8_SRGB;
+					case Channels::RG: return VK_FORMAT_R8G8_SRGB;
+					case Channels::RGB: return VK_FORMAT_R8G8B8_SRGB;
+					case Channels::RGBA: return VK_FORMAT_R8G8B8A8_SRGB;
+					}
+				}
+			}
+		}
 		class Image
 		{
 		public:
 			Image();
-			Image(Vector2i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
-			Image(Vector3i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
+			Image(Vector2i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
+			Image(Vector3i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
 
 			// Create 2D image with image data
-			void create(Vector2i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode,
+			void create(Vector2i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode,
 				bool p_CalcMipLevels = false, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
 			// Create 3D Image with image data
-			void create(Vector3i p_Size, unsigned char* p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode,
+			void create(Vector3i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode,
 				bool p_CalcMipLevels = false, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
 			// Reserved for font and text rendering
-			void create(Vector2i p_Size, std::vector<std::pair<unsigned char*, uint32_t>>& p_ImageData, Channels p_Channels, SamplerMode p_SamplerMode,
+			void create(Vector2i p_Size, std::vector<std::pair<unsigned char*, uint32_t>>& p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode,
 				Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
 
 			void init();
@@ -72,6 +93,7 @@ namespace vgl
 			VkBuffer m_StagingBuffer;
 			void* m_Mapped;
 
+			VkFormat		m_ImageFormat;
 			VkImage			m_VkImageHandle;
 			VmaAllocation	m_ImageAllocation;
 			VkImageView		m_ImageView;
@@ -84,10 +106,8 @@ namespace vgl
 
 			VkDescriptorSet m_ImGuiDescriptorSet;
 
-			// Channels used by the image
-			Channels m_CurrentChannels;
-			// Corresponding formats for number of channels, used as a lookup
-			std::vector<std::pair<Channels, unsigned int>> m_Channels;
+			ColorSpace m_ColorSpace;
+			Channels m_Channels;
 
 		};
 
@@ -133,26 +153,57 @@ namespace vgl
 			Filter m_MagFilter;
 			Filter m_MinFilter;
 
+			VkFormat		m_ImageFormat;
 			VkImage			m_VkImageHandle;
 			VmaAllocation	m_ImageAllocation;
 			VkImageView		m_ImageView;
 			VkSampler		m_Sampler;
 			VkImageLayout	m_Layout;
 
-			Channels m_CurrentChannels;
-			std::vector<std::pair<Channels, unsigned int>> m_Channels;
+			ColorSpace m_ColorSpace;
+			Channels m_Channels;
 		};
 
 		class ImageLoader
 		{
 		public:
 
-			static bool getImageFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode = SamplerMode::Repeat, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
-			static bool getImageFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode, const uint32_t p_MipLevels);
-			static unsigned char* getImageDataFromPath(Image& p_Image, const char* p_Path, SamplerMode p_SamplerMode = SamplerMode::Repeat, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
+			static bool getImageFromPath(
+				Image& p_Image,
+				const char* p_Path, 
+				ColorSpace p_ColorSpace,
+				SamplerMode p_SamplerMode = SamplerMode::Repeat,
+				Filter p_MagFilter = Filter::Linear,
+				Filter p_MinFilter = Filter::Linear
+			);
+			static bool getImageFromPath(
+				Image& p_Image,
+				const char* p_Path,
+				ColorSpace p_ColorSpace,
+				SamplerMode p_SamplerMode,
+				const uint32_t p_MipLevels
+			);
+			static unsigned char* getImageDataFromPath(
+				Image& p_Image,
+				const char* p_Path,
+				ColorSpace p_ColorSpace,
+				SamplerMode p_SamplerMode = SamplerMode::Repeat,
+				Filter p_MagFilter = Filter::Linear,
+				Filter p_MinFilter = Filter::Linear
+			);
 
-			static bool getImageFromPath(ImageCube& p_Image, std::initializer_list<std::pair<const char*, Vector3f>> p_Path, SamplerMode p_SamplerMode);
-			static bool getImageFromPath(ImageCube& p_Image, std::vector<std::pair<const char*, Vector3f>> p_Path, SamplerMode p_SamplerMode);
+			static bool getImageFromPath(
+				ImageCube& p_Image,
+				std::initializer_list<std::pair<const char*, Vector3f>> p_Path,
+				ColorSpace p_ColorSpace,
+				SamplerMode p_SamplerMode
+			);
+			static bool getImageFromPath(
+				ImageCube& p_Image,
+				std::vector<std::pair<const char*, Vector3f>> p_Path,
+				ColorSpace p_ColorSpace,
+				SamplerMode p_SamplerMode
+			);
 
 		private:
 

@@ -18,7 +18,7 @@ public:
 		mesh->mesh = new vgl::MeshData();
 
 		vgl::OBJ_Loader::loadModel("../../VGLgfxEditor/projects/Global_Assets/3D_Models/Sponza/", "sponza.obj", mesh->mesh, false);
-		mesh->mesh->getMaterial(19).config.m_Roughness = 0.1f;
+		mesh->mesh->getMaterial(19).config.m_Roughness = 0.07f;
 
 		auto point_light = new vgl::PointLight3DComponent;
 		point_light->Color = { 0.4f, 0.1f, 1.0f };
@@ -32,7 +32,7 @@ public:
 
 		auto shadow_map = new vgl::DShadowMapComponent;
 		shadow_map->ShadowMap.m_Projection = Matrix4f::orthoRH_ZO(-3000, 3000, -3000, 3000, 1, 4800);
-		shadow_map->ShadowMap.create({ int32_t(4096 * 1.5), int32_t(4096 * 1.5) }, vgl::ImageFormat::D32SF);
+		shadow_map->ShadowMap.create({ int32_t(4096), int32_t(4096) }, vgl::ImageFormat::D32SF);
 		
 		auto pshadow_map = new vgl::PShadowMapComponent;
 		pshadow_map->ShadowMap.m_Position = &point_light->Position;
@@ -52,7 +52,7 @@ public:
 		//vgl::GraphicsContextSingleton::getInstance().generateAtmosphericScatteringCubeMap({ 1024, 1024 }, m_Scene.getComponent<SkyboxComponent>(m_SkyBoxEntity)->AtmosphericScatteringInfo);
 
 		m_RenderPipeline.setup(m_RendererPtr, m_WindowPtr, &m_Scene);
-		vgl::ImageLoader::getImageFromPath(img, "data/CMakeResources/Vulkan.png");
+		vgl::ImageLoader::getImageFromPath(img, "data/CMakeResources/Vulkan.png", vgl::ColorSpace::RGB);
 	}
 	void onDetach() {}
 	void onUpdate(vgl::Renderer& p_Renderer) {
@@ -481,7 +481,7 @@ private:
 int main()
 {
 	vgl::AppConfig config;
-	config.DefaultWindowSize = { 1200, 700 };
+	config.DefaultWindowSize = { 1280, 720 };
 	config.MSAASamples = 8;
 	config.Title = "VGL";
 	config.ImGui_Font_Path = "../data/Fonts/OpenSans-Regular.ttf";

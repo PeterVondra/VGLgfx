@@ -319,25 +319,21 @@ namespace vgl
 			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 			pipelineLayoutInfo.setLayoutCount = p_PipelineInfo.p_DescriptorSetLayouts.size();
 
-			std::vector<VkDescriptorSetLayout> desc_layouts(p_PipelineInfo.p_DescriptorSetLayouts.begin(), p_PipelineInfo.p_DescriptorSetLayouts.end());
-			if (p_PipelineInfo.p_DescriptorSetLayouts.size() > 0) {
-				pipelineLayoutInfo.pSetLayouts = desc_layouts.data();
-			}
+			if (p_PipelineInfo.p_DescriptorSetLayouts.size() > 0)
+				pipelineLayoutInfo.pSetLayouts = p_PipelineInfo.p_DescriptorSetLayouts.data();
 			else pipelineLayoutInfo.setLayoutCount = 0;
 			pipelineLayoutInfo.pushConstantRangeCount = 0;
 			pipelineLayoutInfo.pPushConstantRanges = nullptr;
-
+			
 			if (p_PipelineInfo.p_UsePushConstants){
 				pipelineLayoutInfo.pushConstantRangeCount = 1;
 				pipelineLayoutInfo.pPushConstantRanges = &pcRange;
 			}
 
-			{
-				VkResult result = vkCreatePipelineLayout(m_ContextPtr->m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout);
-				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::g_Pipeline]Failed to create pipeline layout, VkResult: %i", (uint64_t)result);
+			VkResult result = vkCreatePipelineLayout(m_ContextPtr->m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout);
+			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::g_Pipeline]Failed to create pipeline layout, VkResult: %i", (uint64_t)result);
 
-				if (result != VK_SUCCESS) return false;
-			}
+			if (result != VK_SUCCESS) return false;
 
 			VkGraphicsPipelineCreateInfo pipelineInfo = {};
 			pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -359,7 +355,7 @@ namespace vgl
 
 			VGL_INTERNAL_ASSERT_ERROR(p_PipelineInfo.p_RenderPass != nullptr, "[vk::g_Pipeline]Failed to create graphics pipeline, p_RenderPass == nullptr");
 			if (p_PipelineInfo.p_RenderPass == nullptr) return false;
-			VkResult result = vkCreateGraphicsPipelines(m_ContextPtr->m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline);
+			result = vkCreateGraphicsPipelines(m_ContextPtr->m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline);
 			VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::g_Pipeline]Failed to create graphics pipeline, VkResult: %i", (uint64_t)result);
 			if (result != VK_SUCCESS) return false;
 

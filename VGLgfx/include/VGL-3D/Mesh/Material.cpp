@@ -4,11 +4,6 @@ namespace vgl
 {
 	Material::Material()
 	{
-			config.m_Albedo = Vector3f(1.0f);
-			config.m_Metallic = 1.0f;
-			config.m_Roughness = 1.0f;
-			config.m_Ambient = 1.0f;
-			
 			m_PrevConfig.m_Albedo = Vector3f(0.0f);
 			m_PrevConfig.m_Metallic = 0.0f;
 			m_PrevConfig.m_Roughness = 0.0f;

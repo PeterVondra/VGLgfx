@@ -45,7 +45,7 @@ namespace vgl
 				if (character.size != Vector2i(0))
 				{
 					p_Font.glyphs.push_back(Image());
-					p_Font.glyphs[p_Font.glyphs.size() - 1].create(character.size, p_Font.face->glyph->bitmap.buffer, Channels::R, SamplerMode::ClampToBorder);
+					p_Font.glyphs[p_Font.glyphs.size() - 1].create(character.size, p_Font.face->glyph->bitmap.buffer, ColorSpace::RGB, Channels::R, SamplerMode::ClampToBorder);
 
 					p_Font.characters.emplace_back((char)c, character);
 				}

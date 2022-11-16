@@ -33,8 +33,6 @@ layout(binding = 1)uniform UniformBufferObject
 {
  vec4 albedo;
  vec4 mrao;
- float pdmDepth;
- float lumaThreshold;
 } ubo;
 
 
@@ -89,7 +87,7 @@ void main()
 
 
 
- out_MRAA . g = texture(roughnessMap, uv). r * ubo . mrao . g;
+ out_MRAA . g = min(texture(roughnessMap, uv). r * ubo . mrao . g, 1.0f);
 
 
 

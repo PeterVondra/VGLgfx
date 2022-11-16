@@ -1,3 +1,7 @@
+#include "..\include\RenderPipelines.h"
+#include "..\include\RenderPipelines.h"
+#include "..\include\RenderPipelines.h"
+#include "..\include\RenderPipelines.h"
 #include "RenderPipelines.h"
 
 namespace vgl
@@ -476,5 +480,17 @@ namespace vgl
 	{
 		// TODO: insert return statement here
 		return vk::FramebufferAttachment();
+	}
+	void RenderPipeline_Deferred::setupGBuffer()
+	{
+	}
+	void RenderPipeline_Deferred::setupSSAOBuffers()
+	{
+	}
+	void RenderPipeline_Deferred::setupLightPassBuffer()
+	{
+	}
+	void RenderPipeline_Deferred::setupPostProcessBuffers()
+	{
 	}
 }

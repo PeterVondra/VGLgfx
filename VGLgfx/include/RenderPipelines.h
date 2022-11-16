@@ -26,7 +26,9 @@ namespace vgl
 			FramebufferAttachment m_GBuffer;
 			// Lighting pass - no post-process
 			FramebufferAttachment m_LightPassFramebuffer;
-			// Post-Process framebuffer
+			// Post-Process framebuffers
+			FramebufferAttachment m_DOFFramebuffer;
+			FramebufferAttachment m_FXAAFramebuffer;
 			FramebufferAttachment m_HDRFramebuffer;
 
 			HDRFXAAInfo m_HDRInfo; // HDR effects
@@ -34,14 +36,13 @@ namespace vgl
 			Shader m_GBufferLightPassShader;
 			Shader m_SSAOShader;
 			Shader m_SSAOBlurShader;
+			Shader m_DOFShader;
+			Shader m_FXAAShader;
 			Shader m_SSRShader;
 
 			// SSAO Framebuffer
 			FramebufferAttachment m_SSAOFramebuffer;
 			FramebufferAttachment m_SSAOBlurFramebuffer;
-
-			std::vector<FramebufferAttachment> m_GBlurBloomFramebuffers;
-			FramebufferAttachment& getGBloomFramebuffer(Vector2i p_Size);
 
 			// SSR
 			FramebufferAttachment m_SSRFramebuffer;
@@ -60,10 +61,22 @@ namespace vgl
 			Image SSAO_NoiseImage;
 			uint32_t Sample_Count = 64;
 			float SSAO_Bias = 2.5f;
-			float SSAO_Radius = 40.0f;
-			float SSAO_Intensity = 5.0f;
+			float SSAO_Radius = 50.0f;
+			float SSAO_Intensity = 10.0f;
 
 		private:
+			void setupGBuffer();
+			void setupSSAOBuffers();
+			void setupLightPassBuffer();
+			void setupSSRBuffer();
+			void setupPostProcessBuffers();
+
+			void transferGBufferData();
+			void transferSSAOData();
+			void transferSSRData();
+			void transferLightPassData();
+			void transferPostProcessData();
+
 			Renderer* m_RendererPtr = nullptr;
 			Window* m_WindowPtr = nullptr;
 			Scene* m_ScenePtr = nullptr;

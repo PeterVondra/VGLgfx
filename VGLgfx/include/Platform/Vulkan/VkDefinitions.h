@@ -113,13 +113,17 @@ namespace vgl
 		Nearest = VK_FILTER_NEAREST,
 		Linear = VK_FILTER_LINEAR
 	};
+	enum class ColorSpace
+	{
+		RGB = 0,
+		SRGB = 1
+	};
 	enum class Channels
 	{
-		None = 0,
-		R = VK_FORMAT_R8_UNORM,
-		RG = VK_FORMAT_R8G8_UNORM,
-		RGB = VK_FORMAT_R8G8B8_UNORM,
-		RGBA = VK_FORMAT_R8G8B8A8_UNORM
+		R = 1,
+		RG = 2,
+		RGB = 3,
+		RGBA = 4
 	};
 
 	enum class AttachmentType

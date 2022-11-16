@@ -32,11 +32,6 @@ namespace vgl
 			m_PShadowMapShader.setShader("data/Shaders/SMP3D/vert.spv", "data/Shaders/SMP3D/frag.spv");
 			m_PShadowMapAlbedoShader.setShader("data/Shaders/SMP3D/Alpha/vert.spv", "data/Shaders/SMP3D/Alpha/frag.spv");
 
-			//m_DShadowMapDescriptorSetLayout = ContextSingleton::getInstance().m_DescriptorSetLayoutCache.createLayout({
-			//		DLC::Binding(DLC::DescriptorType::Uniform_Buffer, ShaderStage::VertexBit, 0)
-			//	}
-			//);
-
 			m_ShadowMapAlbedoDescriptorSetLayout = ContextSingleton::getInstance().m_DescriptorSetLayoutCache.createLayout({
 				DLC::Binding(DLC::DescriptorType::Combined_Image_Sampler, ShaderStage::FragmentBit, 0)
 				}

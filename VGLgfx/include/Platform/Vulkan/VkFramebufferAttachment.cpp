@@ -148,7 +148,7 @@ namespace vgl
 		}
 		std::vector<ImageAttachment>& FramebufferAttachment::getCurrentImageAttachments()
 		{
-			return m_ImageAttachments[m_ContextPtr->m_ImageIndex];
+			return m_ImageAttachments[m_ContextPtr->m_CurrentFrame];
 		}
 		const std::vector<VkCommandBufferInheritanceInfo>& FramebufferAttachment::getInheritanceInfo()
 		{

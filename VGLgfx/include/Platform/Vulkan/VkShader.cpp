@@ -10,9 +10,9 @@ namespace vgl
 {
 	namespace vk
 	{
-		Shader::Shader()
+		Shader::Shader() : m_ContextPtr(&ContextSingleton::getInstance())
 		{
-			m_ContextPtr = &ContextSingleton::getInstance();
+			
 		}
 
 		std::vector<char> Shader::readFile(const std::string& filename)
@@ -32,14 +32,14 @@ namespace vgl
 
 			return buffer;
 		}
-		Shader::Shader(std::string p_VertexShader, std::string p_FragmentShader, std::string p_GeometryShader)
+		Shader::Shader(std::string p_VertexShader, std::string p_FragmentShader, std::string p_GeometryShader) : m_ContextPtr(&ContextSingleton::getInstance())
 		{
-			m_ContextPtr = &ContextSingleton::getInstance();
+
 		}
 
-		Shader::Shader(std::string p_VertexShader, std::string p_FragmentShader)
+		Shader::Shader(std::string p_VertexShader, std::string p_FragmentShader) : m_ContextPtr(&ContextSingleton::getInstance())
 		{
-			m_ContextPtr = &ContextSingleton::getInstance();
+
 		}
 		Shader::~Shader()
 		{

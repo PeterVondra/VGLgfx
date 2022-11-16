@@ -169,9 +169,6 @@ float vignette()
 }
 
 // Tonemapping
-vec3 linearToneMapping(vec3 p_Color, float p_Exposure);
-vec3 reinhardExtendedLuminance(vec3 color, float max_white_l);
-vec3 HableToneMapping(vec3 color, float p_Exposure);
 vec3 ACESFitted(vec3 color);
 vec3 ACEST2(vec3 x);
 vec3 LinearTosRGB(vec3 color);
@@ -326,7 +323,7 @@ void main()
 	
 	exposure = abs(sbo.prevExposure + (exposure - sbo.prevExposure)*time_c);
 	
-	exposure = max(0.2, exposure);
+	exposure = max(0.7, exposure);
 
 	//exposure = pushConstants.exposure * mix(sbo.prevExposure, 0.5/avgLuma, 0.02);
 	
@@ -335,7 +332,7 @@ void main()
     vec3 result = vec3(1.0) - exp(-color * exposure);
 	
     // also gamma correct while we're at it       
-    result = pow(reinhardExtendedLuminance(result, 10.0f), vec3(1.0 / gamma));
+    result = pow(LinearTosRGB(ACESFitted(result)), vec3(1.0 / gamma));
     outColor = vec4(color, 1.0);// * ditherPattern;
 
 	if(ubo.vignetting > 0)
@@ -344,30 +341,11 @@ void main()
 	outColor += vec4(filmicgrain(outColor), 1.0f);
 }
 
-vec3 linearToneMapping(vec3 p_Color, float p_Exposure)
+vec3 linearToneMapping(vec3 p_Color, p_Exposure)
 {
-	p_Color = vec3(1.0) - exp(-p_Color * p_Exposure);
-	p_Color = pow(p_Color, vec3(1. / pushConstants.gamma));
-	return p_Color;
-}
-
-float luminance(vec3 color)
-{
-    return dot(color, vec3(0.2126f, 0.7152f, 0.0722f));
-}
-
-vec3 convert_luminance(vec3 color_in, float luminance_out)
-{
-    float luminance_in = luminance(color_in);
-    return color_in * (luminance_out / luminance_in);
-}
-
-vec3 reinhardExtendedLuminance(vec3 color, float max_white_l)
-{
-    float luminance_old = luminance(color);
-    float numerator = luminance_old * (1.0f + (luminance_old / (max_white_l * max_white_l)));
-    float luminance_new = numerator / (1.0f + luminance_old);
-    return convert_luminance(color, luminance_new);
+	color = vec3(1.0) - exp(-color * exposure);
+	color = pow(color, vec3(1. / ubo.gamma));
+	return color;
 }
 
 // sRGB => XYZ => D65_2_D60 => AP1 => RRT_SAT
@@ -409,16 +387,16 @@ vec3 ACESFitted(vec3 color)
 }
 
 // Approximated ACES
-//vec3 ACEST2(vec3 x) {
-//  const float a = 2.51;
-//  const float b = 0.03;
-//  const float c = 2.43;
-//  const float d = 0.59;
-//  const float e = 0.14;
-//  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
-//}
-//
-vec3 HablePartial(vec3 color)
+vec3 ACEST2(vec3 x) {
+  const float a = 2.51;
+  const float b = 0.03;
+  const float c = 2.43;
+  const float d = 0.59;
+  const float e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+HablePartial(vec3 color)
 {
 	float A = 0.15f;
     float B = 0.50f;
@@ -428,9 +406,9 @@ vec3 HablePartial(vec3 color)
     float F = 0.30f;
     return ((color*(A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-E/F;
 }
-vec3 HableToneMapping(vec3 p_Color, float p_Exposure)
+HableToneMapping(vec3 color, float p_Exposure)
 {
-    vec3 curr = HablePartial(p_Color * p_Exposure);
+    vec3 curr = HablePartial(v * p_Exposure);
 
     vec3 W = vec3(11.2f);
     vec3 white_scale = vec3(1.0f) / HablePartial(W);
@@ -440,7 +418,7 @@ vec3 HableToneMapping(vec3 p_Color, float p_Exposure)
 vec3 LinearTosRGB(vec3 color)
 {
     vec3 x = color * 12.92f;
-    vec3 y = 1.055f * pow(clamp(color, 0.0f, 1.0f), vec3(1.0f / pushConstants.gamma)) - 0.055f;
+    vec3 y = 1.055f * pow(clamp(color, 0.0f, 1.0f), vec3(1.0f / ubo.gamma)) - 0.055f;
 
     vec3 clr = color;
     clr.r = color.r < 0.0031308f ? x.r : y.r;
@@ -453,7 +431,7 @@ vec3 LinearTosRGB(vec3 color)
 vec3 SRGBToLinear(vec3 color)
 {
     vec3 x = color / 12.92f;
-    vec3 y = pow(max((color + 0.055f) / 1.055f, 0.0f), vec3(pushConstants.gamma));
+    vec3 y = pow(max((color + 0.055f) / 1.055f, 0.0f), vec3(ubo.gamma));
 
     vec3 clr = color;
     clr.r = color.r <= 0.04045f ? x.r : y.r;

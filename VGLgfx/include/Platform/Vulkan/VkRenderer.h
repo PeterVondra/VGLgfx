@@ -42,7 +42,7 @@ namespace vgl
 
 			Context* m_ContextPtr;
 
-			uint32_t m_CommandBufferIdx;
+			uint32_t m_CommandBufferIdx[MAX_FRAMES_IN_FLIGHT] = { 0,0 };
 			std::vector<std::vector<CommandBuffer>> m_CommandBuffers; // Per swapchain image
 		};
 		
@@ -76,7 +76,7 @@ namespace vgl
 
 			Descriptor m_TransformDescriptor;
 
-			uint32_t m_CommandBufferIdx;
+			uint32_t m_CommandBufferIdx[MAX_FRAMES_IN_FLIGHT] = { 0, 0 };
 			std::vector<std::vector<CommandBuffer>> m_CommandBuffers; // Per swapchain image and per face
 		};
 
@@ -89,13 +89,8 @@ namespace vgl
 				Renderer(Window& p_Window);
 				Renderer(Window& p_Window, float p_RenderResolutionScale);
 
-				void begin(){
-					m_ContextPtr->m_ImageIndex = m_ImageIndex;
-					m_ContextPtr->m_CurrentFrame = m_CurrentFrame;
-				}
-				void end() {
-					GPUSubmit();
-				}
+				void begin();
+				void end();
 				void beginRenderPass(RenderInfo& p_RenderInfo);
 				// If not called, will use default frambuffer/swapchain
 				void beginRenderPass(RenderInfo& p_RenderInfo, FramebufferAttachment& p_FramebufferAttachment);
@@ -201,7 +196,7 @@ namespace vgl
 			private:
 				// Main commandbuffers used for rendering, these are used when calling the submit() functions
 				std::vector<std::vector<CommandBuffer>> m_CommandBuffers;
-				uint32_t m_CommandBufferIdx = 0;
+				uint32_t m_CommandBufferIdx[MAX_FRAMES_IN_FLIGHT] = {0, 0};
 
 				std::vector<VkCommandBufferInheritanceInfo> m_InheritanceInfo;
 

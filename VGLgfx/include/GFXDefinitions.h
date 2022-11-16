@@ -8,15 +8,22 @@ namespace vgl
 	struct HDRFXAAInfo {
 		//bool autoExposure;
 		float deltatime = 0.0f;
-        float gamma = 0.920f;
-		float exposure = 1.605f;
+
+        float gamma = 2.2f;
+		float exposure = 1.525f;
 		float exposure_adapt_rate = 0.001;
+
 		float FXAA_Span_Max = 16.0f;
 		float FXAA_REDUCTION_MIN = 1.0f / 128.0f;
 		float FXAA_REDUCTION_BIAS = 1.0f / 8.0f;
 
 		float filmicScale = 32;
-		float filmicStrength = 31;
+		float filmicStrength = 10;
+
+		int vignetting = 1; //use optical lens vignetting?
+		float vignout = 0.5; //vignetting outer border
+		float vignin = 0.0; //vignetting inner border
+		float vignfade = 22.0; //f-stops till vignete fades
 	};
 
 	// Atmosperic scattering
@@ -49,7 +56,6 @@ namespace vgl
 		int autofocus = 1;
 		int noise = 1; //use noise instead of pattern for sample dithering
 		int showFocus = 0; //show debug focus point and focal range (red = focal point, green = focal range)
-		int vignetting = 1; //use optical lens vignetting?
 		float focalDepth = 1.5;
 		float focalLength = 2.79f;
 		float fstop = 7.7f;
@@ -57,10 +63,6 @@ namespace vgl
 		Vector2f focus = { 0.5, 0.5 }; // Focus point
 
 		float namount = 0.0001; //dither amount
-
-		float vignout = 0.5; //vignetting outer border
-		float vignin = 0.0; //vignetting inner border
-		float vignfade = 22.0; //f-stops till vignete fades
 
 		int samples = 4;
 		int rings = 4;
