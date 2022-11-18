@@ -14,7 +14,7 @@ layout(location = 0) out vec4 outColor;
 layout(binding = 1) uniform UniformBufferObject
 {
 	int autofocus;
-	int	noise; //use noise instead of pattern for sample dithering
+	int noise; //use noise instead of pattern for sample dithering
 	int showFocus; //show debug focus point and focal range (red = focal point, green = focal range)
 	float focalDepth;
 	float focalLength;
@@ -157,7 +157,6 @@ void main()
 		float c = (-a-ndofstart)/ndofdist; //near Dof
 		blur = (a>0.0)?b:c;
 	}
-	
 	else
 	{
 		float f = ubo.focalLength; //focal length in mm
@@ -207,7 +206,7 @@ void main()
 			}
 		}
 		col /= s; //divide by sample count
-	}
+	}else col = texture(imageHDR, UV.xy).rgb;
 	
 	if (ubo.showFocus > 0)
 		col = debugFocus(col, blur, depth);

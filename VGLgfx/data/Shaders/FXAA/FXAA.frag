@@ -19,6 +19,9 @@ layout (push_constant) uniform PushConstants {
 
 void main()
 {   
+	vec3 color = vec3(0.0f);
+	float depth = texture(imageHDR,UV.xy).w;
+
 	// FXAA
 	vec2 texSize = 1.0f/textureSize(imageHDR, 0);
 	
@@ -55,5 +58,5 @@ void main()
 	if(lumaResult2 < lumaMin || lumaResult2 > lumaMax)
 	    color += result1;
 
-	outColor = vec4(color, 1.0f);
+	outColor = vec4(color, depth);
 }

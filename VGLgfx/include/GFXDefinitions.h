@@ -5,25 +5,29 @@
 namespace vgl
 {
     // For HDR and FXAA
-	struct HDRFXAAInfo {
+	struct HDRInfo {
 		//bool autoExposure;
 		float deltatime = 0.0f;
 
-        float gamma = 2.2f;
-		float exposure = 1.525f;
-		float exposure_adapt_rate = 0.001;
+        alignas(4) float gamma = 2.2f;
+		alignas(4) float exposure = 1.0f;
+		alignas(4) float exposure_adapt_rate = 0.025;
 
-		float FXAA_Span_Max = 16.0f;
-		float FXAA_REDUCTION_MIN = 1.0f / 128.0f;
-		float FXAA_REDUCTION_BIAS = 1.0f / 8.0f;
+		alignas(4) float filmicScale = 32;
+		alignas(4) float filmicStrength = 10;
 
-		float filmicScale = 32;
-		float filmicStrength = 10;
+		alignas(4) int vignetting = 1; //use optical lens vignetting?
+		alignas(4) float vignout = 0.5; //vignetting outer border
+		alignas(4) float vignin = 0.0; //vignetting inner border
+		alignas(4) float vignfade = 22.0; //f-stops till vignete fades
+		alignas(4) float fstop = 7.7f;
+	};
 
-		int vignetting = 1; //use optical lens vignetting?
-		float vignout = 0.5; //vignetting outer border
-		float vignin = 0.0; //vignetting inner border
-		float vignfade = 22.0; //f-stops till vignete fades
+	struct FXAAInfo
+	{
+		alignas(4) float FXAA_Span_Max = 16.0f;
+		alignas(4) float FXAA_REDUCTION_MIN = 1.0f / 128.0f;
+		alignas(4) float FXAA_REDUCTION_BIAS = 1.0f / 8.0f;
 	};
 
 	// Atmosperic scattering
@@ -45,32 +49,32 @@ namespace vgl
 	// Bloom effect
 	struct BloomInfo
 	{
-		float lumaThreshold = 2.532f;
-		float BlurScale = 3.0f;
-		int samples = 16;
+		alignas(4) float lumaThreshold = 2.532f;
+		alignas(4) float BlurScale = 3.0f;
+		alignas(4) int samples = 16;
 	};
 
 	// Depth of field effect
 	struct DOFInfo
 	{
 		int autofocus = 1;
-		int noise = 1; //use noise instead of pattern for sample dithering
-		int showFocus = 0; //show debug focus point and focal range (red = focal point, green = focal range)
-		float focalDepth = 1.5;
-		float focalLength = 2.79f;
-		float fstop = 7.7f;
-		float maxblur = 2.3f;
-		Vector2f focus = { 0.5, 0.5 }; // Focus point
+		alignas(4) int noise = 1; //use noise instead of pattern for sample dithering
+		alignas(4) int showFocus = 0; //show debug focus point and focal range (red = focal point, green = focal range)
+		alignas(4) float focalDepth = 1.5;
+		alignas(4) float focalLength = 2.79f;
+		alignas(4) float fstop = 7.7f;
+		alignas(4) float maxblur = 2.3f;
+		alignas(8) Vector2f focus = { 0.5, 0.5 }; // Focus point
 
-		float namount = 0.0001; //dither amount
+		alignas(4) float namount = 0.0001; //dither amount
 
-		int samples = 4;
-		int rings = 4;
-		float CoC = 0.09;//circle of confusion size in mm (35mm film = 0.03mm)
-		float threshold = 0.8; //highlight threshold;
-		float gain = 0.1f; //highlight gain;
-
-		float bias = 0.5f; //bokeh edge bias
-		float fringe = 0.7f; //bokeh chromatic aberration/fringing
+		alignas(4) int samples = 4;
+		alignas(4) int rings = 4;
+		alignas(4) float CoC = 0.09;//circle of confusion size in mm (35mm film = 0.03mm)
+		alignas(4) float threshold = 0.8; //highlight threshold;
+		alignas(4) float gain = 0.1f; //highlight gain;
+		
+		alignas(4) float bias = 0.5f; //bokeh edge bias
+		alignas(4) float fringe = 0.7f; //bokeh chromatic aberration/fringing
 	};
 }

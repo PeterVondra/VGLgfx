@@ -17,35 +17,22 @@ namespace vgl
 		m_WindowPtr = p_Window;
 		m_ScenePtr = p_Scene;
 
-		setupGBuffer();
 
 		//vk::GCS::getInstance().createShapesPipelines(*m_GBuffer.m_FramebufferAttachmentInfo.p_GraphicsPipelineInfo.p_RenderPass);
-		vk::GCS::getInstance().createSkyboxPipelines(*m_GBuffer.m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_RenderPass);
 
+		m_SSAOShader.setShader("data/Shaders/SSAO/vert.spv", "data/Shaders/SSAO/frag.spv");
+		m_SSAOBlurShader.setShader("data/Shaders/SSAO/Blur/vert.spv", "data/Shaders/SSAO/Blur/frag.spv");
+		m_HDRShader.setShader("data/Shaders/HDR/vert.spv", "data/Shaders/HDR/frag.spv");
+		m_DOFShader.setShader("data/Shaders/BokehDOF/vert.spv", "data/Shaders/BokehDOF/frag.spv");
+		m_FXAAShader.setShader("data/Shaders/FXAA/vert.spv", "data/Shaders/FXAA/frag.spv");
+
+		setupGBuffer();
 		setupSSAOBuffers();
 		setupLightPassBuffer();
 		setupSSRBuffer();
 		setupPostProcessBuffers();
 
-		/////////////////////////////////////////////////////////////////////////////////////////////
-		//				Geometry Buffer
-		/////////////////////////////////////////////////////////////////////////////////////////////
-		m_DOFFramebuffer.m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
-		m_DOFFramebuffer.m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_CreateGraphicsPipeline = false;
-
-		// Takes image from lightpass and applies depth of field
-		m_DOFFramebuffer.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR);
-
-		static ShaderDescriptorInfo infoDOF = {};
-		infoDOF.p_FragmentUniformBuffer = UniformBuffer(sizeof(DOFInfo), 1);
-
-		for (int32_t i = 0; i < m_LightPassFramebuffer.getImageAttachments().size(); i++)
-			infoDOF.addImage(&m_LightPassFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
-
-		m_DOFFramebuffer.getDescriptors().create(infoDOF);
-		m_DOFFramebuffer.create();
-
-
+		vk::GCS::getInstance().createSkyboxPipelines(*m_GBuffer.m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_RenderPass);
 	}
 	void RenderPipeline_Deferred::render(RenderInfo& p_RenderInfo)
 	{	
@@ -121,9 +108,16 @@ namespace vgl
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_LightPassFramebuffer);
 		m_RendererPtr->endRenderPass();
 		
-		for (auto& img : m_LightPassFramebuffer.getImageAttachments())
-			m_RendererPtr->blitImage(img[0].getImage());
+		m_RendererPtr->beginRenderPass(p_RenderInfo, m_FXAAFramebuffer);
+		m_RendererPtr->endRenderPass();
 
+		// Depth of Field
+		m_RendererPtr->beginRenderPass(p_RenderInfo, m_DOFFramebuffer);
+		m_RendererPtr->endRenderPass();
+		
+		for (auto& img : m_DOFFramebuffer.getImageAttachments())
+			m_RendererPtr->blitImage(img[0].getImage());
+		
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_HDRFramebuffer);
 		m_RendererPtr->endRenderPass();
 	}
@@ -188,7 +182,6 @@ namespace vgl
 		m_SSAOFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, SSAO_Kernel.data(), SSAO_Kernel.size() * sizeof(Vector4f), 2 * sizeof(Vector4f) + sizeof(Matrix4f));
 
 		// Create Post-Processing framebuffer
-		m_SSAOShader.setShader("data/Shaders/SSAO/vert.spv", "data/Shaders/SSAO/frag.spv");
 		m_SSAOFramebuffer.m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
 		m_SSAOFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_SSAOShader;
 		m_SSAOFramebuffer.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_1C, Layout::ShaderR);
@@ -199,7 +192,6 @@ namespace vgl
 			infoSSAOBlur.addImage(&m_SSAOFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
 
 		m_SSAOBlurFramebuffer.getDescriptors().create(infoSSAOBlur);
-		m_SSAOBlurShader.setShader("data/Shaders/SSAO/Blur/vert.spv", "data/Shaders/SSAO/Blur/frag.spv");
 		m_SSAOBlurFramebuffer.m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
 		m_SSAOBlurFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_SSAOBlurShader;
 		m_SSAOBlurFramebuffer.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_1C, Layout::ShaderR);
@@ -237,11 +229,10 @@ namespace vgl
 			m_WindowPtr->getWindowSize(),
 			ImageFormat::C16SF_4C,
 			Layout::ShaderR,
-			true, true,
+			true, false,
 			BorderColor::OpaqueBlack,
 			SamplerMode::ClampToEdge
 		);
-		m_LightPassFramebuffer.m_FramebufferAttachmentInfo.p_AttachmentDescriptors[0].p_AllowMipMapping = true;
 
 		static ShaderDescriptorInfo infoLightPass;
 		infoLightPass.p_FragmentUniformBuffer = UniformBuffer(3 * sizeof(Vector4f) + sizeof(Matrix4f) + sizeof(P_Light) * 500, 0);
@@ -303,26 +294,62 @@ namespace vgl
 	void RenderPipeline_Deferred::setupPostProcessBuffers()
 	{
 		/////////////////////////////////////////////////////////////////////////////////////////////
+		//				FXAA framebuffer
+		/////////////////////////////////////////////////////////////////////////////////////////////
+		m_FXAAFramebuffer.m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
+		m_FXAAFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_FXAAShader;
+		m_FXAAFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantData = &m_FXAAInfo;
+		m_FXAAFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantSize = sizeof(FXAAInfo);
+		m_FXAAFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantShaderStage = ShaderStage::FragmentBit;
+
+		// Takes image from lightpass and applies depth of field
+		m_FXAAFramebuffer.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR);
+
+		static ShaderDescriptorInfo infoFXAA = {};
+		infoFXAA.p_FragmentUniformBuffer = UniformBuffer(sizeof(FXAAInfo), 1);
+
+		for (int32_t i = 0; i < m_LightPassFramebuffer.getImageAttachments().size(); i++)
+			infoFXAA.addImage(&m_LightPassFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
+
+		m_FXAAFramebuffer.getDescriptors().create(infoFXAA);
+		m_FXAAFramebuffer.create();
+
+		/////////////////////////////////////////////////////////////////////////////////////////////
+		//				Depth of Field framebuffer
+		/////////////////////////////////////////////////////////////////////////////////////////////
+		m_DOFFramebuffer.m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
+		m_DOFFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_DOFShader;
+
+		// Takes image from lightpass and applies depth of field
+		m_DOFFramebuffer.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR, true, true);
+
+		static ShaderDescriptorInfo infoDOF = {};
+		infoDOF.p_FragmentUniformBuffer = UniformBuffer(sizeof(DOFInfo), 1);
+
+		for (int32_t i = 0; i < m_FXAAFramebuffer.getImageAttachments().size(); i++)
+			infoDOF.addImage(&m_FXAAFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
+
+		m_DOFFramebuffer.getDescriptors().create(infoDOF);
+		m_DOFFramebuffer.create();
+
+		/////////////////////////////////////////////////////////////////////////////////////////////
 		//				Hight-Definition-Range & Post-Processing
 		/////////////////////////////////////////////////////////////////////////////////////////////
 		static ShaderDescriptorInfo infoHDR;
-		infoHDR.p_FragmentUniformBuffer = UniformBuffer(sizeof(m_DOFInfo), 1);
-		infoHDR.p_StorageBuffer = StorageBuffer(ShaderStage::FragmentBit, sizeof(float) * 2, 2);
-		for (int32_t i = 0; i < m_LightPassFramebuffer.getImageAttachments().size(); i++)
-			infoHDR.addImage(&m_LightPassFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
+		//infoHDR.p_FragmentUniformBuffer = UniformBuffer(sizeof(m_DOFInfo), 1);
+		infoHDR.p_StorageBuffer = StorageBuffer(ShaderStage::FragmentBit, sizeof(float), 1);
+		for (int32_t i = 0; i < m_DOFFramebuffer.getImageAttachments().size(); i++)
+			infoHDR.addImage(&m_DOFFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
 		m_HDRFramebuffer.getDescriptors().create(infoHDR);
-		m_HDRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_DOFInfo, 0);
+		m_HDRFramebuffer.getDescriptors().copyToStorageBuffer(&m_HDRInfo.exposure, sizeof(float), 0);
 
 		// Create Post-Processing framebuffer
-		m_HDRShader.setShader("data/Shaders/HDR/vert.spv", "data/Shaders/HDR/frag.spv");
 		m_HDRFramebuffer.m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
 		m_HDRFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_HDRShader;
 		m_HDRFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantData = &m_HDRInfo;
 		m_HDRFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantSize = sizeof(m_HDRInfo);
 		m_HDRFramebuffer.m_FramebufferAttachmentInfo.p_PushConstantShaderStage = ShaderStage::FragmentBit;
-		auto& info = m_HDRFramebuffer.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR);
-		//info.p_Channels = 4; // Set for read pixels
-		//info.p_Bytes = 4; // Set for read pixels
+		m_HDRFramebuffer.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR);
 		m_HDRFramebuffer.create();
 	}
 	
@@ -380,7 +407,9 @@ namespace vgl
 	}
 	void RenderPipeline_Deferred::transferPostProcessData()
 	{
+		m_DOFFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_DOFInfo, 0);
+
 		m_HDRInfo.deltatime = m_WindowPtr->getDeltaTime();
-		m_HDRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_DOFInfo, 0);
+		m_HDRInfo.fstop = m_DOFInfo.fstop;
 	}
 }

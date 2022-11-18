@@ -922,7 +922,6 @@ namespace vgl
 				if (framebufferPtr->m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_CreateGraphicsPipeline)
 					framebufferPtr->recordCmdBuffer(p_PrimaryCommandBuffer, p_ImageIndex);
 				else{
-
 					framebufferPtr->cmdBeginRenderPass(p_PrimaryCommandBuffer, SubpassContents::Secondary, p_ImageIndex);
 					p_PrimaryCommandBuffer.cmdExecuteCommands(m_CommandBuffers[m_CurrentFrame], m_CommandBufferIdx[m_CurrentFrame]);
 					framebufferPtr->cmdEndRenderPass();
@@ -958,7 +957,6 @@ namespace vgl
 			waitForFences();
 			VkResult result = vkAcquireNextImageKHR(m_ContextPtr->m_Device, m_WindowPtr->m_Swapchain.m_Swapchain, UINT64_MAX,
 				m_ImageAvailableSemaphore[m_CurrentFrame], VK_NULL_HANDLE, &m_ImageIndex);
-
 
 			//Check if a previous frame is using this image (i.e. there is its fence to wait on)
 			//if (m_ImagesInFlight[m_ImageIndex] != VK_NULL_HANDLE)
@@ -1151,7 +1149,7 @@ namespace vgl
 		}
 		void Renderer::recreateSwapChain()
 		{
-			waitForFences();
+			m_ContextPtr->deviceWaitIdle();
 
 			if (m_WindowPtr->getWindowSize().x <= 1)
 			{

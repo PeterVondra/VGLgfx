@@ -436,6 +436,8 @@ namespace vgl
 
 				void recreateSwapchain()
 				{
+					m_ContextPtr->waitForFences();
+
 					for (auto framebuffer : m_Framebuffers)
 						vkDestroyFramebuffer(m_ContextPtr->m_Device, framebuffer, nullptr);
 

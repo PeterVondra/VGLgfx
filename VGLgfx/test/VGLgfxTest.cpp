@@ -27,7 +27,7 @@ public:
 		point_light->ShadowMapID = 0;
 
 		auto directional_light = new vgl::DirectionalLight3DComponent;
-		directional_light->Color = { 7, 7, 7 };
+		directional_light->Color = { 70, 70, 70 };
 		directional_light->Direction = { 0.333, 1, 0.333 };
 
 		auto shadow_map = new vgl::DShadowMapComponent;
@@ -229,6 +229,12 @@ public:
 #undef min
 			std::max(m_RenderPipeline.m_HDRInfo.exposure_adapt_rate, 0.000001f);
 			ImGui::EndColumns();
+			ImGui::Separator();
+			ImGui::Checkbox("Vignette", (bool*)&m_RenderPipeline.m_HDRInfo.vignetting);
+			ImGui::Text("Use optical lens vignetting?");
+			ImGui::DragFloat("Vignette Out##VO", &m_RenderPipeline.m_HDRInfo.vignout, 0.01);
+			ImGui::DragFloat("Vignette In##VI", &m_RenderPipeline.m_HDRInfo.vignin, 0.01);
+			ImGui::DragFloat("Vignette Fade##VF", &m_RenderPipeline.m_HDRInfo.vignfade, 0.1);
 			ImGui::TreePop();
 		}
 		ImGui::Separator();
@@ -243,14 +249,14 @@ public:
 			float offset = ImGui::GetColumnOffset();
 			ImGui::NextColumn();
 			ImGui::SetColumnWidth(1, ImGui::GetWindowSize().x - offset);
-			static float fxaaBias = 1 / m_RenderPipeline.m_HDRInfo.FXAA_REDUCTION_BIAS;
-			static float fxaaMin = 1 / m_RenderPipeline.m_HDRInfo.FXAA_REDUCTION_MIN;
+			static float fxaaBias = 1 / m_RenderPipeline.m_FXAAInfo.FXAA_REDUCTION_BIAS;
+			static float fxaaMin = 1 / m_RenderPipeline.m_FXAAInfo.FXAA_REDUCTION_MIN;
 			if (ImGui::DragFloat("##5", &fxaaBias, 2))
-				m_RenderPipeline.m_HDRInfo.FXAA_REDUCTION_BIAS = 1.0f / fxaaBias;
+				m_RenderPipeline.m_FXAAInfo.FXAA_REDUCTION_BIAS = 1.0f / fxaaBias;
 			if (ImGui::DragFloat("##6", &fxaaMin, 2))
-				m_RenderPipeline.m_HDRInfo.FXAA_REDUCTION_MIN = 1.0f / fxaaMin;
+				m_RenderPipeline.m_FXAAInfo.FXAA_REDUCTION_MIN = 1.0f / fxaaMin;
 
-			ImGui::DragFloat("##7", &m_RenderPipeline.m_HDRInfo.FXAA_Span_Max, 2);
+			ImGui::DragFloat("##7", &m_RenderPipeline.m_FXAAInfo.FXAA_Span_Max, 2);
 			ImGui::EndColumns();
 			ImGui::TreePop();
 		}
@@ -305,12 +311,6 @@ public:
 		ImGui::Separator();
 		ImGui::Checkbox("Show Focus", (bool*)&m_RenderPipeline.m_DOFInfo.showFocus);
 		ImGui::Text("Show debug focus point and focal range (red = focal point, green = focal range)");
-		ImGui::Separator();
-		ImGui::Checkbox("Vignette", (bool*)&m_RenderPipeline.m_DOFInfo.vignetting);
-		ImGui::Text("Use optical lens vignetting?");
-		ImGui::DragFloat("Vignette Out##VO", &m_RenderPipeline.m_DOFInfo.vignout, 0.01);
-		ImGui::DragFloat("Vignette In##VI", &m_RenderPipeline.m_DOFInfo.vignin, 0.01);
-		ImGui::DragFloat("Vignette Fade##VF", &m_RenderPipeline.m_DOFInfo.vignfade, 0.1);
 		ImGui::Separator();
 		ImGui::BeginColumns("##DOF", 2);
 		ImGui::Spacing();

@@ -32,14 +32,22 @@ namespace vgl
 
 			// p_ClearFrame = false, image will not be cleared after image write.
 			AttachmentDescriptor(
-				Vector2i p_Size,
-				ImageFormat p_ImageFormat,
-				Layout p_Layout,
-				bool p_ClearFrame = true,
-				bool p_AllowMipMapping = false,
-				BorderColor p_BorderColor = BorderColor::OpaqueBlack,
-				SamplerMode p_SamplerMode = SamplerMode::ClampToBorder
-			){
+				Vector2i _Size,
+				ImageFormat _ImageFormat,
+				Layout _Layout,
+				bool _ClearFrame = true,
+				bool _AllowMipMapping = false,
+				BorderColor _BorderColor = BorderColor::OpaqueBlack,
+				SamplerMode _SamplerMode = SamplerMode::ClampToBorder
+			) : 
+				p_Size(_Size),
+				p_ImageFormat(_ImageFormat),
+				p_Layout(_Layout),
+				p_ClearFrame(_ClearFrame),
+				p_AllowMipMapping(_AllowMipMapping),
+				p_BorderColor(_BorderColor),
+				p_SamplerMode(_SamplerMode)
+			{
 				m_CreateSampler = p_Layout == Layout::ShaderR || p_Layout == Layout::DepthR;
 				
 				p_AttachmentInfo.p_Format = (VkFormat)p_ImageFormat;

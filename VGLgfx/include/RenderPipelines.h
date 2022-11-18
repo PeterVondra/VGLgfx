@@ -21,6 +21,8 @@ namespace vgl
 
 			float volumetric_light_mie_scattering = 1;
 			DOFInfo m_DOFInfo = {}; // Depth of Field
+			HDRInfo m_HDRInfo; // HDR effects
+			FXAAInfo m_FXAAInfo; // Anti aliasing
 
 			// Geometry and material data / G-Buffer
 			FramebufferAttachment m_GBuffer;
@@ -31,7 +33,6 @@ namespace vgl
 			FramebufferAttachment m_FXAAFramebuffer;
 			FramebufferAttachment m_HDRFramebuffer;
 
-			HDRFXAAInfo m_HDRInfo; // HDR effects
 			Shader m_HDRShader;
 			Shader m_GBufferLightPassShader;
 			Shader m_SSAOShader;
