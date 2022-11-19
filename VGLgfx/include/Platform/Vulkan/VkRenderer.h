@@ -16,7 +16,7 @@ namespace vgl
 	namespace vk
 	{
 		#define MAX_FRAMES_IN_FLIGHT 2
-		#define GET_CURRENT_IMAGE_INDEX(imgidx) (imgidx + 1) % 2;
+		#define GET_CURRENT_IMAGE_INDEX(imgidx) (imgidx + 1) % MAX_FRAMES_IN_FLIGHT;
 
 		// Directional shadow map
 		struct DShadowMap

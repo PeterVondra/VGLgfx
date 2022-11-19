@@ -161,8 +161,9 @@ void main()
     vec3 result = vec3(1.0) - exp(-color * exposure);
 	
     // also gamma correct while we're at it       
-    outColor.rgb = pow(reinhardExtendedLuminance(result, 70.0f), vec3(1.0 / pushConstants.gamma));
-    //outColor.rgb = pow(LinearTosRGB(ACESFitted(result)), vec3(1.0 / pushConstants.gamma));
+    //outColor.rgb = pow(reinhardExtendedLuminance(result, 70.0f), vec3(1.0 / pushConstants.gamma));
+    outColor.rgb = LinearTosRGB(reinhardExtendedLuminance(result, 70.0f));
+    //outColor.rgb = LinearTosRGB(ACESFitted(result));
 
 	if(pushConstants.vignetting > 0)
 		outColor = vec4(outColor.rgb * vignette(), 1.0);

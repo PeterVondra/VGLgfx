@@ -27,7 +27,7 @@ public:
 		point_light->ShadowMapID = 0;
 
 		auto directional_light = new vgl::DirectionalLight3DComponent;
-		directional_light->Color = { 70, 70, 70 };
+		directional_light->Color = { 30, 30, 30 };
 		directional_light->Direction = { 0.333, 1, 0.333 };
 
 		auto shadow_map = new vgl::DShadowMapComponent;

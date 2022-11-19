@@ -897,12 +897,7 @@ float gaussian(float radius, float x) {
 }
 
 vec2 PCF_DirectionalLight(vec4 shadowCoord, float uvRadius)
-{	
-	//ivec2 texDim = textureSize(shadowMap, 0);
-	//float scale = uvRadius;
-	//float dx = scale / float(texDim.x);
-	//float dy = scale / float(texDim.y);
-	
+{
 	float shadowFactor = 0.0;
     float occluded = 1.0f;
     float occ = 1.0f;
@@ -930,6 +925,7 @@ vec2 PCF_DirectionalLight(vec4 shadowCoord, float uvRadius)
 	return vec2(shadowFactor / BLOCKER_SEARCH, occluded);
 }
 
+
 vec2 PCSS_DirectionalLight()
 {	
 	vec4 sc = lightPosFrag;
@@ -940,10 +936,12 @@ vec2 PCSS_DirectionalLight()
 	float blockerDistance = FindBlockerDistance_DirectionalLight(sc, lightSize);
 	if (blockerDistance == -1)
 		return vec2(1.0f);
+
+    float penumbraWidth = (sc.z - blockerDistance) / blockerDistance;
 		
 	// penumbra estimation
 	// percentage-close filtering
-	return PCF_DirectionalLight(sc, ((sc.z - blockerDistance) / blockerDistance) * lightSize * NEAR / sc.z);
+	return PCF_DirectionalLight(sc, (penumbraWidth) * lightSize * NEAR / sc.z);
 }
 #endif
 

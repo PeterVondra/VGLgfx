@@ -141,9 +141,9 @@ namespace vgl
 				std::vector<VkDescriptorPoolSize> m_DefaultDescriptorPoolSizes;
 
 				VkSurfaceKHR* m_SurfacePtr;
-				uint16_t m_SwapchainImageCount;
-				uint32_t m_ImageIndex = UINT32_MAX; // Image index for frame that is not currently occupied by renderer
-				uint32_t m_CurrentFrame = UINT32_MAX; // Current frame that is currently occupied by the renderer
+				uint16_t m_SwapchainImageCount = UINT16_MAX;
+				uint32_t m_ImageIndex = UINT32_MAX; // Image index for frame that is currently occupied by renderer
+				uint32_t m_CurrentFrame = UINT32_MAX; // Current frame that is currently not occupied by the renderer
 
 				bool m_Initialized = false;
 

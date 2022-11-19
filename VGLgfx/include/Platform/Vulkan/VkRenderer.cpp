@@ -372,7 +372,7 @@ namespace vgl
 			VGL_INTERNAL_ASSERT_WARNING(m_DShadowMapPtr != nullptr, "[vk::Renderer]No shadow map bound");
 			if (m_DShadowMapPtr == nullptr) return;
 
-			static Matrix4f data;
+			Matrix4f data;
 			data = p_Transform.model * m_DShadowMapPtr->m_View * m_DShadowMapPtr->m_Projection;
 
 			CommandBuffer& cmd = m_DShadowMapPtr->m_CommandBuffers[m_CurrentFrame][m_DShadowMapPtr->m_CommandBufferIdx[m_CurrentFrame]];
@@ -1149,20 +1149,16 @@ namespace vgl
 		}
 		void Renderer::recreateSwapChain()
 		{
-			m_ContextPtr->deviceWaitIdle();
-
-			if (m_WindowPtr->getWindowSize().x <= 1)
-			{
+			int width = 0, height = 0;
+			glfwGetFramebufferSize(m_WindowPtr->getGLFWWindow(), &width, &height);
+			while (width == 0 || height == 0) {
+				glfwGetFramebufferSize(m_WindowPtr->getGLFWWindow(), &width, &height);
 				glfwWaitEvents();
-				m_WindowPtr->setWindowSize(2, m_WindowPtr->getWindowSize().y);
-			}
-			if (m_WindowPtr->getWindowSize().y <= 1)
-			{
-				glfwWaitEvents();
-				m_WindowPtr->setWindowSize(m_WindowPtr->getWindowSize().x, 2);
 			}
 
 			m_Viewport.m_Size = m_WindowPtr->getWindowSize();
+
+			m_ContextPtr->deviceWaitIdle();
 
 			destroySwapChain();
 
@@ -1181,7 +1177,6 @@ namespace vgl
 #ifdef VGL_IMGUI_VK_IMPL
 			m_ImGuiContext.recreateSwapchain();
 #endif
-
 		}
 
 		void Renderer::waitForFences()

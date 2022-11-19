@@ -10,7 +10,7 @@ namespace vgl
 		float deltatime = 0.0f;
 
         alignas(4) float gamma = 2.2f;
-		alignas(4) float exposure = 1.0f;
+		alignas(4) float exposure = 2.56f;
 		alignas(4) float exposure_adapt_rate = 0.025;
 
 		alignas(4) float filmicScale = 32;

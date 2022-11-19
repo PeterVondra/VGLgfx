@@ -1,5 +1,10 @@
 -Add deletion queue for vulkan handles.
 -Make descriptor addImage(...) frameindex independent.
--Make a separate render thread, render thread will query for commands very frame, while Application thread will submit render commands to a render command queue.
+-Make a separate render thread, render thread will query for commands every frame, while Application thread will submit render commands to a render command queue.
 The render thread will execute the commands from the render command queue.
--Use vk MultiView extension for omni-directional shadow mapping.
+-Use vk MultiView extension for omni-directional shadow mapping. DONE
+-Add physically based bloom, use compute for downsampling and upsampling. 
+1. Find specific queue that supports compute operations. 
+2. Create compute pipeline and syncronization objects to sync between compute and graphics operations
+3. Record commandbuffer with compute operations.
+(Create simple abstraction for easy compute integration into existing renderpipeline, similar to framebuffer attachment class)

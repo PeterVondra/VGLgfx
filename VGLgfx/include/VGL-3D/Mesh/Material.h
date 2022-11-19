@@ -15,7 +15,7 @@ namespace vgl
 		Vector3f m_Albedo = Vector3f(1.0f);
 		float m_Metallic = 0.003f;
 		float m_Roughness = 1.0f;
-		float m_Ambient = 0.2f;
+		float m_Ambient = 0.7f;
 
 		float m_PDMDepth = 1.0f;
 

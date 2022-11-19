@@ -36,10 +36,6 @@ namespace vgl
 	}
 	void RenderPipeline_Deferred::render(RenderInfo& p_RenderInfo)
 	{	
-		transferSSAOData();
-		transferLightPassData();
-		transferPostProcessData();
-
 		for (auto& entity : m_ScenePtr->getEntities()) {
 			// Render into directional shadow map
 			auto directional_light = m_ScenePtr->getComponent<DirectionalLight3DComponent>(entity);
@@ -56,7 +52,6 @@ namespace vgl
 						m_RendererPtr->submit(*mesh->mesh, transform->transform);
 				}
 				m_RendererPtr->endRenderPass();
-				break;
 			}
 			// Render into omni shadow map
 			auto pshadow_map = m_ScenePtr->getComponent<PShadowMapComponent>(entity);
@@ -71,7 +66,6 @@ namespace vgl
 						m_RendererPtr->submit(*mesh->mesh, transform->transform);
 				}
 				m_RendererPtr->endRenderPass();
-				break;
 			}
 		}
 
@@ -95,6 +89,8 @@ namespace vgl
 		m_RendererPtr->endRenderPass();
 
 		// SSAO
+		transferLightPassData();
+		transferSSAOData();
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_SSAOFramebuffer);
 		m_RendererPtr->endRenderPass();
 		
@@ -103,11 +99,12 @@ namespace vgl
 		
 		//m_RendererPtr->beginRenderPass(p_RenderInfo, m_SSRFramebuffer);
 		//m_RendererPtr->endRenderPass();
-		
+
 		// Light pass
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_LightPassFramebuffer);
 		m_RendererPtr->endRenderPass();
 		
+		transferPostProcessData();
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_FXAAFramebuffer);
 		m_RendererPtr->endRenderPass();
 
