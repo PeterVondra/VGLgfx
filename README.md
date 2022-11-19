@@ -27,7 +27,7 @@
   - Physically based Atmospheric Scattering.
   - Fast Approximate Anti-Aliasing (FXAA)
   - Bokeh Depth of Field.
-  - Auto Adaptive Exposure(HDR + Gamma Correction)
+  - Auto Adaptive Exposure(Tonemapping + Gamma Correction)
   - Other features like Filmic noise, vignette and other post-processing effects.
   - Currently working on Screen Space Reflection + Screens Space Refraction. (SSR)
   
