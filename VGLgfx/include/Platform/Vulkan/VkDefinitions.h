@@ -164,6 +164,7 @@ namespace vgl
 		None = -1,
 		VertexBit = 0,
 		FragmentBit = 1,
-		GeometryBit = 2
+		GeometryBit = 2,
+		ComputeBit = 3
 	};
 }

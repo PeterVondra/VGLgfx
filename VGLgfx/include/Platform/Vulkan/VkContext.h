@@ -14,58 +14,12 @@
 
 #include "VkDescriptorLayoutCache.h"
 
-#include "../../../lib/VulkanMemoryAllocator/src/vk_mem_alloc.h"
+#include "../../../libs/VulkanMemoryAllocator/include/vk_mem_alloc.h"
 
 namespace vgl
 {
 	namespace vk
 	{
-		// Struct containing the indices for the queue family that will be used
-		struct QueueFamilyIndices
-		{
-			int32_t graphicsFamily = -1;
-			int32_t presentFamily = -1;
-
-			bool isValid() { return graphicsFamily >= 0 && presentFamily >= 0; }
-		};
-
-		struct PhysicalDevice
-		{
-			// Suitability, higher = better
-			uint32_t m_Score;
-
-			QueueFamilyIndices m_QueueFamily;
-			VkPhysicalDevice m_VkHandle;
-			VkPhysicalDeviceFeatures m_DeviceFeatures;
-			VkPhysicalDeviceFeatures2 m_DeviceFeatures2;
-			VkPhysicalDeviceProperties m_DeviceProperties;
-			VkPhysicalDeviceProperties2 m_DeviceProperties2;
-
-			VkPhysicalDeviceImagelessFramebufferFeatures m_ImagelessFramebufferFeatures = {};
-			VkPhysicalDeviceBufferDeviceAddressFeaturesEXT m_DeviceBufferAdressFeatures = {};
-
-			VkPhysicalDeviceMultiviewFeatures m_MultiViewFeatures = {};
-			VkPhysicalDeviceMultiviewProperties m_MultiViewProperties = {};
-
-			std::string getDeviceType()
-			{
-				std::string deviceType;
-				deviceType = m_DeviceProperties.deviceType == 0 ? "unknown type" : deviceType;
-				deviceType = m_DeviceProperties.deviceType == 1 ? "integrated" : deviceType;
-				deviceType = m_DeviceProperties.deviceType == 2 ? "discrete" : deviceType;
-				deviceType = m_DeviceProperties.deviceType == 3 ? "virtual" : deviceType;
-				deviceType = m_DeviceProperties.deviceType == 4 ? "cpu" : deviceType;
-				return deviceType;
-			}
-		};
-
-		struct SwapchainSupportDetails
-		{
-			VkSurfaceCapabilitiesKHR capabilities;
-			std::vector<VkSurfaceFormatKHR> formats;
-			std::vector<VkPresentModeKHR> presentModes;
-		};
-
 		// Allocator for descriptors
 		class DescriptorAllocator
 		{
@@ -112,8 +66,55 @@ namespace vgl
 
 		struct AllocationInfo
 		{
-		  VmaAllocation p_Alloc;
-		  VmaAllocationInfo p_AllocInfo;
+			VmaAllocation p_Alloc;
+			VmaAllocationInfo p_AllocInfo;
+		};
+
+		// Struct containing the indices for the queue family that will be used
+		struct QueueFamilyIndices
+		{
+			uint32_t graphicsFamily = UINT32_MAX;
+			uint32_t presentFamily = UINT32_MAX;
+			uint32_t computeFamily = UINT32_MAX;
+
+			bool isValid() { return graphicsFamily >= 0 && presentFamily >= 0 && computeFamily >= 0; }
+		};
+
+		struct PhysicalDevice
+		{
+			// Suitability, higher = better
+			uint32_t m_Score;
+
+			QueueFamilyIndices m_QueueFamily;
+			VkPhysicalDevice m_VkHandle;
+			VkPhysicalDeviceFeatures m_DeviceFeatures;
+			VkPhysicalDeviceFeatures2 m_DeviceFeatures2;
+			VkPhysicalDeviceProperties m_DeviceProperties;
+			VkPhysicalDeviceProperties2 m_DeviceProperties2;
+
+			VkPhysicalDeviceImagelessFramebufferFeatures m_ImagelessFramebufferFeatures = {};
+			VkPhysicalDeviceBufferDeviceAddressFeaturesEXT m_DeviceBufferAdressFeatures = {};
+
+			VkPhysicalDeviceMultiviewFeatures m_MultiViewFeatures = {};
+			VkPhysicalDeviceMultiviewProperties m_MultiViewProperties = {};
+
+			std::string getDeviceType()
+			{
+				std::string deviceType;
+				deviceType = m_DeviceProperties.deviceType == 0 ? "unknown type" : deviceType;
+				deviceType = m_DeviceProperties.deviceType == 1 ? "integrated" : deviceType;
+				deviceType = m_DeviceProperties.deviceType == 2 ? "discrete" : deviceType;
+				deviceType = m_DeviceProperties.deviceType == 3 ? "virtual" : deviceType;
+				deviceType = m_DeviceProperties.deviceType == 4 ? "cpu" : deviceType;
+				return deviceType;
+			}
+		};
+
+		struct SwapchainSupportDetails
+		{
+			VkSurfaceCapabilitiesKHR capabilities;
+			std::vector<VkSurfaceFormatKHR> formats;
+			std::vector<VkPresentModeKHR> presentModes;
 		};
 
 		class Context
@@ -132,6 +133,7 @@ namespace vgl
 
 				PhysicalDevice m_PhysicalDevice;
 				VkQueue m_GraphicsQueue;
+				VkQueue m_ComputeQueue;
 				VkQueue m_PresentQueue;
 
 				VmaAllocator m_VmaAllocator;

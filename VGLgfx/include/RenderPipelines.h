@@ -48,11 +48,10 @@ namespace vgl
 			// SSR
 			FramebufferAttachment m_SSRFramebuffer;
 			struct SSR_DATA {
-				float SSR_MaxDistance = 15.0f;
-				// [0, 1]
-				float SSR_Resolution = 0.3f;
-				float SSR_Steps = 5;
-				float SSR_Thickness = 0.5f;
+				float SSR_StepLength = -0.1f;
+				float SSR_MaxSteps = 50;
+				float SSR_BinarySearchSteps = 5;
+				float SSR_ReflectionSpecularFalloffExponent = 3.0f;
 			};
 			SSR_DATA SSR_Data;
 

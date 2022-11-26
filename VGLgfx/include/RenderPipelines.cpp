@@ -96,12 +96,14 @@ namespace vgl
 		
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_SSAOBlurFramebuffer);
 		m_RendererPtr->endRenderPass();
-		
-		//m_RendererPtr->beginRenderPass(p_RenderInfo, m_SSRFramebuffer);
-		//m_RendererPtr->endRenderPass();
 
 		// Light pass
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_LightPassFramebuffer);
+		m_RendererPtr->endRenderPass();
+
+		transferSSRData();
+
+		m_RendererPtr->beginRenderPass(p_RenderInfo, m_SSRFramebuffer);
 		m_RendererPtr->endRenderPass();
 		
 		transferPostProcessData();
@@ -111,7 +113,7 @@ namespace vgl
 		// Depth of Field
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_DOFFramebuffer);
 		m_RendererPtr->endRenderPass();
-		
+
 		for (auto& img : m_DOFFramebuffer.getImageAttachments())
 			m_RendererPtr->blitImage(img[0].getImage());
 		
@@ -266,27 +268,27 @@ namespace vgl
 		/////////////////////////////////////////////////////////////////////////////////////////////
 		//				Screen-Space-Reflections
 		/////////////////////////////////////////////////////////////////////////////////////////////
-		//static ShaderDescriptorInfo infoSSR;
-		//infoSSR.p_FragmentUniformBuffer = vk::UniformBuffer(4 * sizeof(float) + 2 * sizeof(Matrix4f) + sizeof(Vector4f), 0);
-		//for (int32_t i = 0; i < m_GBuffer.getImageAttachments().size(); i++) {
-		//	infoSSR.addImage(&m_LightPassFramebuffer.getImageAttachments()[i][0].getImage(), 1, i);
-		//	infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][4].getImage(), 2, Layout::DepthR, i);
-		//	infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][1].getImage(), 3, i);
-		//	infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][3].getImage(), 4, i);
-		//}
-		//
-		//m_SSRFramebuffer.getDescriptors().create(infoSSR);
-		//
-		//// Create SSR framebuffer
-		//m_SSRShader.setShader("data/Shaders/SSR/vert.spv", "data/Shaders/SSR/frag.spv");
-		//m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Size = p_Window->getWindowSize();
-		//m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_SSRShader;
-		//m_SSRFramebuffer.addAttachment(
-		//	p_Window->getWindowSize(),
-		//	ImageFormat::C16SF_4C,
-		//	Layout::ShaderR
-		//);
-		//m_SSRFramebuffer.create();
+		static ShaderDescriptorInfo infoSSR;
+		infoSSR.p_FragmentUniformBuffer = UniformBuffer(sizeof(SSR_DATA) + 2 * sizeof(Matrix4f), 0);
+		for (int32_t i = 0; i < m_GBuffer.getImageAttachments().size(); i++) {
+			infoSSR.addImage(&m_LightPassFramebuffer.getImageAttachments()[i][0].getImage(), 1, i);
+			infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][0].getImage(), 2, i);
+			infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][1].getImage(), 3, i);
+			infoSSR.addImage(&m_GBuffer.getImageAttachments()[i][3].getImage(), 4, i);
+		}
+		
+		m_SSRFramebuffer.getDescriptors().create(infoSSR);
+		
+		// Create SSR framebuffer
+		m_SSRShader.setShader("data/Shaders/SSR/vert.spv", "data/Shaders/SSR/frag.spv");
+		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
+		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_SSRShader;
+		m_SSRFramebuffer.addAttachment(
+			m_WindowPtr->getWindowSize(),
+			ImageFormat::C16SF_4C,
+			Layout::ShaderR
+		);
+		m_SSRFramebuffer.create();
 	}
 	void RenderPipeline_Deferred::setupPostProcessBuffers()
 	{
@@ -305,8 +307,8 @@ namespace vgl
 		static ShaderDescriptorInfo infoFXAA = {};
 		infoFXAA.p_FragmentUniformBuffer = UniformBuffer(sizeof(FXAAInfo), 1);
 
-		for (int32_t i = 0; i < m_LightPassFramebuffer.getImageAttachments().size(); i++)
-			infoFXAA.addImage(&m_LightPassFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
+		for (int32_t i = 0; i < m_SSRFramebuffer.getImageAttachments().size(); i++)
+			infoFXAA.addImage(&m_SSRFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
 
 		m_FXAAFramebuffer.getDescriptors().create(infoFXAA);
 		m_FXAAFramebuffer.create();
@@ -367,10 +369,11 @@ namespace vgl
 	void RenderPipeline_Deferred::transferSSRData()
 	{
 		// copy SSR specific data to uniformbuffer declared in SSR shaders
-		//m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, SSR_Data, 0);
-		//m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getCurrentCameraPtr()->getViewDirection(), 4 * sizeof(float));
-		//m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getCurrentCameraPtr()->getPerspectiveMatrix(), 4*sizeof(float) + sizeof(Vector4f));
-		//m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getViewProjection() , 4 * sizeof(float) + sizeof(Matrix4f) + sizeof(Vector4f));
+		m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, SSR_Data, 0);
+		//m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getCurrentCameraPtr()->getViewDirection(), sizeof(SSR_DATA));
+		m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getCurrentCameraPtr()->getPerspectiveMatrix(), sizeof(SSR_DATA));
+		m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getCurrentCameraPtr()->getViewMatrix() , sizeof(SSR_DATA) + sizeof(Matrix4f));
+		//m_SSRFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, m_RendererPtr->getViewProjection() , sizeof(SSR_DATA) + sizeof(Matrix4f));
 	}
 	void RenderPipeline_Deferred::transferLightPassData()
 	{

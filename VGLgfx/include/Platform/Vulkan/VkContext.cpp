@@ -4,7 +4,7 @@
 #include "../../Utils/Logger.h"
 
 #ifdef VGL_INTERNAL_LOGGING_ENABLED
-#define VGL_VK_VALIDATION_LAYERS_ENABLED
+//#define VGL_VK_VALIDATION_LAYERS_ENABLED
 #endif
 
 namespace vgl
@@ -136,7 +136,7 @@ namespace vgl
 			QueueFamilyIndices indices = getQueueFamilyIndices(*m_SurfacePtr, m_PhysicalDevice.m_VkHandle);
 
 			std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-			std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
+			std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily, indices.computeFamily };
 
 			float queuePriority = 1.0f;
 			for (int queueFamily : uniqueQueueFamilies)
@@ -178,6 +178,7 @@ namespace vgl
 			}
 
 			vkGetDeviceQueue(m_Device, indices.graphicsFamily, 0, &m_GraphicsQueue);
+			vkGetDeviceQueue(m_Device, indices.computeFamily, 0, &m_ComputeQueue);
 			vkGetDeviceQueue(m_Device, indices.presentFamily, 0, &m_PresentQueue);
 
 			initCommandPool();
@@ -469,8 +470,14 @@ namespace vgl
 			{
 				VkBool32 presentSupport = false;
 				vkGetPhysicalDeviceSurfaceSupportKHR(p_PhysicalDevice, i, p_Surface, &presentSupport);
-
-				if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && presentSupport) {
+				
+				if ((queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) && (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && presentSupport) {
+					indices.graphicsFamily = i;
+					indices.presentFamily = i;
+					indices.computeFamily = i;
+					break;
+				}
+				else if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && presentSupport) {
 					indices.graphicsFamily = i;
 					indices.presentFamily = i;
 					break;
@@ -479,6 +486,8 @@ namespace vgl
 					indices.presentFamily = i;
 				else if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 					indices.graphicsFamily = i;
+				else if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
+					indices.computeFamily = i;
 
 				i++;
 			}

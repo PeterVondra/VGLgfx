@@ -18,7 +18,7 @@ public:
 		mesh->mesh = new vgl::MeshData();
 
 		vgl::OBJ_Loader::loadModel("../../VGLgfxEditor/projects/Global_Assets/3D_Models/Sponza/", "sponza.obj", mesh->mesh, false);
-		mesh->mesh->getMaterial(19).config.m_Roughness = 0.07f;
+		mesh->mesh->getMaterial(19).config.m_Roughness = 0.77f;
 
 		auto point_light = new vgl::PointLight3DComponent;
 		point_light->Color = { 0.4f, 0.1f, 1.0f };
@@ -121,6 +121,10 @@ public:
 
 		ImGui::Begin("SSAO", nullptr);
 		vgl::ImGuiContext::Image(m_RenderPipeline.m_SSAOBlurFramebuffer.getCurrentImageAttachments()[0].getImage(), { (float)ImGui::GetContentRegionAvail().x, (float)ImGui::GetContentRegionAvail().x });
+		ImGui::End();
+		
+		ImGui::Begin("SSR", nullptr);
+		vgl::ImGuiContext::Image(m_RenderPipeline.m_SSRFramebuffer.getCurrentImageAttachments()[0].getImage(), { (float)ImGui::GetContentRegionAvail().x, (float)ImGui::GetContentRegionAvail().x });
 		ImGui::End();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 2.0f, 2.0f });
@@ -282,21 +286,21 @@ public:
 		ImGui::Separator();
 		if (ImGui::TreeNodeEx("SSR##SSR", vgl::EditorColorScheme::TreeNodeFlags)) {
 			ImGui::BeginColumns("##SSR", 2);
-			ImGui::Text("Max Distance");
+			ImGui::Text("Step Length");
 			ImGui::Spacing();
-			ImGui::Text("Resolution");
+			ImGui::Text("Max Steps");
 			ImGui::Spacing();
-			ImGui::Text("Steps");
+			ImGui::Text("Binary Search Steps");
 			ImGui::Spacing();
-			ImGui::Text("Thickness");
+			ImGui::Text("Reflection Specular Falloff Exponent");
 			ImGui::Spacing();
 			float offset = ImGui::GetColumnOffset();
 			ImGui::NextColumn();
 			ImGui::SetColumnWidth(1, ImGui::GetWindowSize().x - offset);
-			ImGui::DragFloat("##SSR1", &m_RenderPipeline.SSR_Data.SSR_MaxDistance, 0.01);
-			ImGui::DragFloat("##SSR2", &m_RenderPipeline.SSR_Data.SSR_Resolution, 0.01);
-			ImGui::DragFloat("##SSR3", &m_RenderPipeline.SSR_Data.SSR_Steps, 1);
-			ImGui::DragFloat("##SSR4", &m_RenderPipeline.SSR_Data.SSR_Thickness, 0.01);
+			ImGui::DragFloat("##SSR1", &m_RenderPipeline.SSR_Data.SSR_StepLength, 0.01);
+			ImGui::DragFloat("##SSR2", &m_RenderPipeline.SSR_Data.SSR_MaxSteps, 0.01);
+			ImGui::DragFloat("##SSR3", &m_RenderPipeline.SSR_Data.SSR_BinarySearchSteps, 1);
+			ImGui::DragFloat("##SSR4", &m_RenderPipeline.SSR_Data.SSR_ReflectionSpecularFalloffExponent, 0.01);
 			std::max(m_RenderPipeline.m_HDRInfo.exposure_adapt_rate, 0.000001f);
 			ImGui::EndColumns();
 			ImGui::TreePop();

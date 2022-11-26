@@ -134,6 +134,14 @@ namespace vgl
 			std::vector<std::vector<VkVertexInputAttributeDescription>> 	p_AttributeDescription;
 		};
 
+		// Compute pipeline
+		class ComputePipeline
+		{
+			public:
+
+			private:
+		};
+
 		// Graphics Pipeline
 		class g_Pipeline
 		{

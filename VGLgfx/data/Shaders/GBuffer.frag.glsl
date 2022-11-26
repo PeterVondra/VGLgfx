@@ -72,7 +72,7 @@ void main()
 	#endif
 
 	#ifdef METALLIC_MAP
-	out_MRAA.r = min(texture(metallicMap, uv).r, 1.0f);
+	out_MRAA.r = min(texture(metallicMap, uv).r + ubo.mrao.r, 1.0f);
 	#else
 	out_MRAA.r = ubo.mrao.r;
 	#endif

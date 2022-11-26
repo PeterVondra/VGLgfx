@@ -31,40 +31,20 @@ mat4 view;
 float metallic;
 float roughness;
 
-float FetchLinearDepth(vec2 depthUV);
 bool TraceScreenSpaceRay(vec3 pRayOrigin, vec3 pRayDirection, float pJitter, out vec2 pHitPixel, out vec3 pHitPoint, out float pItCount);
 
-// Customize
 float _Iterations = 100;							// maximum ray iterations
 float _BinarySearchIterations = 100;				// maximum binary search refinement iterations
 float _PixelZSize = 0.01;							// Z size in camera space of a pixel in the depth buffer
-float _PixelStride = 1;							// number of pixels per ray step close to camera
-float _PixelStrideZCuttoff = 1;					// ray origin Z at this distance will have a pixel stride of 1.0
+float _PixelStride = 1;								// number of pixels per ray step close to camera
+float _PixelStrideZCuttoff = 1;						// ray origin Z at this distance will have a pixel stride of 1.0
 float _MaxRayDistance = 1000;						// maximum distance of a ray
 float _ScreenEdgeFadeStart = 0.1f;					// distance to screen edge that ray hits will start to fade (0.0 -> 1.0)
-float _EyeFadeStart = 0.9f;						// ray direction's Z that ray hits will start to fade (0.0 -> 1.0)
+float _EyeFadeStart = 0.9f;							// ray direction's Z that ray hits will start to fade (0.0 -> 1.0)
 float _EyeFadeEnd = 1.0f;
 
+
 vec2 image_size;
-
-float linearize_depth(float d,float zNear,float zFar)
-{
-    return zNear * zFar / (zFar + d * (zNear - zFar));
-}
-
-float fmod(float x, float y)
-{
-	return x - y * trunc(x/y);
-}
-
-float calculateAlphaForIntersection( bool intersect, 
-	float iterationCount, 
-	float specularStrength,
-	vec2 hitPixel,
-	vec3 hitPoint,
-	vec3 vsRayOrigin,
-	vec3 vsRayDirection
-);
 
 const mat4 bias = mat4( 
 		0.5, 0.0, 0.0, 0.0,
@@ -73,49 +53,41 @@ const mat4 bias = mat4(
 		0.5, 0.5, 0.0, 1.0 
 	);
 
+float fetchLinearDepth(vec2 depthUV) {
+	float depth = texture(in_Depth, vec2(depthUV.x, 1.0f - depthUV.y)).r;
+
+	//float z = depth * 2.0f - 1.0f; 
+	return (1.0f * 1000.0f) / (1000.0f + 1.0f - depth * (1000.0f - 1.0f));	
+}
+
 void main()
 {
-	//view = inverse(ubo.projection) * ubo.view;
 	view = ubo.view;
 	
 	image_size = textureSize(in_Depth, 0);
 	
 	vec2 mra = texture(in_MRAA, UV).rg;
-	
 	roughness = mra.g;
-
-	float specularStrength = 1.0f - roughness;
 	
-	vec3 normal = (texture(in_Normal, UV) * inverse(view)).xyz;
+	vec3 normal = (texture(in_Normal, UV)*inverse(view)).xyz;
 	vec3 albedo = texture(in_SceneImage, UV).rgb;
-	
-	float d_depth = texture(in_Depth, UV).r;
 
-	vec4 cameraRay = vec4(UV, 1.0, 1.0);
-	cameraRay = bias * ubo.projection * cameraRay;
-	cameraRay = cameraRay / cameraRay.w;
-	//cameraRay = ubo.view_direction;
-
-	vec3 ray_origin = cameraRay.xyz*d_depth;
-	
-	vec3 ray_direction = normalize(reflect(normalize(ray_origin), normalize(normal)));
-
+	vec3 ray_origin = ubo.view_direction.xyz * fetchLinearDepth(UV);
+	vec3 ray_direction = normalize(reflect(normalize(ray_origin), normal));
+	float jitter = roughness;
 	vec2 hit_pixel;
 	vec3 hit_point;
 	float iteration_count;
 
-	vec2 uv2 = UV * image_size;
-	float c = (uv2.x + uv2.y) * 0.25f;
-	float jitter = fmod(c, 1.0f);
-
 	bool intersect = TraceScreenSpaceRay(ray_origin, ray_direction, jitter, hit_pixel, hit_point, iteration_count);
-	float alpha = calculateAlphaForIntersection(intersect, iteration_count, specularStrength, hit_pixel, hit_point, ray_origin, ray_direction);
 
-	hit_pixel = mix(UV, hit_pixel, float(intersect));
+	if(hit_pixel.x > 1.0f || hit_pixel.x < 0.0f || hit_pixel.y > 1.0f || hit_pixel.y < 0.0f){
+        outColor = vec4(vec3(roughness), 1.0f);
+		return;
+    }
 
-	outColor.rgb = texture(in_SceneImage, vec2(hit_pixel.x, 1.0f - hit_pixel.y)).rgb;
-	outColor = vec4(hit_pixel, specularStrength, 1.0f);
-	outColor.a = 1.0f;
+	outColor = vec4(hit_pixel, roughness, 1.0f);
+	//outColor = vec4(texture(in_SceneImage, hit_pixel).rgb, 1.0f - roughness);
 }
 
 float DistanceSquared(vec2 a, vec2 b) {
@@ -131,22 +103,14 @@ void SwapIfBigger (inout float aa, inout float bb) {
     }
 }
 
-float FetchLinearDepth(vec2 depthUV) {
-    float cameraFarPlusNear = 10.0f + 1.0f;
-    float cameraFarMinusNear = 10.0f - 1.0f;
-    float cameraCoef = 1.0f * 10.0f;
-    return cameraCoef / (10.0f - texture(in_Depth, vec2(depthUV.x, 1.0f - depthUV.y)).x * (1.0f - 10.0f));
-}
-
-bool rayIntersectsDepthBuffer (float minZ, float maxZ, vec2 depthUV) {
-    float z = FetchLinearDepth(depthUV);
+bool rayIntersectsDepthBuffer(float minZ, float maxZ, vec2 depthUV) {
+    float z = fetchLinearDepth(depthUV);
     
-    /*
-    * Based on how far away from the camera the depth is,
-    * adding a bit of extra thickness can help improve some
-    * artifacts. Driving this value up too high can cause
-    * artifacts of its own.
-    */
+    // Based on how far away from the camera the depth is,
+    // adding a bit of extra thickness can help improve some
+    // artifacts. Driving this value up too high can cause
+    // artifacts of its own.
+    
     float depthScale = min(1.0f, z * _PixelStrideZCuttoff);
     z += ubo.SSR_Thickness + mix(0.0f, 2.0f, depthScale);
     return (maxZ >= z) && (minZ - ubo.SSR_Thickness <= z);
@@ -161,8 +125,8 @@ bool TraceScreenSpaceRay(vec3 pRayOrigin, vec3 pRayDirection, float pJitter, out
 	float ray_length = ((pRayOrigin.z + pRayDirection.z * ubo.SSR_MaxDistance) > -1.0f) ? (-1.0f - pRayOrigin.z) / pRayDirection.z : ubo.SSR_MaxDistance;
 	vec3 ray_end = pRayOrigin + pRayDirection * ray_length;
 
-	vec4 H0 = ubo.projection * vec4(pRayOrigin, 1.0f);
-	vec4 H1 = ubo.projection * vec4(ray_end, 1.0f);
+	vec4 H0 = bias * ubo.projection * vec4(pRayOrigin, 1.0f);
+	vec4 H1 = bias * ubo.projection * vec4(ray_end, 1.0f);
 
 	float k0 = 1.0f/H0.w;
 	float k1 = 1.0f/H1.w;
@@ -187,8 +151,8 @@ bool TraceScreenSpaceRay(vec3 pRayOrigin, vec3 pRayDirection, float pJitter, out
 	float dk = (k1 - k0) * invdx;
 	vec2 dP = vec2(step_direction, delta.y * invdx);
 
-	float strie_scale = 1.0f - min(1.0f, -pRayOrigin.z / _PixelStrideZCuttoff);
-	float pixel_stride = 1.0f + strie_scale * _PixelStride;
+	float stride_scale = 1.0f - min(1.0f, -pRayOrigin.z / _PixelStrideZCuttoff);
+	float pixel_stride = 1.0f + stride_scale * _PixelStride;
 
 	dP *= pixel_stride; 
 	dQ *= pixel_stride;
@@ -252,39 +216,4 @@ bool TraceScreenSpaceRay(vec3 pRayOrigin, vec3 pRayDirection, float pJitter, out
 	pHitPoint = Q0/pqk.w;
 	pItCount = i;
 	return intersect;
-}
-
-float calculateAlphaForIntersection( bool intersect, 
-	float iterationCount, 
-	float specularStrength,
-	vec2 hitPixel,
-	vec3 hitPoint,
-	vec3 vsRayOrigin,
-	vec3 vsRayDirection)
-{
-	float alpha = min( 1.0, specularStrength * 1.0);
-	
-	// Fade ray hits that approach the maximum iterations
-	alpha *= 1.0 - (iterationCount / _Iterations);
-	
-	// Fade ray hits that approach the screen edge
-	float screenFade = _ScreenEdgeFadeStart;
-	vec2 hitPixelNDC = (hitPixel * 2.0 - 1.0);
-	float maxDimension = min( 1.0, max( abs( hitPixelNDC.x), abs( hitPixelNDC.y)));
-	alpha *= 1.0 - (max( 0.0, maxDimension - screenFade) / (1.0 - screenFade));
-	
-	// Fade ray hits base on how much they face the camera
-	float eyeFadeStart = _EyeFadeStart;
-	float eyeFadeEnd = _EyeFadeEnd;
-	SwapIfBigger( eyeFadeStart, eyeFadeEnd);
-	
-	float eyeDirection = clamp( vsRayDirection.z, eyeFadeStart, eyeFadeEnd);
-	alpha *= 1.0 - ((eyeDirection - eyeFadeStart) / (eyeFadeEnd - eyeFadeStart));
-	
-	// Fade ray hits based on distance from ray origin
-	alpha *= 1.0 - clamp( distance( vsRayOrigin, hitPoint) / _MaxRayDistance, 0.0, 1.0);
-	
-	alpha *= float(intersect);
-	
-	return alpha;
 }
