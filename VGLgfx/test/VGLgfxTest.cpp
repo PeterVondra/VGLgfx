@@ -16,9 +16,19 @@ public:
 		vgl::Transform3DComponent* transform = new vgl::Transform3DComponent();
 		transform->transform.scale(1);
 		mesh->mesh = new vgl::MeshData();
-
+		
 		vgl::OBJ_Loader::loadModel("../../VGLgfxEditor/projects/Global_Assets/3D_Models/Sponza/", "sponza.obj", mesh->mesh, false);
 		mesh->mesh->getMaterial(19).config.m_Roughness = 0.77f;
+
+		vgl::Mesh3DComponent* mesh2 = new vgl::Mesh3DComponent();
+		vgl::Transform3DComponent* transform2 = new vgl::Transform3DComponent();
+		transform2->transform.scale(50);
+		transform2->transform.setPosition(100.0f, 10, -100.0f);
+		mesh2->mesh = new vgl::MeshData();
+
+		vgl::OBJ_Loader::loadModel("../../VGLgfxEditor/projects/Global_Assets/3D_Models/", "Cthulhu.obj", mesh2->mesh, false);
+		mesh2->mesh->getMaterial(0).config.m_Roughness = 0.07f;
+		mesh2->mesh->getMaterial(0).config.m_Metallic = 1.00f;
 
 		auto point_light = new vgl::PointLight3DComponent;
 		point_light->Color = { 0.4f, 0.1f, 1.0f };
@@ -44,6 +54,7 @@ public:
 		skybox->skybox = new vgl::Skybox();
 
 		m_Scene.addEntity(*mesh, *transform, *(new vgl::EntityNameComponent("Sponza")));
+		m_Scene.addEntity(*mesh2, *transform2, *(new vgl::EntityNameComponent("Cthulhu")));
 		//m_PointLightEntity = m_Scene.addEntity(*point_light, *pshadow_map, *(new vgl::EntityNameComponent("Point Light")));
 		//m_PointLightEntity = m_Scene.addEntity(*point_light2, *(new vgl::EntityNameComponent("Point Light")));
 		m_DirectionalLightEntity = m_Scene.addEntity(*directional_light, *shadow_map, *(new vgl::EntityNameComponent("Directional Light")));
