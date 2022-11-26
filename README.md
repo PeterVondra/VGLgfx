@@ -29,7 +29,8 @@
   - Bokeh Depth of Field.
   - Auto Adaptive Exposure(Tonemapping + Gamma Correction)
   - Other features like Filmic noise, vignette and other post-processing effects.
-  - Currently working on Screen Space Reflection + Screens Space Refraction. (SSR)
+  - Basic Screen Space Reflections (SSR) with fading.
+  - Currently working on Screens Space Refraction.
   
   
 ___(Editor is currently not running, rewrite is pending)___
