@@ -42,7 +42,9 @@ ___(Editor is currently not running, rewrite is pending)___
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(183).png?raw=true)
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(185).png?raw=true)
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(84).png?raw=true)
-
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(31).png?raw=true)
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(30).png?raw=true)
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(23).png?raw=true)
 
 
 
