@@ -20,6 +20,7 @@
   - Add basic shapes eg. Spheres (UV), Cubes and Grids.
   - Basic Content Browser to directly load textures, obj models or scenes.
 - __Graphical Features__
+  - Parallax Occlusion Mapping (Requires displacement map)
   - Physically Based Rendering.
   - Screen Space Ambient Occlusion (SSAO)
   - Directional/Point light Shadow mapping + Percentage Closer Soft Shadows(PCSS), also includes basic PCF Filtering
