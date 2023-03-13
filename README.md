@@ -22,7 +22,7 @@
 - __Graphical Features__
   - Physically Based Rendering.
   - Screen Space Ambient Occlusion (SSAO)
-  - Directional Shadow mapping + Percentage Closer Soft Shadows(PCSS), also includes basic PCF Filtering
+  - Directional/Point Shadow mapping + Percentage Closer Soft Shadows(PCSS), also includes basic PCF Filtering
   - Volumetric lighting (Using ray marching).
   - Physically based Atmospheric Scattering.
   - Fast Approximate Anti-Aliasing (FXAA)
