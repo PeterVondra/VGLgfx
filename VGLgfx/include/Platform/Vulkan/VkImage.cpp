@@ -135,7 +135,8 @@ namespace vgl
 			m_ContextPtr->destroyImage(m_VkImageHandle, m_ImageAllocation);
 			
 			vkDestroySampler(m_ContextPtr->m_Device, m_Sampler, nullptr);
-			vkDestroyImageView(m_ContextPtr->m_Device, m_ImageView, nullptr);
+			for(auto view : m_ImageViews)
+			vkDestroyImageView(m_ContextPtr->m_Device, view, nullptr);
 			
 			vkDestroyDescriptorSetLayout(m_ContextPtr->m_Device, m_DescriptorSetLayout, nullptr);
 			vkFreeDescriptorSets(m_ContextPtr->m_Device, m_ContextPtr->m_DefaultDescriptorPool, 1, &m_DescriptorSet);
@@ -170,7 +171,7 @@ namespace vgl
 			// Update the Descriptor Set:
 			VkDescriptorImageInfo desc_image = {};
 			desc_image.sampler = m_Sampler;
-			desc_image.imageView = m_ImageView;
+			desc_image.imageView = m_ImageViews[0];
 			desc_image.imageLayout = m_FinalLayout;
 			
 			VkWriteDescriptorSet write_desc = {};
@@ -199,12 +200,16 @@ namespace vgl
 			m_ContextPtr->unmapMemory(alloc);
 
 
+			VkImageUsageFlagBits usage = (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+			if (ImageStorageUsage)
+				usage = (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
+
 			m_ImageAllocation = m_ContextPtr->createImage
 			(
 				m_Size.x, m_Size.y,
 				m_ImageFormat,
 				VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				usage,
 				VMA_MEMORY_USAGE_GPU_ONLY,
 				m_VkImageHandle, m_MipLevels
 			).p_Alloc;
@@ -283,7 +288,15 @@ namespace vgl
 
 		void Image::createImageView()
 		{
-			m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels);
+			if (ImageStorageUsage) {
+				m_ImageViews.resize(m_MipLevels);
+				for (int mip = 0; mip < m_ImageViews.size(); mip++)
+					m_ImageViews[mip] = m_ContextPtr->createImageView(m_VkImageHandle, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, mip);
+			}
+			else {
+				m_ImageViews.resize(1);
+				m_ImageViews[0] = m_ContextPtr->createImageView(m_VkImageHandle, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels);
+			}
 		}
 
 		void Image::createSampler(SamplerMode p_SamplerMode)
@@ -395,6 +408,228 @@ namespace vgl
 			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
 			m_ContextPtr->endSingleTimeCmds(cmd);
+		}
+
+		void Image3D::create(Vector3i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode,
+			Filter p_MagFilter, Filter p_MinFilter)
+		{
+			m_IsValid = false;
+			m_MipLevels = 1;
+			m_Size = p_Size;
+
+			m_MagFilter = p_MagFilter;
+			m_MinFilter = p_MinFilter;
+
+			VGL_INTERNAL_ASSERT_WARNING(m_ImageData != nullptr, "[vk::Image3D]Attempted to create Image with 'p_ImageData' == nullptr");
+
+			if (!m_ImageData) m_IsValid = false;
+
+			m_ColorSpace = p_ColorSpace;
+			m_Channels = p_Channels;
+			m_ImageFormat = getImageFormat(m_ColorSpace, m_Channels);
+
+			VkDeviceSize imageSize = static_cast<size_t>(m_Size.x * m_Size.y * m_Size.z * (uint32_t)m_Channels);
+
+			auto alloc = m_ContextPtr->createBuffer(
+				imageSize,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VMA_MEMORY_USAGE_CPU_ONLY,
+				m_StagingBuffer
+			).p_Alloc;
+
+			m_Mapped = m_ContextPtr->mapMemory(alloc);
+			memcpy(m_Mapped, m_ImageData, static_cast<size_t>(imageSize));
+			m_ContextPtr->unmapMemory(alloc);
+
+
+			VkImageCreateInfo imageInfo = {};
+			imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+			imageInfo.imageType = VK_IMAGE_TYPE_3D;
+			imageInfo.extent.width = static_cast<uint32_t>(m_Size.x);
+			imageInfo.extent.height = static_cast<uint32_t>(m_Size.y);
+			imageInfo.extent.depth = static_cast<uint32_t>(m_Size.z);
+			imageInfo.mipLevels = m_MipLevels;
+			imageInfo.arrayLayers = 1;
+			imageInfo.format = m_ImageFormat;
+			imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+			imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+			imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+			VmaAllocationCreateInfo allocCreateInfo = {};
+			allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+			VmaAllocationInfo allocInfo;
+
+			{
+				VkResult result = vmaCreateImage(m_ContextPtr->m_VmaAllocator, &imageInfo, &allocCreateInfo, &m_VkImageHandle, &m_ImageAllocation, &allocInfo);
+				VGL_INTERNAL_ASSERT_WARNING(result == VK_SUCCESS, "[vk::Image3D]Failed to create image, VkResult: %i", (uint64_t)result);
+			}
+
+			m_ContextPtr->transitionLayoutImage
+			(
+				m_VkImageHandle,
+				m_ImageFormat,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_MipLevels
+			);
+			m_ContextPtr->copyBufferToImage
+			(
+				m_StagingBuffer,
+				m_VkImageHandle,
+				static_cast<uint32_t>(m_Size.x),
+				static_cast<uint32_t>(m_Size.y)
+			);
+
+			//generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size, m_MipLevels);
+
+			m_CurrentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			m_FinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			m_ContextPtr->destroyBuffer(m_StagingBuffer, alloc);
+
+			m_SamplerMode = p_SamplerMode;
+
+			VkSamplerCreateInfo samplerInfo = {};
+			samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			samplerInfo.magFilter = (VkFilter)m_MagFilter;
+			samplerInfo.minFilter = (VkFilter)m_MinFilter;
+			samplerInfo.addressModeU = (VkSamplerAddressMode)p_SamplerMode;
+			samplerInfo.addressModeV = (VkSamplerAddressMode)p_SamplerMode;
+			samplerInfo.addressModeW = (VkSamplerAddressMode)p_SamplerMode;
+			samplerInfo.anisotropyEnable = VK_FALSE;
+			samplerInfo.maxAnisotropy = 1;
+			samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+			samplerInfo.unnormalizedCoordinates = VK_FALSE;
+			samplerInfo.compareEnable = VK_FALSE;
+			samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			samplerInfo.mipLodBias = 0.0f;
+			samplerInfo.minLod = 0.0f;
+			samplerInfo.maxLod = static_cast<float>(m_MipLevels);
+
+			{
+				VkResult result = vkCreateSampler(m_ContextPtr->m_Device, &samplerInfo, nullptr, &m_Sampler);
+				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::Image3D]Failed to create Image sampler, VkResult: %i", (uint64_t)result);
+			}
+
+			//generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size, m_MipLevels);
+
+			m_CurrentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			m_FinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels, 1, VK_IMAGE_VIEW_TYPE_3D);
+
+			m_IsValid = true;
+		}
+		void Image3D::create(Vector3i p_Size, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode,
+			Filter p_MagFilter, Filter p_MinFilter)
+		{
+			m_IsValid = false;
+			m_MipLevels = 1;
+			m_Size = p_Size;
+
+			m_MagFilter = p_MagFilter;
+			m_MinFilter = p_MinFilter;
+
+			VGL_INTERNAL_ASSERT_WARNING(m_ImageData != nullptr, "[vk::Image3D]Attempted to create Image with 'p_ImageData' == nullptr");
+
+			if (!m_ImageData) m_IsValid = false;
+
+			m_ColorSpace = p_ColorSpace;
+			m_Channels = p_Channels;
+			m_ImageFormat = getImageFormat(m_ColorSpace, m_Channels);
+
+			VkDeviceSize imageSize = static_cast<size_t>(m_Size.x * m_Size.y * m_Size.z * (uint32_t)m_Channels);
+
+			auto alloc = m_ContextPtr->createBuffer(
+				imageSize,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VMA_MEMORY_USAGE_CPU_ONLY,
+				m_StagingBuffer
+			).p_Alloc;
+
+			m_Mapped = m_ContextPtr->mapMemory(alloc);
+			memcpy(m_Mapped, m_ImageData, static_cast<size_t>(imageSize));
+			m_ContextPtr->unmapMemory(alloc);
+
+			VkImageCreateInfo imageInfo = {};
+			imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+			imageInfo.imageType = VK_IMAGE_TYPE_3D;
+			imageInfo.extent.width = static_cast<uint32_t>(m_Size.x);
+			imageInfo.extent.height = static_cast<uint32_t>(m_Size.y);
+			imageInfo.extent.depth = static_cast<uint32_t>(m_Size.z);
+			imageInfo.mipLevels = m_MipLevels;
+			imageInfo.arrayLayers = 1;
+			imageInfo.format = m_ImageFormat;
+			imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+			imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+			imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+			VmaAllocationCreateInfo allocCreateInfo = {};
+			allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+			VmaAllocationInfo allocInfo;
+
+			{
+				VkResult result = vmaCreateImage(m_ContextPtr->m_VmaAllocator, &imageInfo, &allocCreateInfo, &m_VkImageHandle, &alloc, &allocInfo);
+				VGL_INTERNAL_ASSERT_WARNING(result == VK_SUCCESS, "[vk::Image3D]Failed to create image, VkResult: %i", (uint64_t)result);
+			}
+
+			m_ContextPtr->transitionLayoutImage
+			(
+				m_VkImageHandle,
+				m_ImageFormat,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_MipLevels
+			);
+
+			m_SamplerMode = p_SamplerMode;
+
+			VkSamplerCreateInfo samplerInfo = {};
+			samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			samplerInfo.magFilter = (VkFilter)m_MagFilter;
+			samplerInfo.minFilter = (VkFilter)m_MinFilter;
+			samplerInfo.addressModeU = (VkSamplerAddressMode)p_SamplerMode;
+			samplerInfo.addressModeV = (VkSamplerAddressMode)p_SamplerMode;
+			samplerInfo.addressModeW = (VkSamplerAddressMode)p_SamplerMode;
+			samplerInfo.anisotropyEnable = VK_FALSE;
+			samplerInfo.maxAnisotropy = 1;
+			samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+			samplerInfo.unnormalizedCoordinates = VK_FALSE;
+			samplerInfo.compareEnable = VK_FALSE;
+			samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			samplerInfo.mipLodBias = 0.0f;
+			samplerInfo.minLod = 0.0f;
+			samplerInfo.maxLod = static_cast<float>(m_MipLevels);
+
+			{
+				VkResult result = vkCreateSampler(m_ContextPtr->m_Device, &samplerInfo, nullptr, &m_Sampler);
+				VGL_INTERNAL_ASSERT_ERROR(result == VK_SUCCESS, "[vk::Image3D]Failed to create Image sampler, VkResult: %i", (uint64_t)result);
+			}
+
+			//generateMipMaps(m_VkImageHandle, VK_FORMAT_R16G16B16A16_SFLOAT, m_Size, m_MipLevels);
+
+			m_CurrentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			m_FinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			m_ImageView = m_ContextPtr->createImageView(m_VkImageHandle, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels, 1, VK_IMAGE_VIEW_TYPE_3D);
+
+			m_IsValid = true;
+		}
+
+		void Image3D::destroy()
+		{
+			m_IsValid = false;
+
+			VGL_INTERNAL_TRACE("[vk::StorageImage3D]Destroyed Image: %p", (void*)m_VkImageHandle);
+
+			m_ContextPtr->destroyImage(m_VkImageHandle, m_ImageAllocation);
+
+			vkDestroySampler(m_ContextPtr->m_Device, m_Sampler, nullptr);
+			vkDestroyImageView(m_ContextPtr->m_Device, m_ImageView, nullptr);
 		}
 
 		ImageCube::ImageCube()

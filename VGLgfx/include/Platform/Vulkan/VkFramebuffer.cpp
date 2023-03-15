@@ -29,9 +29,9 @@ namespace vgl
 			m_Size = p_FramebufferInfo.p_Size;
 
 			for (ImageAttachment& imageAttachment : p_FramebufferInfo.p_ImageAttachments){
-				m_ImageViews.push_back(imageAttachment.m_ImageViewAttachment);
+				m_ImageViews.push_back(imageAttachment.m_ImageViewAttachments[0]);
 				if(p_FramebufferInfo.p_AllowMipMapping)
-					m_AttachmentImageInfos.push_back(imageAttachment.m_AttachmentImageInfo);
+					m_AttachmentImageInfos.push_back(imageAttachment.m_AttachmentImageInfo[0]);
 			}
 
 			m_RenderPassPtr = p_FramebufferInfo.p_RenderPass;
@@ -121,6 +121,10 @@ namespace vgl
 			if(p_ImageAttachmentInfo.p_AllowMipMapping)
 				m_MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(p_ImageAttachmentInfo.p_Size.x, p_ImageAttachmentInfo.p_Size.y)))) + 1;
 
+			m_ImageViewAttachments.resize(m_MipLevels);
+			m_AttachmentImageInfo.resize(m_MipLevels);
+			m_ImageObj.m_ImageViews.resize(m_MipLevels);
+
 			if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Depth)
 				usageFlag = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 			if (p_ImageAttachmentInfo.p_CreateSampler)
@@ -154,13 +158,17 @@ namespace vgl
 					p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1,
 					(VkImageViewType)p_ImageAttachmentInfo.p_ViewType
 				);
-				m_ImageViewAttachment = m_ContextPtr->createImageView(
-					m_VkImageHandle,
-					p_ImageAttachmentInfo.p_AttachmentInfo->p_Format,
-					VK_IMAGE_ASPECT_DEPTH_BIT,
-					1,
-					p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1,
-					(VkImageViewType)p_ImageAttachmentInfo.p_ViewType);
+				// Image view that is used in the framebuffer
+				for (int mip = 0; mip < m_ImageViewAttachments.size(); mip++)
+					m_ImageViewAttachments[mip] = m_ContextPtr->createImageView(
+						m_VkImageHandle,
+						p_ImageAttachmentInfo.p_AttachmentInfo->p_Format,
+						VK_IMAGE_ASPECT_DEPTH_BIT,
+						1,
+						p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1,
+						(VkImageViewType)p_ImageAttachmentInfo.p_ViewType,
+						mip
+					);
 			}
 			else if (p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Color || p_ImageAttachmentInfo.p_AttachmentInfo->p_AttachmentType == AttachmentType::Resolve) {
 				// Image view used for sampling
@@ -173,14 +181,16 @@ namespace vgl
 					(VkImageViewType)p_ImageAttachmentInfo.p_ViewType
 				);
 				// Image view that is used in the framebuffer
-				m_ImageViewAttachment = m_ContextPtr->createImageView(
-					m_VkImageHandle, 
-					p_ImageAttachmentInfo.p_AttachmentInfo->p_Format, 
-					VK_IMAGE_ASPECT_COLOR_BIT, 
-					1,
-					p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1,
-					(VkImageViewType)p_ImageAttachmentInfo.p_ViewType
-				);
+				for(int mip = 0; mip < m_ImageViewAttachments.size(); mip++)
+					m_ImageViewAttachments[mip] = m_ContextPtr->createImageView(
+						m_VkImageHandle, 
+						p_ImageAttachmentInfo.p_AttachmentInfo->p_Format, 
+						VK_IMAGE_ASPECT_COLOR_BIT, 
+						1,
+						p_ImageAttachmentInfo.p_ViewType == AttachmentViewType::ImageCube ? 6 : 1,
+						(VkImageViewType)p_ImageAttachmentInfo.p_ViewType,
+						mip
+					);
 			}
 
 			m_ImageObj.m_CurrentLayout = (VkImageLayout)info.p_AttachmentInfo->p_InitialLayout;
@@ -228,7 +238,12 @@ namespace vgl
 
 			m_ImageObj.m_VkImageHandle = m_VkImageHandle;
 			m_ImageObj.m_ImageAllocation = m_ImageAllocation;
-			m_ImageObj.m_ImageView = m_ImageView;
+			m_ImageObj.m_ImageViews[0] = m_ImageView;
+			if (p_ImageAttachmentInfo.p_AllowMipMapping)
+				if (p_ImageAttachmentInfo.p_ImageUsageStorage) {
+					m_ImageObj.ImageStorageUsage = true;
+					m_ImageObj.m_ImageViews = m_ImageViewAttachments;
+				}
 			m_ImageObj.m_FinalLayout = (VkImageLayout)info.p_AttachmentInfo->p_FinalLayout;
 			m_ImageObj.m_Size = p_ImageAttachmentInfo.p_Size;
 			m_ImageObj.m_MipLevels = m_MipLevels;
@@ -274,14 +289,16 @@ namespace vgl
 			m_ImageObj.m_IsValid = m_IsValid;
 			m_ImageCubeObj.m_IsValid = m_IsValid;
 
-			m_AttachmentImageInfo = {};
-			m_AttachmentImageInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO;
-			m_AttachmentImageInfo.layerCount = 1;
-			m_AttachmentImageInfo.usage = usageFlag;
-			m_AttachmentImageInfo.pViewFormats = &p_ImageAttachmentInfo.p_AttachmentInfo->p_Format;
-			m_AttachmentImageInfo.viewFormatCount = 1;
-			m_AttachmentImageInfo.width = p_ImageAttachmentInfo.p_Size.x;
-			m_AttachmentImageInfo.height = p_ImageAttachmentInfo.p_Size.y;
+			for (int mip = 0; mip < m_ImageViewAttachments.size(); mip++) {
+				m_AttachmentImageInfo[mip] = {};
+				m_AttachmentImageInfo[mip].sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO;
+				m_AttachmentImageInfo[mip].layerCount = 1;
+				m_AttachmentImageInfo[mip].usage = usageFlag;
+				m_AttachmentImageInfo[mip].pViewFormats = &p_ImageAttachmentInfo.p_AttachmentInfo->p_Format;
+				m_AttachmentImageInfo[mip].viewFormatCount = 1;
+				m_AttachmentImageInfo[mip].width = p_ImageAttachmentInfo.p_Size.x;
+				m_AttachmentImageInfo[mip].height = p_ImageAttachmentInfo.p_Size.y;
+			}
 		}
 
 		void ImageAttachment::destroy()

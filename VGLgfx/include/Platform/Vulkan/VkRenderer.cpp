@@ -126,7 +126,7 @@ namespace vgl
 
 			createDefaultRenderPass();
 			createDepthImageAttachment();
-			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageView, m_WindowPtr->m_ColorImageView);
+			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageViews[0], m_WindowPtr->m_ColorImageView);
 			m_PresentInfo.pSwapchains = &m_WindowPtr->m_Swapchain.m_Swapchain;
 
 			createPostSwapchainRenderPass();
@@ -168,7 +168,7 @@ namespace vgl
 
 			createDefaultRenderPass();
 			createDepthImageAttachment();
-			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageView, m_WindowPtr->m_ColorImageView);
+			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageViews[0], m_WindowPtr->m_ColorImageView);
 			m_PresentInfo.pSwapchains = &m_WindowPtr->m_Swapchain.m_Swapchain;
 
 			createPostSwapchainRenderPass();
@@ -210,7 +210,7 @@ namespace vgl
 
 			createDefaultRenderPass();
 			createDepthImageAttachment();
-			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageView, m_WindowPtr->m_ColorImageView);
+			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageViews[0], m_WindowPtr->m_ColorImageView);
 			m_PresentInfo.pSwapchains = &m_WindowPtr->m_Swapchain.m_Swapchain;
 
 			createPostSwapchainRenderPass();
@@ -253,7 +253,7 @@ namespace vgl
 
 			createDefaultRenderPass();
 			createDepthImageAttachment();
-			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageView, m_WindowPtr->m_ColorImageView);
+			m_WindowPtr->m_Swapchain.initFramebuffers(m_DefaultRenderPass.m_RenderPass, m_DepthImageAttachment.getImage().m_ImageViews[0], m_WindowPtr->m_ColorImageView);
 			m_PresentInfo.pSwapchains = &m_WindowPtr->m_Swapchain.m_Swapchain;
 
 			createPostSwapchainRenderPass();
@@ -324,6 +324,17 @@ namespace vgl
 		{
 
 		}
+		void Renderer::submit(ComputePipeline& p_ComputePipeline, Descriptor& p_Descriptor, const Vector3i p_WorkgroupCount, PipelineStage p_SrcStage, PipelineStage p_DstStage)
+		{
+			ComputeDispatchInfo info;
+			info.p_ComputePipeline = &p_ComputePipeline;
+			info.p_Descriptor = &p_Descriptor;
+			info.p_WorkgroupCount = p_WorkgroupCount;
+			info.p_SrcStage = p_SrcStage;
+			info.p_DstStage = p_DstStage;
+
+			m_RecordPrimaryCmdBuffersFunPtrs.emplace_back(&info, &Renderer::recordPCmdComputeFun);
+		}
 		void Renderer::submit(void* p_Data, const uint32_t p_Size)
 		{
 		}
@@ -351,7 +362,7 @@ namespace vgl
 			if(p_Skybox.m_CubeMap != nullptr)
 				if (p_Skybox.m_CubeMap->isValid())
 					m_AtmosphericScatteringInfoPtr = nullptr;
-			if(m_AtmosphericScatteringInfoPtr) m_AtmosphericScatteringInfoPtr->p_RayOrigin = m_Camera->getPosition();
+			//if(m_AtmosphericScatteringInfoPtr) m_AtmosphericScatteringInfoPtr->p_RayOrigin = m_Camera->getPosition();
 
 			recordMeshDataSkybox(p_Skybox, p_Skybox);
 		}
@@ -950,6 +961,66 @@ namespace vgl
 					p_PrimaryCommandBuffer.cmdExecuteCommands(shadowPtr->m_CommandBuffers[m_CurrentFrame], shadowPtr->m_CommandBufferIdx[m_CurrentFrame]);
 					shadowPtr->m_Attachment.cmdEndRenderPass();
 				}
+		}
+
+		void Renderer::recordPCmdComputeFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex)
+		{
+			/*ComputeDispatchInfo& dispatch_info = *(ComputeDispatchInfo*)(p_Ptr);
+
+			VkDependencyInfo info;
+			
+			dispatch_info
+
+			vkCmdPipelineBarrier(p_PrimaryCommandBuffer.m_CommandBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT);
+
+			vkCmdBindPipeline(p_PrimaryCommandBuffer.m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, dispatch_info.p_ComputePipeline->m_ComputePipeline);
+			vkCmdBindDescriptorSets(
+				p_PrimaryCommandBuffer.m_CommandBuffer, 
+				VK_PIPELINE_BIND_POINT_COMPUTE,
+				dispatch_info.p_ComputePipeline->m_PipelineLayout, 
+				0, 1, &dispatch_info.p_Descriptor->m_DescriptorSets[p_ImageIndex].m_DescriptorSet,
+				0, 0
+			);
+
+			vkCmdDispatch(p_PrimaryCommandBuffer.m_CommandBuffer, dispatch_info.p_WorkgroupCount.x, dispatch_info.p_WorkgroupCount.y, dispatch_info.p_WorkgroupCount.z);
+
+			vkCmdPipelineBarrier(p_PrimaryCommandBuffer.m_CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+			struct BufferMemoryBarrier
+			{
+
+			};
+			struct ImageMemoryBarrier
+			{
+
+			};
+
+			{
+				DispatchInfo
+				{
+					Pipeline;
+					ShaderDescriptor;
+					WorkgroupCount;
+				}
+				MemoryBarrier
+				{
+
+				}
+				ExecBarrier
+				{
+
+				}
+				Dispatch;
+				MemoryBarrier
+				{
+
+				}
+				ExecBarrier
+				{
+
+				}
+
+			}*/
 		}
 
 		void Renderer::begin()

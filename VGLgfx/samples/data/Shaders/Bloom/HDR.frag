@@ -8,7 +8,7 @@
 #define EPSILON 0.0000001
 
 layout(binding = 0) uniform sampler2D imageHDR;
-//layout(binding = 1) uniform sampler2D imageBloom;
+layout(binding = 1) uniform sampler2D imageBloom;
 
 layout(location = 0) in vec2 UV;
 layout(location = 0) out vec4 outColor;

@@ -1153,7 +1153,7 @@ namespace vgl
 			return { alloc, allocInfo };
 		}
 
-		VkImageView Context::createImageView(VkImage p_Image, VkFormat p_Format, VkImageAspectFlags p_AspectFlags, uint32_t p_MipLevels, uint32_t p_ArrayLayers, VkImageViewType p_ImageViewType)
+		VkImageView Context::createImageView(VkImage p_Image, VkFormat p_Format, VkImageAspectFlags p_AspectFlags, uint32_t p_MipLevels, uint32_t p_ArrayLayers, VkImageViewType p_ImageViewType, uint32_t p_BaseMipLevel)
 		{
 			VkImageView imageView;
 			VkImageViewCreateInfo imageViewInfo = {};
@@ -1162,7 +1162,7 @@ namespace vgl
 			imageViewInfo.viewType = p_ImageViewType;
 			imageViewInfo.format = p_Format;
 			imageViewInfo.subresourceRange.aspectMask = p_AspectFlags;
-			imageViewInfo.subresourceRange.baseMipLevel = 0;
+			imageViewInfo.subresourceRange.baseMipLevel = p_BaseMipLevel;
 			imageViewInfo.subresourceRange.levelCount = static_cast<float>(p_MipLevels);
 			imageViewInfo.subresourceRange.baseArrayLayer = 0;
 			imageViewInfo.subresourceRange.layerCount = p_ArrayLayers;

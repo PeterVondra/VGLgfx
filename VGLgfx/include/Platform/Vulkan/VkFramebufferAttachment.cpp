@@ -106,6 +106,7 @@ namespace vgl
 					ImageAttachmentInfo attachmentInfo;
 					attachmentInfo.p_AttachmentInfo = &FBAinfo.p_AttachmentDescriptors[j].p_AttachmentInfo;
 					attachmentInfo.p_AllowMipMapping = FBAinfo.p_AttachmentDescriptors[j].p_AllowMipMapping;
+					attachmentInfo.p_ImageUsageStorage = FBAinfo.p_AttachmentDescriptors[j].p_ImageUsageStorage;
 					attachmentInfo.p_CreateSampler = FBAinfo.p_AttachmentDescriptors[j].m_CreateSampler;
 					attachmentInfo.p_BorderColor = FBAinfo.p_AttachmentDescriptors[j].p_BorderColor;
 					attachmentInfo.p_SamplerMode = FBAinfo.p_AttachmentDescriptors[j].p_SamplerMode;
@@ -185,7 +186,7 @@ namespace vgl
 			m_CurrentCommandBuffer->cmdEndRenderPass();
 		}
 
-		void FramebufferAttachment::recordCmdBuffer(CommandBuffer& p_CommandBuffer, const uint32_t p_ImageIndex)
+		void FramebufferAttachment::recordCmdBuffer(CommandBuffer& p_CommandBuffer, const uint32_t p_ImageIndex, const uint32_t p_MipLevel)
 		{			
 			if (m_AllowMipMapping) {
 				m_AttachmentBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO;

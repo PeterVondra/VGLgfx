@@ -110,6 +110,13 @@ namespace vgl
 				//void submit(P_Light& p_LightSrc);
 				// Use custom shader for next drawcall
 				void submit(Shader& p_Shader);
+				void submit(
+					ComputePipeline& p_ComputePipeline,
+					Descriptor& p_Descriptor,
+					const Vector3i p_WorkgroupCount,
+					PipelineStage p_SrcStage = PipelineStage::Bottom_Of_Pipe,
+					PipelineStage p_DstStage = PipelineStage::Top_Of_Pipe
+				);
 				// Submits to push constant
 				void submit(void* p_Data, const uint32_t p_Size);
 				void submit(Image& p_Image, const uint32_t p_Binding);
@@ -188,6 +195,18 @@ namespace vgl
 				void recordPCmdSMAPFunDS(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
 				void recordPCmdSMAPFunP(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
 
+				struct ComputeDispatchInfo
+				{
+					ComputePipeline* p_ComputePipeline;
+					Descriptor* p_Descriptor;
+					Vector3i p_WorkgroupCount;
+
+					PipelineStage p_SrcStage = PipelineStage::Fragment_Shader;
+					PipelineStage p_DstStage = PipelineStage::Compute_Shader;
+				};
+
+				void recordPCmdComputeFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
+
 			private:
 				friend class vgl::Application;
 
@@ -237,6 +256,7 @@ namespace vgl
 				void (Renderer::*m_RecordMeshDataFun)(MeshData& p_MeshData, Transform3D& p_Transform);
 
 				std::vector<PCMDP> m_RecordPrimaryCmdBuffersFunPtrs;
+				std::vector<PCMDP> m_RecordPrimaryComputeCmdBufferFunPtrs;
 			
 			// Internal vulkan functions for renderer 
 			private:
@@ -277,5 +297,84 @@ namespace vgl
 				uint32_t	m_CurrentFrame = 0; // Current frame/image that is written by the gpu
 				uint32_t 	m_ImageIndex = 0; // Available frame/image that is not currently written by the gpu
 		};
+
+		/*struct ComputeCommands
+		{
+			ComputeCommands() : m_ContextPtr(&ContextSingleton::getInstance()) {}
+
+			void submit(
+				Image& p_Image,
+				PipelineStage p_SrcStage,
+				PipelineStage p_DstStage
+			){
+				static ImageMemoryBarrierInfo info = { &p_Image, p_SrcStage, p_DstStage };
+				m_ComputeCommandsQueue.emplace_back(&info, &ComputeCommands::CCmdImageMemoryBarrierFun);
+			}
+
+			void CCmdImageMemoryBarrierFun(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex)
+			{
+				ImageMemoryBarrierInfo& info = *(ImageMemoryBarrierInfo*)p_Ptr;
+				if (info.p_Image == nullptr) return;
+				
+				VkImageMemoryBarrier barrier = {};
+				barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+				barrier.image = info.p_Image->m_VkImageHandle;
+				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				barrier.subresourceRange.baseArrayLayer = 0;
+				barrier.subresourceRange.layerCount = 1;
+				barrier.subresourceRange.levelCount = info.p_Image->m_MipLevels;
+				barrier.subresourceRange.baseMipLevel = 0;
+
+				vkCmdPipelineBarrier(*m_CommandBufferPtr, (VkPipelineStageFlags)info.p_SrcStage, (VkPipelineStageFlags)info.p_DstStage,
+					0, 0, nullptr, 0, nullptr, 1,
+					&barrier
+				);
+			}
+
+			void bufferMemoryBarrier(VkBuffer& p_Buffer, PipelineStage p_SrcStage, PipelineStage p_DstStage)
+			{
+				VkBufferMemoryBarrier barrier = {};
+				barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+				barrier.buffer = p_Buffer;
+				//barrier.dstAccessMask = VK_ACCESS_STAG
+
+			}
+			void executionBarrier(PipelineStage p_SrcStage, PipelineStage p_DstStage)
+			{
+				vkCmdPipelineBarrier(*m_CommandBufferPtr, (VkPipelineStageFlags)p_SrcStage, (VkPipelineStageFlags)p_DstStage, VK_DEPENDENCY_BY_REGION_BIT, 1, )
+			}
+			void dispatch()
+			{
+
+			}
+
+		private:
+			Context* m_ContextPtr = nullptr;
+
+			VkCommandBuffer* m_CommandBufferPtr;
+
+			std::vector<VkImageMemoryBarrier> m_ImageMemoryBarriers;
+			std::vector<VkBufferMemoryBarrier> m_BufferMemoryBarriers;
+
+			struct ImageMemoryBarrierInfo
+			{
+				Image* p_Image = nullptr;
+				PipelineStage p_SrcStage;
+				PipelineStage p_DstStage;
+			};
+
+			// Data passed from command submission
+			struct CCMDFP {
+				CCMDFP(void* p_Ptr, void(ComputeCommands::* p_CCMDFun)(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex))
+					: ptr(p_Ptr), ccmdFun(p_CCMDFun) {}
+
+				void* ptr; // Data
+				void(ComputeCommands::* ccmdFun)(void* p_Ptr, CommandBuffer& p_PrimaryCommandBuffer, const uint32_t& p_ImageIndex);
+			};
+
+			std::vector<CCMDFP> m_ComputeCommandsQueue;
+		};*/
 	}
 }

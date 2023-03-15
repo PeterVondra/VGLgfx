@@ -32,6 +32,18 @@ namespace vgl
 			FramebufferAttachment m_DOFFramebuffer;
 			FramebufferAttachment m_FXAAFramebuffer;
 			FramebufferAttachment m_HDRFramebuffer;
+			
+			uint32_t m_DownsampleMipLevels = 1;
+			std::vector<FramebufferAttachment> m_DownsamplingFramebuffers;
+			uint32_t m_UpsampleMipLevels = 1;
+			std::vector<FramebufferAttachment> m_UpsamplingFramebuffers;
+
+			FramebufferAttachment m_PrefilterFramebufferAttachment;
+			FramebufferAttachment m_BloomFramebufferAttachment;
+
+			// For upsampling (Bloom)
+			float m_FilterRadius = 0.001f;
+			float m_BloomThreshold = 0.0f;
 
 			Shader m_HDRShader;
 			Shader m_GBufferLightPassShader;
@@ -40,6 +52,10 @@ namespace vgl
 			Shader m_DOFShader;
 			Shader m_FXAAShader;
 			Shader m_SSRShader;
+			Shader m_DownsamplingShader;
+			Shader m_UpsamplingShader;
+			Shader m_PrefilterShader;
+			Shader m_BloomShader;
 
 			// SSAO Framebuffer
 			FramebufferAttachment m_SSAOFramebuffer;
@@ -51,7 +67,7 @@ namespace vgl
 				float SSR_StepLength = -0.1f;
 				float SSR_MaxSteps = 50;
 				float SSR_BinarySearchSteps = 5;
-				float SSR_ReflectionSpecularFalloffExponent = 3.0f;
+				float SSR_ReflectionSpecularFalloffExponent = 10.0f;
 			};
 			SSR_DATA SSR_Data;
 
@@ -70,12 +86,14 @@ namespace vgl
 			void setupLightPassBuffer();
 			void setupSSRBuffer();
 			void setupPostProcessBuffers();
+			void setupBloomBuffers();
 
 			void transferGBufferData();
 			void transferSSAOData();
 			void transferSSRData();
 			void transferLightPassData();
 			void transferPostProcessData();
+			void transferBloomData();
 
 			Renderer* m_RendererPtr = nullptr;
 			Window* m_WindowPtr = nullptr;

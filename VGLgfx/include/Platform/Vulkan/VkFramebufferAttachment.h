@@ -20,8 +20,9 @@ namespace vgl
 			ImageFormat p_ImageFormat;
 			Layout p_Layout;
 
-			bool p_AllowMipMapping = false;
 			bool p_ClearFrame = true;
+			bool p_AllowMipMapping = false;
+			bool p_ImageUsageStorage = false;
 
 			// AttachmentInfo from RenderPass 
 			AttachmentViewType p_ViewType = AttachmentViewType::Image2D;
@@ -37,6 +38,7 @@ namespace vgl
 				Layout _Layout,
 				bool _ClearFrame = true,
 				bool _AllowMipMapping = false,
+				bool _ImageUsageStorage = false,
 				BorderColor _BorderColor = BorderColor::OpaqueBlack,
 				SamplerMode _SamplerMode = SamplerMode::ClampToBorder
 			) : 
@@ -45,6 +47,7 @@ namespace vgl
 				p_Layout(_Layout),
 				p_ClearFrame(_ClearFrame),
 				p_AllowMipMapping(_AllowMipMapping),
+				p_ImageUsageStorage(_ImageUsageStorage),
 				p_BorderColor(_BorderColor),
 				p_SamplerMode(_SamplerMode)
 			{
@@ -138,6 +141,7 @@ namespace vgl
 					Layout p_Layout,
 					bool p_ClearFrame = true,
 					bool p_AllowMipMapping = false,
+					bool p_ImageUsageStorage = false,
 					BorderColor p_BorderColor = BorderColor::OpaqueBlack,
 					SamplerMode p_SamplerMode = SamplerMode::ClampToBorder
 				){ 
@@ -147,6 +151,7 @@ namespace vgl
 						p_Layout,
 						p_ClearFrame,
 						p_AllowMipMapping,
+						p_ImageUsageStorage,
 						p_BorderColor,
 						p_SamplerMode
 					);
@@ -164,7 +169,7 @@ namespace vgl
 
 				void cmdBeginRenderPass(CommandBuffer& p_CommandBuffer, SubpassContents p_SubpassContents, const uint32_t p_ImageIndex);
 				void cmdEndRenderPass();
-				void recordCmdBuffer(CommandBuffer& p_CommandBuffer, const uint32_t p_ImageIndex);
+				void recordCmdBuffer(CommandBuffer& p_CommandBuffer, const uint32_t p_ImageIndex, const uint32_t p_MipLevel = 0);
 
 				Context* m_ContextPtr;
 

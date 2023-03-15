@@ -9,8 +9,8 @@ namespace vgl
 		//bool autoExposure;
 		float deltatime = 0.0f;
 
-        alignas(4) float gamma = 2.2f;
-		alignas(4) float exposure = 2.56f;
+        alignas(4) float gamma = 1.780f;
+		alignas(4) float exposure = 2.06f;
 		alignas(4) float exposure_adapt_rate = 0.025;
 
 		alignas(4) float filmicScale = 32;
@@ -33,7 +33,7 @@ namespace vgl
 	// Atmosperic scattering
 	struct AtmosphericScatteringInfo
 	{
-		alignas(4) Vector3f p_RayOrigin = { 0, 6372e3, 0 };					// ray origin
+		Vector3f p_RayOrigin = { 0, 6372e3, 0 };					// ray origin
 		alignas(16) Vector3f p_SunPos = { 0, 0.1, -1 };						// position of the sun
 		alignas(4) float p_SunIntensity = 100.0;							// intensity of the sun
 		alignas(4) float p_PlanetRadius = 6372e3;							// radius of the planet in meters

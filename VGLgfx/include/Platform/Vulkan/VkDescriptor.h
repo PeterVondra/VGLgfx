@@ -44,12 +44,13 @@ namespace vgl
 				bool isValid() { return m_Size > 0 && m_Binding != UINT32_MAX; }
 		};
 
-
 		struct StorageBuffer
 		{
 			StorageBuffer() : m_ContextPtr(&ContextSingleton::getInstance()), m_Size(0) {};
-			StorageBuffer(ShaderStage p_ShaderStage, const uint64_t p_Size, const uint32_t p_Binding) : m_ContextPtr(&ContextSingleton::getInstance()), m_ShaderStage(p_ShaderStage), m_Size(p_Size), m_Binding(p_Binding) {};
+			StorageBuffer(std::vector<ShaderStage> p_ShaderStages, const uint64_t p_Size, const uint32_t p_Binding) : m_ContextPtr(&ContextSingleton::getInstance()), m_ShaderStages(p_ShaderStages), m_Size(p_Size), m_Binding(p_Binding) {};
 			~StorageBuffer() {};
+
+			bool m_VertexBufferUsage = false;
 
 			// Must be set before creation (before Descriptor::create(...);
 			uint64_t m_Size = UINT64_MAX; // Max size is UINT64_MAX - 1
@@ -65,7 +66,7 @@ namespace vgl
 			VkBuffer m_Buffer;
 			AllocationInfo m_AllocInfo;
 
-			ShaderStage m_ShaderStage;
+			std::vector<ShaderStage> m_ShaderStages;
 
 			std::vector<uint64_t> m_Offsets;
 
@@ -90,7 +91,7 @@ namespace vgl
 			// If index < 0 then index will not be used
 			int32_t p_FrameIndex = -1;
 
-			ShaderStage p_ShaderStage = ShaderStage::FragmentBit; // Can be set to vertexbit, but fragmentbit is the default
+			ShaderStage p_ShaderStage = ShaderStage::FragmentBit;
 
 			bool isValid() { return p_Image && p_Binding != UINT32_MAX; }
 
@@ -105,10 +106,24 @@ namespace vgl
 			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_), p_ImageLayout(p_Image->m_FinalLayout)
 		{
 			p_ImageInfo.imageLayout = p_Image->m_FinalLayout;
-			p_ImageInfo.imageView = p_Image->m_ImageView;
+			p_ImageInfo.imageView = p_Image->m_ImageViews[0];
 			p_ImageInfo.sampler = p_Image->m_Sampler;
 		}
 		template<> inline SamplerDescriptorData<Image>::SamplerDescriptorData(Image* p_Image_, uint32_t p_Binding_, VkImageLayout p_ImageLayout_, int32_t p_FrameIndex_)
+			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_), p_ImageLayout(p_ImageLayout_)
+		{
+			p_ImageInfo.imageLayout = p_ImageLayout_;
+			p_ImageInfo.imageView = p_Image->m_ImageViews[0];
+			p_ImageInfo.sampler = p_Image->m_Sampler;
+		}
+		template<> inline SamplerDescriptorData<Image3D>::SamplerDescriptorData(Image3D* p_Image_, uint32_t p_Binding_, int32_t p_FrameIndex_)
+			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_), p_ImageLayout(p_Image->m_FinalLayout)
+		{
+			p_ImageInfo.imageLayout = p_Image->m_FinalLayout;
+			p_ImageInfo.imageView = p_Image->m_ImageView;
+			p_ImageInfo.sampler = p_Image->m_Sampler;
+		}
+		template<> inline SamplerDescriptorData<Image3D>::SamplerDescriptorData(Image3D* p_Image_, uint32_t p_Binding_, VkImageLayout p_ImageLayout_, int32_t p_FrameIndex_)
 			: p_Image(p_Image_), p_Binding(p_Binding_), p_FrameIndex(p_FrameIndex_), p_ImageLayout(p_ImageLayout_)
 		{
 			p_ImageInfo.imageLayout = p_ImageLayout_;
@@ -129,6 +144,54 @@ namespace vgl
 			SamplerDescriptorData(std::vector<Image>* p_Image_, uint32_t p_Binding_);
 
 			std::vector<Image>* p_Image = nullptr;
+			uint32_t p_Binding = UINT32_MAX; // Has to be set
+
+			ShaderStage p_ShaderStage = ShaderStage::FragmentBit; // Can be set to vertexbit, but fragmentbit is the default
+			
+			bool isValid() { return p_Image && p_Binding != UINT32_MAX; }
+			
+			private:
+				friend class Descriptor;
+
+				std::vector<std::pair<VkImageView, VkSampler>> p_ImageInfo;
+				VkImageLayout p_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Optional
+				std::vector<VkDescriptorImageInfo> m_ImageArrayDescriptorInfo;
+				std::vector<uint32_t> m_ImageArrayDescriptorBindings;
+
+		};
+
+		// Image, Image Array or CubeMap
+		template<typename ImageType> struct StorageImageDescriptorData
+		{
+			StorageImageDescriptorData() {}
+			StorageImageDescriptorData(ImageType* p_Image_, uint32_t p_Binding_, int32_t p_FrameIndex_ = -1);
+			StorageImageDescriptorData(ImageType* p_Image_, uint32_t p_Binding_, VkImageLayout p_ImageLayout_, int32_t p_FrameIndex_ = -1);
+
+			ImageType* p_Image = nullptr;
+			uint32_t p_Binding = UINT32_MAX; // Has to be set
+			// Frame index is used when image is only used for an individual frame,
+			// in case of double buffering (2 frames), index 0 and 1 refers to two different images/frames.
+			// If index < 0 then index will not be used
+			int32_t p_FrameIndex = -1;
+
+			ShaderStage p_ShaderStage = ShaderStage::FragmentBit;
+
+			bool isValid() { return p_Image && p_Binding != UINT32_MAX; }
+
+		private:
+			friend class Descriptor;
+
+			VkDescriptorImageInfo p_ImageInfo;
+			VkImageLayout p_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Optional
+		};
+		
+		template<> struct StorageImageDescriptorData<Image>
+		{
+			// p_ImageViews is for each mip level
+			StorageImageDescriptorData(Image* p_Image_, uint32_t p_Binding_);
+			StorageImageDescriptorData(Image* p_Image_, uint32_t p_Binding_, std::vector<VkImageView>* p_ImageViews) {}
+
+			Image* p_Image = nullptr;
 			uint32_t p_Binding = UINT32_MAX; // Has to be set
 
 			ShaderStage p_ShaderStage = ShaderStage::FragmentBit; // Can be set to vertexbit, but fragmentbit is the default
@@ -166,6 +229,12 @@ namespace vgl
 			void addImage(Image* p_Image, uint32_t p_Binding, Layout p_Layout, int32_t p_FrameIndex = -1){
 				p_ImageDescriptors.emplace_back(p_Image, p_Binding, (VkImageLayout)p_Layout, p_FrameIndex);
 			}
+			void addStorageImage(Image* p_Image, uint32_t p_Binding, Layout p_Layout, int32_t p_FrameIndex = -1){
+				//p_StorageImageDescriptors.emplace_back(p_Image, p_Binding, (VkImageLayout)p_Layout, p_FrameIndex);
+			}
+			void addImage(Image3D* p_Image, uint32_t p_Binding, int32_t p_FrameIndex = -1){
+				p_Image3dDescriptors.emplace_back(p_Image, p_Binding, p_FrameIndex);
+			}
 			void addImageCube(ImageCube* p_Image, uint32_t p_Binding, int32_t p_FrameIndex = -1){
 				p_CubeMapDescriptors.emplace_back(p_Image, p_Binding, p_FrameIndex);
 			}
@@ -174,7 +243,11 @@ namespace vgl
 			}
 
 			std::vector<SamplerDescriptorData<Image>> p_ImageDescriptors;
-			//std::vector<SamplerDescriptorData<StorageImage3D>> p_StorageImage3dDescriptors; // TODO: Implement 3D image functionality
+			std::vector<SamplerDescriptorData<Image3D>> p_Image3dDescriptors;
+
+			std::vector<StorageImageDescriptorData<Image>> p_StorageImageDescriptors;
+			std::vector<SamplerDescriptorData<Image3D>> p_StorageImage3dDescriptors; // TODO: Implement 3D image functionality
+
 			std::vector<SamplerDescriptorData<ImageCube>> p_CubeMapDescriptors;
 			std::vector<SamplerDescriptorData<std::vector<Image>>> p_ImageArrayDescriptors;
 
@@ -185,7 +258,7 @@ namespace vgl
 			inline void clearDescriptors(){
 				p_ImageDescriptors.clear();
 				p_CubeMapDescriptors.clear();
-				//p_StorageImage3dDescriptors.clear();
+				p_StorageImage3dDescriptors.clear();
 				p_ImageArrayDescriptors.clear();
 			}
 

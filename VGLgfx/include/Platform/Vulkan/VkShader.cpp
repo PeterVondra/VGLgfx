@@ -10,11 +10,6 @@ namespace vgl
 {
 	namespace vk
 	{
-		Shader::Shader() : m_ContextPtr(&ContextSingleton::getInstance())
-		{
-			
-		}
-
 		std::vector<char> Shader::readFile(const std::string& filename)
 		{
 			std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -32,14 +27,97 @@ namespace vgl
 
 			return buffer;
 		}
+
+		Shader::Shader() : m_ContextPtr(&ContextSingleton::getInstance())
+		{
+			
+		}
+
+		Shader::Shader(std::string p_ComputeShader) : m_ContextPtr(&ContextSingleton::getInstance())
+		{
+			// Create shader modules and parse the pre-compiled SPIRV-shaders
+			auto computeShaderCode = readFile(p_ComputeShader);
+
+			if (computeShaderCode.empty()) {
+				VGL_INTERNAL_ERROR("[vk::Shader]Failed to create shader, source data is empty");
+				return;
+			}
+
+			m_ComputeShaderModule = createShaderModule(computeShaderCode);
+
+			m_ComputeShaderStageInfo = {};
+			m_ComputeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			m_ComputeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			m_ComputeShaderStageInfo.module = m_ComputeShaderModule;
+			m_ComputeShaderStageInfo.pName = "main";
+		}
+
 		Shader::Shader(std::string p_VertexShader, std::string p_FragmentShader, std::string p_GeometryShader) : m_ContextPtr(&ContextSingleton::getInstance())
 		{
+			// Create shader modules and parse the pre-compiled SPIRV-shaders
+			auto vertShaderCode = readFile(p_VertexShader);
+			auto geoShaderCode = readFile(p_GeometryShader);
+			auto fragShaderCode = readFile(p_FragmentShader);
 
+			if (vertShaderCode.empty() || fragShaderCode.empty()) {
+				VGL_INTERNAL_ERROR("[vk::Shader]Failed to create shader, source data is empty");
+				return;
+			}
+
+			m_VertShaderModule = createShaderModule(vertShaderCode);
+			m_GeometryShaderModule = createShaderModule(geoShaderCode);
+			m_FragShaderModule = createShaderModule(fragShaderCode);
+
+			m_VertShaderStageInfo = {};
+			m_VertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			m_VertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+
+			m_VertShaderStageInfo.module = m_VertShaderModule;
+			m_VertShaderStageInfo.pName = "main";
+			
+			m_GeometryShaderStageInfo = {};
+			m_GeometryShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			m_GeometryShaderStageInfo.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+
+			m_GeometryShaderStageInfo.module = m_GeometryShaderModule;
+			m_GeometryShaderStageInfo.pName = "main";
+
+			m_FragShaderStageInfo = {};
+			m_FragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			m_FragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			m_FragShaderStageInfo.module = m_FragShaderModule;
+			m_FragShaderStageInfo.pName = "main";
 		}
 
 		Shader::Shader(std::string p_VertexShader, std::string p_FragmentShader) : m_ContextPtr(&ContextSingleton::getInstance())
 		{
+			// Create shader modules and parse the pre-compiled SPIRV-shaders
+			auto vertShaderCode = readFile(p_VertexShader);
+			auto fragShaderCode = readFile(p_FragmentShader);
 
+			if (vertShaderCode.empty() || fragShaderCode.empty()) {
+				VGL_INTERNAL_ERROR("[vk::Shader]Failed to create shader, source data is empty");
+				return;
+			}
+
+			m_VertShaderModule = createShaderModule(vertShaderCode);
+			m_FragShaderModule = createShaderModule(fragShaderCode);
+
+			m_VertShaderStageInfo = {};
+			m_VertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			m_VertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+
+			m_VertShaderStageInfo.module = m_VertShaderModule;
+			m_VertShaderStageInfo.pName = "main";
+
+			m_FragShaderStageInfo = {};
+			m_FragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			m_FragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			m_FragShaderStageInfo.module = m_FragShaderModule;
+			m_FragShaderStageInfo.pName = "main";
 		}
 		Shader::~Shader()
 		{
@@ -55,14 +133,16 @@ namespace vgl
 		{
 			// Create shader modules and parse the pre-compiled SPIRV-shaders
 			auto vertShaderCode = readFile(p_VertexShader);
+			auto geoShaderCode = readFile(p_GeometryShader);
 			auto fragShaderCode = readFile(p_FragmentShader);
 
-			if (vertShaderCode.empty() || fragShaderCode.empty()){
+			if (vertShaderCode.empty() || fragShaderCode.empty()) {
 				VGL_INTERNAL_ERROR("[vk::Shader]Failed to create shader, source data is empty");
 				return;
 			}
 
 			m_VertShaderModule = createShaderModule(vertShaderCode);
+			m_GeometryShaderModule = createShaderModule(geoShaderCode);
 			m_FragShaderModule = createShaderModule(fragShaderCode);
 
 			m_VertShaderStageInfo = {};
@@ -71,6 +151,13 @@ namespace vgl
 
 			m_VertShaderStageInfo.module = m_VertShaderModule;
 			m_VertShaderStageInfo.pName = "main";
+
+			m_GeometryShaderStageInfo = {};
+			m_GeometryShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			m_GeometryShaderStageInfo.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+
+			m_GeometryShaderStageInfo.module = m_GeometryShaderModule;
+			m_GeometryShaderStageInfo.pName = "main";
 
 			m_FragShaderStageInfo = {};
 			m_FragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -108,9 +195,28 @@ namespace vgl
 			m_FragShaderStageInfo.module = m_FragShaderModule;
 			m_FragShaderStageInfo.pName = "main";
 		}
+		
+		void Shader::setShader(std::string p_ComputeShaderPath)
+		{
+			// Create shader modules and parse the pre-compiled SPIRV-shaders
+			std::vector<char> computeShaderCode = readFile(p_ComputeShaderPath);
+
+			if (computeShaderCode.empty()) {
+				VGL_INTERNAL_ERROR("[vk::Shader]Failed to create shader, source data is empty");
+				return;
+			}
+
+			m_ComputeShaderModule = createShaderModule(computeShaderCode);
+
+			m_ComputeShaderStageInfo = {};
+			m_ComputeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			m_ComputeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			m_ComputeShaderStageInfo.module = m_ComputeShaderModule;
+			m_ComputeShaderStageInfo.pName = "main";
+		}
 		void Shader::compile(std::vector<std::string> p_Shader)
 		{
-			
 			m_VertShaderModule = createShaderModule(glslToSpirv(p_Shader[0], glslType::Vertex));
 			m_FragShaderModule = createShaderModule(glslToSpirv(p_Shader[1], glslType::Fragment));
 			
@@ -127,6 +233,47 @@ namespace vgl
 			
 			m_FragShaderStageInfo.module = m_FragShaderModule;
 			m_FragShaderStageInfo.pName = "main";
+		}
+
+		void Shader::compile(std::string p_Shader, glslType p_Type)
+		{
+			VkShaderModule* shader_module = nullptr;
+			VkPipelineShaderStageCreateInfo* shader_info = nullptr;
+			VkShaderStageFlagBits shader_stage;
+
+			switch (p_Type){
+				case glslType::Compute:
+					shader_module = &m_ComputeShaderModule;
+					shader_info = &m_ComputeShaderStageInfo;
+					shader_stage = VK_SHADER_STAGE_COMPUTE_BIT;
+					break;
+				case glslType::Vertex:
+					shader_module = &m_VertShaderModule;
+					shader_info = &m_VertShaderStageInfo;
+					shader_stage = VK_SHADER_STAGE_VERTEX_BIT;
+					break;
+				case glslType::Geometry:
+					shader_module = &m_GeometryShaderModule;
+					shader_info = &m_GeometryShaderStageInfo;
+					shader_stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+					break;
+				case glslType::Fragment:
+					shader_module = &m_FragShaderModule;
+					shader_info = &m_FragShaderStageInfo;
+					shader_stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+					break;
+				default:
+					return;
+			}
+
+			*shader_module = createShaderModule(glslToSpirv(p_Shader, p_Type));
+
+			shader_info = {};
+			shader_info->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shader_info->stage = shader_stage;
+
+			shader_info->module = *shader_module;
+			shader_info->pName = "main";
 		}
 
 		std::vector<unsigned int> Shader::glslToSpirv(std::string& p_Code, glslType p_Type)

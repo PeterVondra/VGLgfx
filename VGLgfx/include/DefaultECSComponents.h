@@ -23,6 +23,12 @@ namespace vgl
 	{
 		CameraController3D controller;
 	};
+	
+	// Camera controller 2D component
+	struct VGL_ECS_COMPONENT(CameraController2DComponent)
+	{
+		Ortho2DCameraController controller;
+	};
 
 	struct VGL_ECS_COMPONENT(CameraComponent)
 	{
@@ -78,6 +84,7 @@ namespace vgl
 	{
 		Vector3f Direction;
 		Vector3f Color;
+		float LightIntensity = 1.0f;
 		float VolumetricLightDensity = 1.0f;
 	};
 	
@@ -87,6 +94,7 @@ namespace vgl
 		Vector3f Position;
 		Vector3f Color = Vector3f(1.0f);
 		float Radius = 75;
+		float LightIntensity = 1.0f;
 		int32_t ShadowMapID = -1; // == -1/not using shadow map
 		Matrix4f Transform;
 	};

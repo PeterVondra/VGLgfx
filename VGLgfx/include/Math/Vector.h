@@ -132,7 +132,7 @@ class Vector3i
             struct { int32_t r, g, b; };
         };
 
-        Vector3i();
+        Vector3i() {}
         Vector3i(int32_t xyz) : x(xyz), y(xyz), z(xyz) {};
 
         Vector3i(int32_t x, int32_t y, int32_t z) : x(x), y(y), z(z) {};
@@ -143,18 +143,19 @@ class Vector3i
         void set(int32_t x, int32_t y, int32_t z);
         int32_t* get() { return &x; };
 
-        Vector3i operator= (const Vector3i& vec);
-        Vector3i operator+ (const Vector3i& vec)const;
-        Vector3i operator- (const Vector3i& vec)const;
-        Vector3i operator/ (const Vector3i& vec)const;
+        Vector3i& operator= (const Vector3i& vec);
+        Vector3i operator+ (const Vector3i vec)const;
+        Vector3i operator- (const Vector3i vec)const;
+        Vector3i operator/ (const Vector3i vec)const;
         Vector3i operator/ (const float& num)const;
-        Vector3i operator* (const Vector3i& vec)const;
+        Vector3i operator* (const Vector3i vec)const;
         Vector3i operator* (const float& num)const;
-        void operator*= (const Vector3i& vec);
+        void operator*= (const Vector3i vec);
         Vector3i operator+= (const Vector3i& vec);
         Vector3i operator-= (const Vector3i& vec);
-        float& operator []  (const uint32_t index);
-        bool operator!= (const Vector3i& vec);
+        int32_t& operator []  (const uint32_t index);
+        bool operator!= (const Vector3i vec);
+        bool operator== (const Vector3i vec);
 
     protected:
     private:

@@ -29,6 +29,7 @@ namespace vgl
 				}
 			}
 		}
+
 		class Image
 		{
 		public:
@@ -36,11 +37,10 @@ namespace vgl
 			Image(Vector2i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
 			Image(Vector3i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
 
+			bool ImageStorageUsage = false;
+
 			// Create 2D image with image data
 			void create(Vector2i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode,
-				bool p_CalcMipLevels = false, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
-			// Create 3D Image with image data
-			void create(Vector3i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode,
 				bool p_CalcMipLevels = false, Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
 			// Reserved for font and text rendering
 			void create(Vector2i p_Size, std::vector<std::pair<unsigned char*, uint32_t>>& p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode,
@@ -72,6 +72,7 @@ namespace vgl
 			friend class Descriptor;
 			friend class ImageAttachment;
 			friend class Framebuffer;
+			friend class ComputeCommands;
 			friend class Renderer;
 			friend class GraphicsContext;
 			friend class ImGuiContext;
@@ -96,7 +97,7 @@ namespace vgl
 			VkFormat		m_ImageFormat;
 			VkImage			m_VkImageHandle;
 			VmaAllocation	m_ImageAllocation;
-			VkImageView		m_ImageView;
+			std::vector<VkImageView> m_ImageViews;
 			VkImageLayout	m_CurrentLayout;
 			VkImageLayout	m_FinalLayout;
 			VkSampler		m_Sampler;
@@ -109,6 +110,65 @@ namespace vgl
 			ColorSpace m_ColorSpace;
 			Channels m_Channels;
 
+		};
+
+		class Image3D
+		{
+			public:
+
+				Image3D() : m_ContextPtr(&ContextSingleton::getInstance()) {}
+
+				void create(Vector3i p_Size, unsigned char* p_ImageData, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode,
+					Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
+				void create(Vector3i p_Size, ColorSpace p_ColorSpace, Channels p_Channels, SamplerMode p_SamplerMode,
+						Filter p_MagFilter = Filter::Linear, Filter p_MinFilter = Filter::Linear);
+
+				bool isValid() { return m_IsValid; }
+				void destroy();
+
+			private:
+				friend class ImageLoader;
+				template<typename ImageType> friend class SamplerDescriptorData;
+				friend class Descriptor;
+				friend class ImageAttachment;
+				friend class Framebuffer;
+				friend class Renderer;
+				friend class GraphicsContext;
+
+				//std::vector<ShaderStage> m_ShaderStages;
+
+				Context* m_ContextPtr;
+
+				bool m_IsValid = false;
+				bool m_IsDescriptorSetValid = false;
+
+				unsigned char* m_ImageData;
+
+				Vector3i m_Size = { 0, 0, 0 };
+				uint32_t m_MipLevels;
+
+				SamplerMode m_SamplerMode;
+				Filter m_MagFilter;
+				Filter m_MinFilter;
+
+				VkBuffer m_StagingBuffer;
+				void* m_Mapped;
+
+				VkFormat		m_ImageFormat;
+				VkImage			m_VkImageHandle;
+				VmaAllocation	m_ImageAllocation;
+				VkImageView		m_ImageView;
+				VkImageLayout	m_CurrentLayout;
+				VkImageLayout	m_FinalLayout;
+				VkSampler		m_Sampler;
+
+				VkDescriptorImageInfo m_DescriptorImageInfo;
+
+				VkDescriptorSet m_DescriptorSet;
+				VkDescriptorSetLayout m_DescriptorSetLayout;
+
+				ColorSpace m_ColorSpace;
+				Channels m_Channels;
 		};
 
 		class ImageCube

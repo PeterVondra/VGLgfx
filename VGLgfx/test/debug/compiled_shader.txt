@@ -4,6 +4,12 @@
 
 
 
+layout(binding = 2)uniform sampler2D albedoMap;
+layout(binding = 3)uniform sampler2D roughnessMap;
+layout(binding = 4)uniform sampler2D normalMap;
+
+
+
 
 
 layout(location = 0)in float in_Depth;
@@ -13,7 +19,7 @@ layout(location = 3)in vec3 in_FragPosition;
 layout(location = 4)in vec3 in_ViewPosition;
 
 
-
+layout(location = 5)in mat3 in_TBN;
 
 
 layout(location = 0)out vec4 out_Position;
@@ -57,11 +63,11 @@ void main()
 
 
 
+ out_Albedo = texture(albedoMap, uv);
+ if(out_Albedo . a < 0.5)
+  discard;
 
 
-
-
- out_Albedo = vec4(ubo . albedo . rgb, 1.0f);
 
 
  if(isinf(out_Albedo . r)|| isinf(out_Albedo . g)|| isinf(out_Albedo . b)|| isnan(out_Albedo . r)|| isnan(out_Albedo . g)|| isnan(out_Albedo . b)){ out_Albedo = vec4(0.0f, 0.0f, 0.0f, 1.0f);}
@@ -69,9 +75,9 @@ void main()
  out_Position = vec4(in_FragPosition, 1.0f);
 
 
+ out_Normal = vec4(normalize(in_TBN *(normalize(texture(normalMap, uv). rgb * 2.0f - 1.0f))), 1.0f);
 
 
- out_Normal = vec4(normalize(in_Normal), 1.0f);
 
 
 
@@ -81,9 +87,9 @@ void main()
 
 
 
+ out_MRAA . g = min(texture(roughnessMap, uv). r * ubo . mrao . g, 1.0f);
 
 
- out_MRAA . g = ubo . mrao . g;
 
 
 

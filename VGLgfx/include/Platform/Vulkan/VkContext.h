@@ -202,7 +202,15 @@ namespace vgl
 					VkImage& p_Image, VkSampleCountFlagBits p_Samples
 				);
 
-				VkImageView createImageView(VkImage p_Image, VkFormat p_Format, VkImageAspectFlags p_AspectFlags, uint32_t p_MipLevels = 1, uint32_t p_ArrayLayers = 1, VkImageViewType p_ImageViewType = VK_IMAGE_VIEW_TYPE_2D);
+				VkImageView createImageView(
+					VkImage p_Image,
+					VkFormat p_Format, 
+					VkImageAspectFlags p_AspectFlags, 
+					uint32_t p_MipLevels = 1, 
+					uint32_t p_ArrayLayers = 1, 
+					VkImageViewType p_ImageViewType = VK_IMAGE_VIEW_TYPE_2D, 
+					uint32_t p_BaseMipLevel = 0
+				);
 
 				void destroyImage(VkImage& p_Image, VmaAllocation& p_BufferAlloc);
 

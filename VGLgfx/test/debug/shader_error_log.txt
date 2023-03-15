@@ -1,0 +1,3 @@
+ERROR: 0:953: '' :  syntax error, unexpected SEMICOLON, expecting RIGHT_PAREN or COMMA
+ERROR: 1 compilation errors.  No code generated.
+

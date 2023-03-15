@@ -469,7 +469,7 @@ namespace vgl
 					const ImVec4& border_col = ImVec4(0, 0, 0, 0)
 				) {
 					if (user_texture_id.isValid() && !user_texture_id.m_IsDescriptorSetValid) {
-						user_texture_id.m_ImGuiDescriptorSet = ImGui_ImplVulkan_AddTexture(user_texture_id.m_Sampler, user_texture_id.m_ImageView, user_texture_id.m_FinalLayout);
+						user_texture_id.m_ImGuiDescriptorSet = ImGui_ImplVulkan_AddTexture(user_texture_id.m_Sampler, user_texture_id.m_ImageViews[0], user_texture_id.m_FinalLayout);
 						user_texture_id.m_IsDescriptorSetValid = true;
 					}
 					else if (!user_texture_id.isValid() && user_texture_id.m_IsDescriptorSetValid) {
@@ -489,7 +489,7 @@ namespace vgl
 					const ImVec4& tint_col = ImVec4(1, 1, 1, 1)
 				) {
 					if (user_texture_id.isValid() && !user_texture_id.m_IsDescriptorSetValid) {
-						user_texture_id.m_DescriptorSet = ImGui_ImplVulkan_AddTexture(user_texture_id.m_Sampler, user_texture_id.m_ImageView, user_texture_id.m_FinalLayout);
+						user_texture_id.m_DescriptorSet = ImGui_ImplVulkan_AddTexture(user_texture_id.m_Sampler, user_texture_id.m_ImageViews[0], user_texture_id.m_FinalLayout);
 						user_texture_id.m_IsDescriptorSetValid = true;
 					}
 					else if (!user_texture_id.isValid() && user_texture_id.m_IsDescriptorSetValid) {

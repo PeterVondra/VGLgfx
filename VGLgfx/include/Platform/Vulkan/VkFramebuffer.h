@@ -31,6 +31,7 @@ namespace vgl
 				friend class FramebufferAttachment;
 
 				bool p_AllowMipMapping = false;
+				bool p_ImageUsageStorage = false;
 		};
 
 		class ImageAttachment
@@ -69,15 +70,15 @@ namespace vgl
 			VkSampler m_Sampler;
 			VkImage m_VkImageHandle;
 			VkImageView m_ImageView;
-			VkImageView m_ImageViewAttachment;
+			
+			std::vector<VkImageView> m_ImageViewAttachments;
+			std::vector<VkFramebufferAttachmentImageInfo> m_AttachmentImageInfo;
 			VmaAllocation m_ImageAllocation;
 
 			uint32_t m_MipLevels = 1;
 
 			VkImageCreateInfo m_ImageCreateInfo;
 			VkImageViewCreateInfo m_ImageViewCreateInfo;
-
-			VkFramebufferAttachmentImageInfo m_AttachmentImageInfo;
 		};
 
 		struct FramebufferInfo

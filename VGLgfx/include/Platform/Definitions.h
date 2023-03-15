@@ -15,7 +15,8 @@ namespace vgl
 	{
 		Vertex,
 		Fragment,
-		Geometry
+		Geometry,
+		Compute
 	};
 
 	struct RenderInfo

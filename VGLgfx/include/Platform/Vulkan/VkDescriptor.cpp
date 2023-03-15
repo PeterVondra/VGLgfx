@@ -14,11 +14,11 @@ namespace vgl
 			m_ImageArrayDescriptorBindings.resize(p_Image->size());
 
 			for(uint32_t i = 0; i < p_Image->size(); i++){
-				p_ImageInfo[i].first = p_Image->operator[](i).m_ImageView;
+				p_ImageInfo[i].first = p_Image->operator[](i).m_ImageViews[0];
 				p_ImageInfo[i].second = p_Image->operator[](i).m_Sampler;
 
 				m_ImageArrayDescriptorInfo[i].imageLayout = p_Image->operator[](i).m_FinalLayout;
-				m_ImageArrayDescriptorInfo[i].imageView = p_Image->operator[](i).m_ImageView;
+				m_ImageArrayDescriptorInfo[i].imageView = p_Image->operator[](i).m_ImageViews[0];
 				m_ImageArrayDescriptorInfo[i].sampler = p_Image->operator[](i).m_Sampler;
 
 				m_ImageArrayDescriptorBindings[i] = p_Binding + i;
@@ -37,9 +37,9 @@ namespace vgl
 		bool DescriptorSetInfo::isStorageImage3dDescriptorsValid()
 		{
 			bool valid = false;
-			//for (auto& sampler : p_StorageImage3dDescriptors)
-			//	if(sampler.p_Image)
-			//		valid = sampler.isValid() && sampler.p_Image->isValid();
+			for (auto& sampler : p_StorageImage3dDescriptors)
+				if(sampler.p_Image)
+					valid = sampler.isValid() && sampler.p_Image->isValid();
 			return valid;
 		}
 
@@ -158,7 +158,7 @@ namespace vgl
 						// Image info for descriptor update, check if frameindex match with swapchain image index
 						if (m_DescriptorSetInfo->p_ImageDescriptors[i].p_FrameIndex == s || m_DescriptorSetInfo->p_ImageDescriptors[i].p_FrameIndex < 0) {
 							m_ImageDescriptorInfo[s][i-ig].imageLayout = m_DescriptorSetInfo->p_ImageDescriptors[i].p_ImageLayout;
-							m_ImageDescriptorInfo[s][i-ig].imageView = m_DescriptorSetInfo->p_ImageDescriptors[i].p_Image->m_ImageView;
+							m_ImageDescriptorInfo[s][i-ig].imageView = m_DescriptorSetInfo->p_ImageDescriptors[i].p_Image->m_ImageViews[0];
 							m_ImageDescriptorInfo[s][i-ig].sampler = m_DescriptorSetInfo->p_ImageDescriptors[i].p_Image->m_Sampler;
 
 							// s = 0, i = 0, k = 1, ig = 1
@@ -186,6 +186,51 @@ namespace vgl
 
 					// If image descriptors also included, increase baseIndex of m_ImageDescriptorInfo[s]
 					baseIndex = m_DescriptorSetInfo->p_ImageDescriptors.size() - (dec / 2);
+				}
+
+				if (m_DescriptorSetInfo->p_IsStorageImage3dDescriptorsValid) {
+					// Find all duplicated bindings (but with different frameindex)
+					int32_t dec = 0;
+					for (auto& imgDsc : m_DescriptorSetInfo->p_StorageImage3dDescriptors) {
+						if (imgDsc.p_FrameIndex >= 0)
+							dec++;
+					}
+					imgDescriptorCount += m_DescriptorSetInfo->p_StorageImage3dDescriptors.size() - dec / 2; // Descriptor count for each frameindex, only half of duplicated bindings will be removed
+
+					if (baseIndex < 0)
+						baseIndex = 0;
+
+					// Remove duplicated bindings (but with different frameindex)
+					m_ImageDescriptorInfo[s].resize(baseIndex + m_DescriptorSetInfo->p_StorageImage3dDescriptors.size() - dec / 2);
+
+					uint32_t ig = 0;
+					for (uint32_t i = 0; i < m_DescriptorSetInfo->p_StorageImage3dDescriptors.size(); i++) {
+						// Image/CubeMap info for descriptor update, check if frameindex match with swapchain image index
+						if (m_DescriptorSetInfo->p_CubeMapDescriptors[i].p_FrameIndex == s || m_DescriptorSetInfo->p_StorageImage3dDescriptors[i].p_FrameIndex < 0) {
+							m_ImageDescriptorInfo[s][baseIndex + i - ig].imageLayout = m_DescriptorSetInfo->p_StorageImage3dDescriptors[i].p_ImageLayout;
+							m_ImageDescriptorInfo[s][baseIndex + i - ig].imageView = m_DescriptorSetInfo->p_StorageImage3dDescriptors[i].p_Image->m_ImageView;
+							m_ImageDescriptorInfo[s][baseIndex + i - ig].sampler = m_DescriptorSetInfo->p_StorageImage3dDescriptors[i].p_Image->m_Sampler;
+
+							// Describe what type of desriptor will be used, and which stage
+							VkDescriptorSetLayoutBinding layoutBinding;
+							layoutBinding.binding = m_DescriptorSetInfo->p_StorageImage3dDescriptors[i].p_Binding;
+							layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+							layoutBinding.descriptorCount = 1;
+							layoutBinding.stageFlags = getShaderStageVkH(m_DescriptorSetInfo->p_StorageImage3dDescriptors[i].p_ShaderStage);
+							layoutBinding.pImmutableSamplers = nullptr;
+
+							if (s == 0) // Avoid duplicated bindings
+								m_ImageDescriptorBindings.push_back(layoutBinding.binding);
+
+							m_LayoutBindings[s].push_back(layoutBinding);
+
+							continue;
+						}
+						ig++; // Duplicated binding was found (but with different frameindex)
+					}
+
+					// If image descriptors also included, increase baseIndex of m_ImageDescriptorInfo[s]
+					baseIndex = m_DescriptorSetInfo->p_StorageImage3dDescriptors.size() - (dec / 2);
 				}
 
 				/*if (m_DescriptorSetInfo->p_IsStorageImage3dDescriptorsValid) {
@@ -245,11 +290,8 @@ namespace vgl
 						baseIndex = 0;
 
 					// Remove duplicated bindings (but with different frameindex)
-					if (m_DescriptorSetInfo->p_IsImageDescriptorsValid)
-						m_ImageDescriptorInfo[s].resize(baseIndex + m_DescriptorSetInfo->p_CubeMapDescriptors.size() - dec / 2);
-					else
-						m_ImageDescriptorInfo[s].resize(m_DescriptorSetInfo->p_CubeMapDescriptors.size() - dec / 2);
-
+					m_ImageDescriptorInfo[s].resize(baseIndex + m_DescriptorSetInfo->p_CubeMapDescriptors.size() - dec / 2);
+					
 					uint32_t ig = 0;
 					for (uint32_t i = 0; i < m_DescriptorSetInfo->p_CubeMapDescriptors.size(); i++) {
 						// Image/CubeMap info for descriptor update, check if frameindex match with swapchain image index
@@ -311,15 +353,29 @@ namespace vgl
 					m_DescriptorSetInfo->p_StorageBuffer.createBuffer();
 
 				// Describe what type of desriptor will be used, and which stage
-				VkDescriptorSetLayoutBinding layoutBinding;
+				VkDescriptorSetLayoutBinding layoutBinding = {};
 				layoutBinding.binding = m_DescriptorSetInfo->p_StorageBuffer.m_Binding; // Must be this binding in shader
 				layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 				layoutBinding.descriptorCount = 1;
-				layoutBinding.stageFlags = getShaderStageVkH(m_DescriptorSetInfo->p_StorageBuffer.m_ShaderStage);
+				for(auto stage : m_DescriptorSetInfo->p_StorageBuffer.m_ShaderStages)
+					layoutBinding.stageFlags |= getShaderStageVkH(stage);
 				layoutBinding.pImmutableSamplers = nullptr;
 				
 				for(int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
 					m_LayoutBindings[i].push_back(layoutBinding);
+
+				if (m_DescriptorSetInfo->p_StorageBuffer.m_VertexBufferUsage) {
+					layoutBinding.binding = m_DescriptorSetInfo->p_StorageBuffer.m_Binding+1; // Must be this binding in shader
+					layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+					layoutBinding.descriptorCount = 1;
+					for (auto stage : m_DescriptorSetInfo->p_StorageBuffer.m_ShaderStages)
+						layoutBinding.stageFlags |= getShaderStageVkH(stage);
+					layoutBinding.pImmutableSamplers = nullptr;
+
+					for (int32_t i = 0; i < m_ContextPtr->m_SwapchainImageCount; i++)
+						m_LayoutBindings[i].push_back(layoutBinding);
+				}
+
 			}
 			if (m_DescriptorSetInfo->p_VertexUniformBuffer.isValid()) {
 				if (!m_DescriptorSetInfo->p_VertexUniformBuffer.m_IsValid)
@@ -603,15 +659,46 @@ namespace vgl
 			m_MappedData.resize((uint32_t)m_ContextPtr->m_SwapchainImageCount);
 			m_Offsets.resize((uint32_t)m_ContextPtr->m_SwapchainImageCount);
 
-			m_AllocInfo = m_ContextPtr->createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_Buffer);
 
-			m_MappedData[0] = m_ContextPtr->mapMemory(m_AllocInfo.p_Alloc);
+			if (m_VertexBufferUsage) {
+				VkBuffer staging_buffer;
+				AllocationInfo staging_alloc_info;
+				staging_alloc_info = m_ContextPtr->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, staging_buffer);
 
-			m_Offsets.resize(m_ContextPtr->m_SwapchainImageCount);
-			m_Offsets[0] = 0;
-			for (int i = 1; i < m_ContextPtr->m_SwapchainImageCount; i++) {
-				m_Offsets[i] = i * m_ContextPtr->padUniformBufferSize(m_Size);
-				m_MappedData[i] = (char*)m_MappedData[0] + i * m_ContextPtr->padUniformBufferSize(m_Size);
+				m_MappedData[0] = m_ContextPtr->mapMemory(staging_alloc_info.p_Alloc);
+
+				m_Offsets.resize(m_ContextPtr->m_SwapchainImageCount);
+				m_Offsets[0] = 0;
+				for (int i = 1; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+					m_Offsets[i] = i * m_ContextPtr->padUniformBufferSize(m_Size);
+					m_MappedData[i] = (char*)m_MappedData[0] + i * m_ContextPtr->padUniformBufferSize(m_Size);
+				}
+
+				m_AllocInfo = m_ContextPtr->createBuffer(
+					bufferSize,
+					VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+					VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					VMA_MEMORY_USAGE_GPU_ONLY,
+					m_Buffer
+				);
+
+				// Copy content of staging buffer(CPU) to vertex buffer(GPU)
+				m_ContextPtr->copyBuffer(staging_buffer, m_Buffer, bufferSize);
+
+				m_ContextPtr->destroyBuffer(staging_buffer, staging_alloc_info.p_Alloc);
+
+			} else {
+				m_AllocInfo = m_ContextPtr->createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_Buffer);
+
+				m_MappedData[0] = m_ContextPtr->mapMemory(m_AllocInfo.p_Alloc);
+
+				m_Offsets.resize(m_ContextPtr->m_SwapchainImageCount);
+				m_Offsets[0] = 0;
+				for (int i = 1; i < m_ContextPtr->m_SwapchainImageCount; i++) {
+					m_Offsets[i] = i * m_ContextPtr->padUniformBufferSize(m_Size);
+					m_MappedData[i] = (char*)m_MappedData[0] + i * m_ContextPtr->padUniformBufferSize(m_Size);
+				}
 			}
 
 			m_IsValid = true;

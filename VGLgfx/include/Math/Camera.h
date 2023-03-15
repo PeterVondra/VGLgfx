@@ -13,7 +13,7 @@
 
 namespace vgl
 {
-	enum class View { Third_Person, First_Person };
+	enum class View { Third_Person, First_Person, Ortho2D };
 
 	// #ifdef VGL_RENDER_API_VULKAN
 	// Camera will use 0 to 1 depth
@@ -48,8 +48,8 @@ namespace vgl
 			Matrix4f& getOrthographicMatrix();
 			Vector3f& getPosition();
 
-      void setPerspectiveMatrix(const Matrix4f& p_Perspective) { m_PerspectiveMatrix = p_Perspective; }
-      void setOrthographicMatrix(const Matrix4f& p_Orthographic) { m_OrthographicMatrix = p_Orthographic; }  
+			void setPerspectiveMatrix(const Matrix4f& p_Perspective) { m_PerspectiveMatrix = p_Perspective; }
+			void setOrthographicMatrix(const Matrix4f& p_Orthographic) { m_OrthographicMatrix = p_Orthographic; }  
 
 			const Matrix4f& setPerspectiveMatrix(const float p_AspectRatio);
 			const Matrix4f& setOrthographicMatrix(
@@ -62,9 +62,9 @@ namespace vgl
 			void setYaw(const float p_Yaw);
 			void setPitch(const float p_Pitch);
 			void setRoll(const float p_Roll);
-      void setFOV(const float p_FOV){ m_FieldOfView = p_FOV; }
-	  void setAspectRatio(const float p_AspectRatio);
-      void setViewMatrix(const Matrix4f p_ViewMatrix) { m_ViewMatrix = p_ViewMatrix; }
+			void setFOV(const float p_FOV){ m_FieldOfView = p_FOV; }
+			void setAspectRatio(const float p_AspectRatio);
+			void setViewMatrix(const Matrix4f p_ViewMatrix) { m_ViewMatrix = p_ViewMatrix; }
 
 			void moveFromCameraView(const Vector3f p_Offset)
 			{  
@@ -80,7 +80,7 @@ namespace vgl
 			const float& getFieldOfView();
 			void lookAt(const Vector3f p_LookAtPoint);
       
-      float getViewModifier() { return m_ViewZModifier; }
+			float getViewModifier() { return m_ViewZModifier; }
 			void setViewModifier(const float p_Modifier) { m_ViewZModifier = p_Modifier; }
 			View getView() { return m_View; }
 
@@ -121,15 +121,136 @@ namespace vgl
 	class Ortho2DCameraController
 	{
 		public:
-			Ortho2DCameraController();
-			~Ortho2DCameraController();
+			Ortho2DCameraController()
+				: m_CameraPtr(nullptr), m_DeltaTimePtr(nullptr), m_Enabled(true), m_ConstrainPitch(true),
+				m_Sensitivity(70), m_MovementSpeed(200), m_Zoom(600), m_Yaw(0), m_Pitch(0), m_PrevCursorPos({ 0, 0 }) {}
+			~Ortho2DCameraController() {};
 
-			void onMouseMovedEvent(Event::MouseMovedEvent& p_MouseMovedEvent);
-			void onMousePressedEvent(Event::MouseButtonPressedEvent& p_MousePressedEvent);
-			void onMouseScrolledEvent(Event::MouseScrolledEvent& p_MouseScrolledEvent);
-			void onKeyPressedEvent(Event::KeyPressedEvent& p_KeyPressedEvent);
+			void bind(Camera& p_Camera)
+			{
+				m_CameraPtr = &p_Camera;
+				m_CameraPtr->setViewModifier(m_Zoom);
+			};
+			void bind(Camera* p_Camera)
+			{
+				m_CameraPtr = p_Camera;
+				m_CameraPtr->setViewModifier(m_Zoom);
+			};
 
+			void setZoom(const float p_Zoom) { m_Zoom = p_Zoom; }
+
+			void setDeltaTime(const double& p_DeltaTime) { m_DeltaTimePtr = &const_cast<double&>(p_DeltaTime); }
+
+			void update()
+			{
+				if (m_Enabled) {
+					if (vgl::Input::keyIsDown(vgl::Key::W))
+						processKeyboard(CameraMovement::Front);
+					if (vgl::Input::keyIsDown(vgl::Key::S))
+						processKeyboard(CameraMovement::Back);
+					if (vgl::Input::keyIsDown(vgl::Key::A))
+						processKeyboard(CameraMovement::Left);
+					if (vgl::Input::keyIsDown(vgl::Key::D))
+						processKeyboard(CameraMovement::Right);
+					if (vgl::Input::keyIsDown(vgl::Key::Space))
+						processKeyboard(CameraMovement::Up);
+					if (vgl::Input::keyIsDown(vgl::Key::LeftShift))
+						processKeyboard(CameraMovement::Down);
+				}
+			}
+
+			void onMouseMovedEvent(Event::MouseMovedEvent& p_MouseMovedEvent)
+			{
+				if (!m_Enabled) {
+					m_PrevCursorPos.x = p_MouseMovedEvent.getX();
+					m_PrevCursorPos.y = p_MouseMovedEvent.getY();
+				}
+
+				if (m_Enabled)
+				{
+					if (Input::mouseButtonIsDown(0)) {
+						float xOffset = m_PrevCursorPos.x - p_MouseMovedEvent.getX();
+						float yOffset = p_MouseMovedEvent.getY() - m_PrevCursorPos.y;
+
+						if (std::isinf(xOffset) || std::isinf(yOffset) || std::isnan(xOffset) || std::isnan(yOffset))
+							return;
+
+						double d = m_Sensitivity / 1000;
+						m_Yaw -= xOffset * d * Math::DEG2RAD;
+						m_Pitch -= yOffset * d * Math::DEG2RAD;
+
+						if (m_ConstrainPitch)
+						{
+							if (m_Pitch > 89.0f * Math::DEG2RAD)
+								m_Pitch = 89.0f * Math::DEG2RAD;
+							else if (m_Pitch < -89.0f * Math::DEG2RAD)
+								m_Pitch = -89.0f * Math::DEG2RAD;
+						}
+						m_CameraPtr->setViewDirection(m_Yaw, m_Pitch, 0);
+						m_CameraPtr->update();
+					}
+				}
+				m_PrevCursorPos.x = p_MouseMovedEvent.getX();
+				m_PrevCursorPos.y = p_MouseMovedEvent.getY();
+			}
+
+			void onMouseScrolledEvent(Event::MouseScrolledEvent& p_MouseScrolledEvent)
+			{
+				if (m_Enabled) {
+					m_Zoom -= p_MouseScrolledEvent.getOffsetY() * 50;
+					m_CameraPtr->setViewModifier(m_Zoom);
+				}
+			}
+
+			bool isEnabled() { return m_Enabled; }
+			void enable(const bool p_Enabled) { m_Enabled = p_Enabled; }
+			void constrainPitch(const bool p_ConstrainPitch) { m_ConstrainPitch = p_ConstrainPitch; }
+			bool  isPitchConstrained() { return m_ConstrainPitch; }
+
+			float getSensitivity() { return m_Sensitivity; }
+			float getZoom() { return m_Zoom; }
+			float getYaw() { return m_Yaw; }
+			float getPitch() { return m_Pitch; }
+
+			void setYaw(const float p_Yaw) { m_Yaw = p_Yaw; }
+			void setPitch(const float p_Pitch) { m_Pitch = p_Pitch; }
+
+			void setMovementSpeed(const float p_MovementSpeed) { m_MovementSpeed = p_MovementSpeed; }
+			void setSensitivity(const float p_Sensitivity) { m_Sensitivity = p_Sensitivity; }
+
+
+			float m_MovementSpeed;
 		private:
+			friend class Scene;
+
+			Camera* m_CameraPtr;
+			double* m_DeltaTimePtr;
+
+			bool m_Enabled;
+			bool m_ConstrainPitch;
+			float m_Sensitivity;
+			float m_Zoom;
+
+			float m_Yaw;
+			float m_Pitch;
+
+			Vector2f m_PrevCursorPos;
+
+			void processKeyboard(CameraMovement direction)
+			{
+				if (direction == CameraMovement::Front)
+					m_CameraPtr->moveFromCameraView({ 0, 0, m_MovementSpeed * (float)(*m_DeltaTimePtr) });
+				else if (direction == CameraMovement::Back)
+					m_CameraPtr->moveFromCameraView({ 0, 0, -m_MovementSpeed * (float)(*m_DeltaTimePtr) });
+				else if (direction == CameraMovement::Left)
+					m_CameraPtr->moveFromCameraView({ -m_MovementSpeed * (float)(*m_DeltaTimePtr), 0, 0 });
+				else if (direction == CameraMovement::Right)
+					m_CameraPtr->moveFromCameraView({ m_MovementSpeed * (float)(*m_DeltaTimePtr), 0, 0 });
+				else if (direction == CameraMovement::Up)
+					m_CameraPtr->move({ 0, m_MovementSpeed * (float)(*m_DeltaTimePtr), 0 });
+				else if (direction == CameraMovement::Down)
+					m_CameraPtr->move({ 0, -m_MovementSpeed * (float)(*m_DeltaTimePtr), 0 });
+			}
 	};
 	// Orthographic 3D Projection
 	class Ortho3DCameraController

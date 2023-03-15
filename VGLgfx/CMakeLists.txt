@@ -296,6 +296,28 @@ target_include_directories(VGLgfxTest PRIVATE ${PROJECT_SOURCE_DIR}/include/)
 
 target_link_libraries(VGLgfxTest VGLgfx)
 
-enable_testing()
+add_executable(
+	VGLgfxTest2D
+
+	${PROJECT_SOURCE_DIR}/test/VGLgfxTest2D.cpp
+	data/CMakeResources/icon.rc
+)
+
+target_include_directories(VGLgfxTest2D PRIVATE ${PROJECT_SOURCE_DIR}/include/)
+
+target_link_libraries(VGLgfxTest2D VGLgfx)
 
 file(COPY ${VGLGFX_DATA_DIRECTORY} DESTINATION "${PROJECT_SOURCE_DIR}/test")
+
+add_executable(
+	VGLvxgi
+
+	${PROJECT_SOURCE_DIR}/samples/vxgi.cpp
+	data/CMakeResources/icon.rc
+)
+
+target_include_directories(VGLvxgi PRIVATE ${PROJECT_SOURCE_DIR}/include/)
+
+target_link_libraries(VGLvxgi VGLgfx)
+
+file(COPY ${VGLGFX_DATA_DIRECTORY} DESTINATION "${PROJECT_SOURCE_DIR}/samples")

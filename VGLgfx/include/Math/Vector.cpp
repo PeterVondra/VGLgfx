@@ -109,7 +109,7 @@ Vector2i Vector2i::operator- (const Vector2i vec)const
 
 Vector2i Vector2i::operator/ (const Vector2i vec)const
 {
-    return Vector2i(x / vec.x, y / vec.y);
+    return Vector2i(int32_t(x / vec.x), int32_t(y / vec.y));
 }
 
 Vector2i Vector2i::operator/ (const int32_t& num)const
@@ -233,6 +233,99 @@ Vector3f Vector3f::operator-= (const Vector3f& vec)
 float& Vector3f::operator[] (const uint32_t index)
 { 
     switch(index)
+    {
+    case 0:
+        return x;
+    case 1:
+        return y;
+    case 2:
+        return z;
+    default:
+        std::cout << "index is too big!!!" << std::endl;
+    }
+}
+
+void Vector3i::set(int32_t x, int32_t y, int32_t z)
+{
+    this->x = x;
+    this->y = y;
+    this->z = z;
+}
+
+Vector3i& Vector3i::operator= (const Vector3i& vec)
+{
+    x = vec.x;
+    y = vec.y;
+    z = vec.z;
+    return *this;
+}
+
+Vector3i Vector3i::operator+ (const Vector3i vec)const
+{
+    return Vector3i(x + vec.x, y + vec.y, z + vec.z);
+}
+
+Vector3i Vector3i::operator- (const Vector3i vec)const
+{
+    return Vector3i(x - vec.x, y - vec.y, z - vec.z);
+}
+
+Vector3i Vector3i::operator/ (const Vector3i vec)const
+{
+    return Vector3i(x / vec.x, y / vec.y, z / vec.z);
+}
+
+Vector3i Vector3i::operator/ (const float& num)const
+{
+    return Vector3i(x / num, y / num, z / num);
+}
+
+Vector3i Vector3i::operator* (const Vector3i vec)const
+{
+    return Vector3i(x * vec.x, y * vec.y, z * vec.z);
+}
+
+Vector3i Vector3i::operator* (const float& num)const
+{
+    return Vector3i(x * num, y * num, z * num);
+}
+void Vector3i::operator*= (const Vector3i vec)
+{
+    *this = *this * vec;
+}
+bool Vector3i::operator!= (const Vector3i vec)
+{
+    return x != vec.x || y != vec.y || z != vec.z;
+}
+bool Vector3i::operator== (const Vector3i vec)
+{
+    return x == vec.x && y == vec.y && z == vec.z;
+}
+
+std::ostream& operator<< (std::ostream& output, const Vector3i& vec)
+{
+    return output << std::fixed << std::setprecision(5) << "[" << vec.x << ", " << vec.y << ", " << vec.z << "]";
+}
+
+Vector3i Vector3i::operator+= (const Vector3i& vec)
+{
+    x += vec.x;
+    y += vec.y;
+    z += vec.z;
+    return *this;
+}
+
+Vector3i Vector3i::operator-= (const Vector3i& vec)
+{
+    x -= vec.x;
+    y -= vec.y;
+    z -= vec.z;
+    return *this;
+}
+
+int32_t& Vector3i::operator[] (const uint32_t index)
+{
+    switch (index)
     {
     case 0:
         return x;

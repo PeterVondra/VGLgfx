@@ -167,4 +167,18 @@ namespace vgl
 		GeometryBit = 2,
 		ComputeBit = 3
 	};
+
+	enum class PipelineStage
+	{
+		Vertex_Shader = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+		Fragment_Shader = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		Compute_Shader = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		Geometry_Shader = VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+		Top_Of_Pipe = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		Bottom_Of_Pipe = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
+	};
+	//enum class AccessStage
+	//{
+	//	VK_ACCESS
+	//};
 }

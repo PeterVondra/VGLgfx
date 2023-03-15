@@ -1,6 +1,7 @@
 #include <ostream>
 #define VGL_RENDER_API_VULKAN
 #include <VGLgfx.h>
+#include "../include/Utils/FileGUI.h"
 
 class TestLayer : public vgl::Layer
 {
@@ -26,9 +27,9 @@ public:
 		transform2->transform.setPosition(100.0f, 10, -100.0f);
 		mesh2->mesh = new vgl::MeshData();
 
-		vgl::OBJ_Loader::loadModel("../../VGLgfxEditor/projects/Global_Assets/3D_Models/", "Cthulhu.obj", mesh2->mesh, false);
-		mesh2->mesh->getMaterial(0).config.m_Roughness = 0.07f;
-		mesh2->mesh->getMaterial(0).config.m_Metallic = 1.00f;
+		//vgl::OBJ_Loader::loadModel("../../VGLgfxEditor/projects/Global_Assets/3D_Models/", "Cthulhu.obj", mesh2->mesh, false);
+		//mesh2->mesh->getMaterial(0).config.m_Roughness = 0.07f;
+		//mesh2->mesh->getMaterial(0).config.m_Metallic = 1.00f;
 
 		auto point_light = new vgl::PointLight3DComponent;
 		point_light->Color = { 0.4f, 0.1f, 1.0f };
@@ -37,7 +38,8 @@ public:
 		point_light->ShadowMapID = 0;
 
 		auto directional_light = new vgl::DirectionalLight3DComponent;
-		directional_light->Color = { 30, 30, 30 };
+		directional_light->Color = { 1, 1, 1 };
+		directional_light->LightIntensity = 12;
 		directional_light->Direction = { 0.333, 1, 0.333 };
 
 		auto shadow_map = new vgl::DShadowMapComponent;
@@ -54,7 +56,7 @@ public:
 		skybox->skybox = new vgl::Skybox();
 
 		m_Scene.addEntity(*mesh, *transform, *(new vgl::EntityNameComponent("Sponza")));
-		m_Scene.addEntity(*mesh2, *transform2, *(new vgl::EntityNameComponent("Cthulhu")));
+		//m_Scene.addEntity(*mesh2, *transform2, *(new vgl::EntityNameComponent("Cthulhu")));
 		//m_PointLightEntity = m_Scene.addEntity(*point_light, *pshadow_map, *(new vgl::EntityNameComponent("Point Light")));
 		//m_PointLightEntity = m_Scene.addEntity(*point_light2, *(new vgl::EntityNameComponent("Point Light")));
 		m_DirectionalLightEntity = m_Scene.addEntity(*directional_light, *shadow_map, *(new vgl::EntityNameComponent("Directional Light")));
@@ -64,6 +66,7 @@ public:
 
 		m_RenderPipeline.setup(m_RendererPtr, m_WindowPtr, &m_Scene);
 		vgl::ImageLoader::getImageFromPath(img, "data/CMakeResources/Vulkan.png", vgl::ColorSpace::RGB);
+		vgl::ImageLoader::getImageFromPath(m_DefaultImage, "data/textures/default.png", vgl::ColorSpace::RGB);
 	}
 	void onDetach() {}
 	void onUpdate(vgl::Renderer& p_Renderer) {
@@ -137,6 +140,10 @@ public:
 		ImGui::Begin("SSR", nullptr);
 		vgl::ImGuiContext::Image(m_RenderPipeline.m_SSRFramebuffer.getCurrentImageAttachments()[0].getImage(), { (float)ImGui::GetContentRegionAvail().x, (float)ImGui::GetContentRegionAvail().x });
 		ImGui::End();
+		
+		ImGui::Begin("Upsampling", nullptr);
+		vgl::ImGuiContext::Image(m_RenderPipeline.m_UpsamplingFramebuffers[0].getCurrentImageAttachments()[0].getImage(), { (float)ImGui::GetContentRegionAvail().x, (float)ImGui::GetContentRegionAvail().x });
+		ImGui::End();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 2.0f, 2.0f });
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, { (float)230 / 256, (float)180 / 256, (float)66 / 256, 1 });
@@ -150,7 +157,7 @@ public:
 			  (float)m_ViewportData.m_Position.y + (float)m_ViewportData.m_Size.y },
 			false
 		);
-		//ImGuizmo::SetDrawlist();
+		ImGuizmo::SetDrawlist();
 		vgl::ImGuiContext::Image(m_RenderPipeline.m_HDRFramebuffer.getCurrentImageAttachments()[0].getImage(), { (float)m_ViewportData.m_Size.x, (float)m_ViewportData.m_Size.y });
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		m_Camera.setAspectRatio((float)m_ViewportData.m_Size.x / m_ViewportData.m_Size.y);
@@ -232,6 +239,10 @@ public:
 			ImGui::Text("Exposure");
 			ImGui::Spacing();
 			ImGui::Text("Adaptive Exposure Rate");
+			ImGui::Spacing();
+			ImGui::Text("Bloom Threshold");
+			ImGui::Spacing();
+			ImGui::Text("Bloom Filter Radius");
 			float offset = ImGui::GetColumnOffset();
 			ImGui::NextColumn();
 			ImGui::SetColumnWidth(1, ImGui::GetWindowSize().x - offset);
@@ -240,6 +251,8 @@ public:
 			ImGui::DragFloat("##3", &m_RenderPipeline.m_HDRInfo.gamma, 0.01);
 			ImGui::DragFloat("##4", &m_RenderPipeline.m_HDRInfo.exposure, 0.01);
 			ImGui::DragFloat("##42", &m_RenderPipeline.m_HDRInfo.exposure_adapt_rate, 0.0001, 0.0001);
+			ImGui::DragFloat("##43", &m_RenderPipeline.m_BloomThreshold, 0.1, 0);
+			ImGui::DragFloat("##44", &m_RenderPipeline.m_FilterRadius, 0.0001, 0.000);
 #undef max
 #undef min
 			std::max(m_RenderPipeline.m_HDRInfo.exposure_adapt_rate, 0.000001f);
@@ -437,6 +450,520 @@ public:
 			ImGui::TreePop();
 		}
 		ImGui::End();
+
+		sceneDisplay();
+	}
+
+	void transformEdit(vgl::Transform3DComponent* p_TransformComponent, const int p_ID, bool p_Translation = true, bool p_Rotation = true, bool p_Scaling = true)
+	{
+		if (!p_Translation && !p_Rotation && !p_Scaling)
+			return;
+		if (ImGui::TreeNodeEx(("Transform##" + std::to_string(p_ID)).c_str(), vgl::EditorColorScheme::TreeNodeFlagsFramed)) {
+			static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
+			static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
+
+			if (p_Translation) {
+				if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
+					mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+				ImGui::SameLine();
+			}
+			if (p_Rotation) {
+				if (ImGui::RadioButton("Rotate", mCurrentGizmoOperation == ImGuizmo::ROTATE))
+					mCurrentGizmoOperation = ImGuizmo::ROTATE;
+				ImGui::SameLine();
+			}
+			if (p_Scaling) {
+				if (ImGui::RadioButton("Scale", mCurrentGizmoOperation == ImGuizmo::SCALE))
+					mCurrentGizmoOperation = ImGuizmo::SCALE;
+			}
+
+			static bool useSnap(false);
+			Vector3f snap;
+
+			Vector3f matrixTranslation, matrixRotation, matrixScale;
+			ImGuizmo::DecomposeMatrixToComponents(&p_TransformComponent->transform.model[0], matrixTranslation.get(), matrixRotation.get(), matrixScale.get());
+			if (p_Translation) vgl::DrawVec3Control("Translation", matrixTranslation);
+			if (p_Rotation) vgl::DrawVec3Control("Rotation", matrixRotation);
+			if (p_Scaling) vgl::DrawVec3Control("Scale", matrixScale, 1.0f);
+
+			if (p_Translation || p_Rotation) {
+				if (mCurrentGizmoOperation != ImGuizmo::SCALE)
+				{
+					if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
+						mCurrentGizmoMode = ImGuizmo::LOCAL;
+					ImGui::SameLine();
+					if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
+						mCurrentGizmoMode = ImGuizmo::WORLD;
+				}
+			}
+			ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation.get(), matrixRotation.get(), matrixScale.get(), &p_TransformComponent->transform.model[0]);
+
+			ImGuiIO& io = ImGui::GetIO();
+			ImGuizmo::SetRect(m_ViewportData.m_Position.x, m_ViewportData.m_Position.y, m_ViewportData.m_Size.x, m_ViewportData.m_Size.y);
+			ImGuizmo::Manipulate(&m_Camera.getViewMatrix()[0], &m_Camera.getPerspectiveMatrix()[0],
+				mCurrentGizmoOperation, mCurrentGizmoMode, &p_TransformComponent->transform.model[0], NULL, (useSnap ? &snap.x : NULL));
+
+			ImGui::TreePop();
+		}
+	}
+
+	void sceneDisplay()
+	{
+		ImGui::Begin("Scene");
+		ImGui::BeginChild("SCENE-HIERARCHY");
+		vgl::ImGuiRowsBackground();
+		static int32_t C0unt = 0;
+		if (ImGui::BeginPopupContextWindow("CNE")) {
+			if (ImGui::MenuItem(("Create New Entity##" + std::to_string(C0unt)).c_str())) {
+				vgl::EntityNameComponent* name = new vgl::EntityNameComponent();
+				name->Name += "Entity " + std::to_string(C0unt);
+				C0unt++;
+				m_Scene.addEntity(*name);
+			}
+			ImGui::EndPopup();
+		}
+		//if (ImGui::BeginPopupContextWindow("CNPL")) {
+		//	if (ImGui::MenuItem(("Create New Point Light##p" + std::to_string(C0unt)).c_str())) {
+		//		vgl::EntityNameComponent* name = new vgl::EntityNameComponent();
+		//		vgl::PointLight3DComponent* light = new vgl::PointLight3DComponent();
+		//
+		//		name->Name = "Point Light " + std::to_string(C0unt);
+		//		C0unt++;
+		//		m_Scene.addEntity(*name, *light);
+		//	}
+		//	ImGui::EndPopup();
+		//}
+
+		static bool openGridEdit = false;
+
+		static int entity_idx = -1;
+
+		for (int i = 0; i < m_Scene.getEntities().size(); i++) {
+			auto* mesh = m_Scene.getComponent<vgl::Mesh3DComponent>(m_Scene.getEntities()[i]);
+			auto* name = m_Scene.getComponent<vgl::EntityNameComponent>(m_Scene.getEntities()[i]);
+			auto* transform = m_Scene.getComponent<vgl::Transform3DComponent>(m_Scene.getEntities()[i]);
+			auto* directional_light = m_Scene.getComponent<vgl::DirectionalLight3DComponent>(m_Scene.getEntities()[i]);
+			auto* point_light = m_Scene.getComponent<vgl::PointLight3DComponent>(m_Scene.getEntities()[i]);
+
+			//float y = ImGui::GetTextLineHeight();
+			//ImGuiContext::Image(m_EntityIcon, { y,y });
+			//ImGui::SameLine();
+			bool open = ImGui::TreeNodeEx(name->Name.c_str());
+
+			if (open) {
+				if (directional_light) {
+					ImGui::Begin("Component Properties");
+					if (ImGui::TreeNodeEx(name->Name.c_str(), vgl::EditorColorScheme::TreeNodeFlags)) {
+						ImGui::ColorPicker3("Color", directional_light->Color.get(), ImGuiColorEditFlags_DisplayRGB);
+						ImGui::DragFloat("Light Intensity", &directional_light->LightIntensity, 0.1f);
+						ImGui::DragFloat("Mie Scatter Constant (Volumetric Lighting)", &directional_light->VolumetricLightDensity, 1e-2);
+						directional_light->VolumetricLightDensity = 0.00001 + std::abs(directional_light->VolumetricLightDensity);
+						ImGui::TreePop();
+					}
+					ImGui::End();
+				}
+				if (point_light) {
+					ImGui::Begin("Component Properties");
+					if (ImGui::TreeNodeEx(name->Name.c_str(), vgl::EditorColorScheme::TreeNodeFlags)) {
+
+						ImGui::ColorPicker3("Color", point_light->Color.get(), ImGuiColorEditFlags_DisplayRGB);
+						ImGui::DragFloat("Light Intensity", &point_light->LightIntensity, 0.1f);
+
+						static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
+						static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
+
+						Vector3f matrixTranslation, matrixRotation, matrixScale;
+						ImGuizmo::DecomposeMatrixToComponents(&point_light->Transform[0], matrixTranslation.get(), matrixRotation.get(), matrixScale.get());
+						vgl::DrawVec3Control("Translation", matrixTranslation);
+						ImGui::DragFloat("Radius", &point_light->Radius, 0.1f);
+
+						point_light->Position = matrixTranslation;
+
+						ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation.get(), matrixRotation.get(), matrixScale.get(), &point_light->Transform[0]);
+
+						ImGuiIO& io = ImGui::GetIO();
+						ImGuizmo::SetRect(m_ViewportData.m_Position.x, m_ViewportData.m_Position.y, m_ViewportData.m_Size.x, m_ViewportData.m_Size.y);
+						ImGuizmo::Manipulate(&m_Camera.getViewMatrix()[0], &m_Camera.getPerspectiveMatrix()[0],
+							mCurrentGizmoOperation, mCurrentGizmoMode, &point_light->Transform[0], NULL, NULL);
+
+						ImGui::TreePop();
+					}
+					ImGui::End();
+				}
+				if (transform) {
+					//ImGuiContext::Image(m_TransformIcon, { y,y });
+					//ImGui::SameLine();
+					if (ImGui::TreeNodeEx("Transform", vgl::EditorColorScheme::TreeNodeFlags)) {
+						ImGui::Begin("Component Properties");
+						transformEdit(transform, i);
+						ImGui::End();
+						ImGui::TreePop();
+					}
+				}
+			}
+
+			if (mesh && mesh->mesh) {
+				if (open) {
+					if (ImGui::BeginPopupContextWindow(std::to_string(i).c_str())) {
+						if (ImGui::MenuItem(("Delete##" + std::to_string(i)).c_str())) {
+							mesh->mesh->destroy();
+							m_Scene.deleteEntity(m_Scene.getEntities()[i]);
+							ImGui::EndPopup();
+							ImGui::TreePop();
+							continue;
+						}
+						ImGui::EndPopup();
+					}
+
+					for (int j = 0; j < mesh->mesh->m_SubMeshIndices.size(); j++) {
+						//ImGuiContext::Image(m_MaterialIcon, { y,y });
+						//ImGui::SameLine();
+						std::string name = mesh->mesh->getMaterial(j).m_Name != "" ? mesh->mesh->getMaterial(j).m_Name : "Material " + std::to_string(j);
+						if (ImGui::TreeNodeEx(name.c_str(), vgl::EditorColorScheme::TreeNodeFlags)) {
+							ImGui::Begin("Component Properties");
+
+							ImGui::Checkbox(("##" + name).c_str(), &mesh->mesh->render(j));
+							if (ImGui::IsItemHovered())
+								ImGui::SetTooltip((std::string("Render=") + (mesh->mesh->render(j) ? "on" : "off")).c_str());
+
+							ImGui::SameLine();
+							if (ImGui::TreeNodeEx((name + "##" + std::to_string(i)).c_str(), vgl::EditorColorScheme::TreeNodeFlagsFramed)) {
+								ImGui::Text("Metallic");
+								ImGui::SliderFloat("##4", &mesh->mesh->getMaterial(j).config.m_Metallic, 0.02f, 1.0f);
+								ImGui::Text("Roughness");
+								ImGui::SliderFloat("##5", &mesh->mesh->getMaterial(j).config.m_Roughness, 0.02f, 1.0f);
+								ImGui::Text("PDM Depth");
+								ImGui::SliderFloat("##6", &mesh->mesh->getMaterial(j).config.m_PDMDepth, 0.02f, 1.0f);
+
+								ImGui::PushItemWidth(128);
+
+								if (ImGui::TreeNodeEx("Albedo Color", vgl::EditorColorScheme::TreeNodeFlags)) {
+									ImGui::ColorPicker3("Albedo", mesh->mesh->getMaterial(j).config.m_Albedo.get());
+									ImGui::TreePop();
+								}
+
+								if (ImGui::TreeNodeEx("Albedo Map", vgl::EditorColorScheme::TreeNodeFlagsFramed)) {
+									if (mesh->mesh->getMaterial(j).m_AlbedoMap.isValid())
+										vgl::ImGuiContext::Image(mesh->mesh->getMaterial(j).m_AlbedoMap, { 64, 64 });
+									else
+										vgl::ImGuiContext::Image(m_DefaultImage, { 64, 64 });
+
+									//if (ImGui::BeginDragDropTarget() && vgl::Input::mouseButtonIsReleased(0)) {
+									//	if (ImGui::AcceptDragDropPayload("Image")) {
+									//		if (mesh->mesh->getMaterial(j).m_AlbedoMap.isValid())
+									//			mesh->mesh->getMaterial(j).m_AlbedoMap.destroy();
+									//
+									//		vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_AlbedoMap, m_Draggable.c_str(), SamplerMode::Repeat);
+									//
+									//		mesh->mesh->m_MTLRecreateFlag = true;
+									//	}
+									//	ImGui::EndDragDropTarget();
+									//}
+
+									ImGui::SameLine();
+
+									if (ImGui::Button("...")) {
+										if (mesh->mesh->getMaterial(j).m_AlbedoMap.isValid())
+											mesh->mesh->getMaterial(j).m_AlbedoMap.destroy();
+
+										vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_AlbedoMap, Utils::FileGUI::getFileDialog({ "jpg", "png", "bmp" }), vgl::ColorSpace::SRGB, vgl::SamplerMode::Repeat);
+
+										mesh->mesh->m_MTLRecreateFlag = true;
+									}
+									if (ImGui::Button("Remove"))
+										if (mesh->mesh->getMaterial(j).m_AlbedoMap.isValid()) {
+											mesh->mesh->getMaterial(j).m_AlbedoMap.destroy();
+											mesh->mesh->m_MTLRecreateFlag = true;
+										}
+
+									ImGui::TreePop();
+								}
+								if (ImGui::TreeNodeEx("Normal Map", vgl::EditorColorScheme::TreeNodeFlagsFramed)) {
+									if (mesh->mesh->getMaterial(j).m_NormalMap.isValid())
+										vgl::ImGuiContext::Image(mesh->mesh->getMaterial(j).m_NormalMap, { 64, 64 });
+									else
+										vgl::ImGuiContext::Image(m_DefaultImage, { 64, 64 });
+
+									//if (ImGui::BeginDragDropTarget() && vgl::Input::mouseButtonIsReleased(0)) {
+									//	if (ImGui::AcceptDragDropPayload("Image")) {
+									//		if (mesh->mesh->getMaterial(j).m_NormalMap.isValid())
+									//			mesh->mesh->getMaterial(j).m_NormalMap.destroy();
+									//
+									//		vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_NormalMap, m_Draggable.c_str(), SamplerMode::Repeat);
+									//
+									//		mesh->mesh->m_MTLRecreateFlag = true;
+									//	}
+									//	ImGui::EndDragDropTarget();
+									//}
+
+									ImGui::SameLine();
+
+									if (ImGui::Button("...")) {
+										if (mesh->mesh->getMaterial(j).m_NormalMap.isValid())
+											mesh->mesh->getMaterial(j).m_NormalMap.destroy();
+
+										vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_NormalMap, Utils::FileGUI::getFileDialog({ "jpg", "png", "bmp" }), vgl::ColorSpace::SRGB, vgl::SamplerMode::Repeat);
+
+										mesh->mesh->m_MTLRecreateFlag = true;
+									}
+									if (ImGui::Button("Remove"))
+										if (mesh->mesh->getMaterial(j).m_NormalMap.isValid()) {
+											mesh->mesh->getMaterial(j).m_NormalMap.destroy();
+											mesh->mesh->m_MTLRecreateFlag = true;
+										}
+
+									ImGui::TreePop();
+								}
+								if (ImGui::TreeNodeEx("Displacement Map", vgl::EditorColorScheme::TreeNodeFlagsFramed)) {
+									if (mesh->mesh->getMaterial(j).m_DisplacementMap.isValid())
+										vgl::ImGuiContext::Image(mesh->mesh->getMaterial(j).m_DisplacementMap, { 64, 64 });
+									else
+										vgl::ImGuiContext::Image(m_DefaultImage, { 64, 64 });
+
+									//if (ImGui::BeginDragDropTarget() && vgl::Input::mouseButtonIsReleased(0)) {
+									//	if (ImGui::AcceptDragDropPayload("Image")) {
+									//		if (mesh->mesh->getMaterial(j).m_DisplacementMap.isValid())
+									//			mesh->mesh->getMaterial(j).m_DisplacementMap.destroy();
+									//
+									//		vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_DisplacementMap, m_Draggable.c_str(), SamplerMode::Repeat);
+									//
+									//		mesh->mesh->m_MTLRecreateFlag = true;
+									//	}
+									//	ImGui::EndDragDropTarget();
+									//}
+
+									ImGui::SameLine();
+
+									if (ImGui::Button("...")) {
+										if (mesh->mesh->getMaterial(j).m_DisplacementMap.isValid())
+											mesh->mesh->getMaterial(j).m_DisplacementMap.destroy();
+
+										vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_DisplacementMap, Utils::FileGUI::getFileDialog({ "jpg", "png", "bmp" }), vgl::ColorSpace::SRGB, vgl::SamplerMode::Repeat);
+
+										mesh->mesh->m_MTLRecreateFlag = true;
+									}
+									if (ImGui::Button("Remove"))
+										if (mesh->mesh->getMaterial(j).m_DisplacementMap.isValid()) {
+											mesh->mesh->getMaterial(j).m_DisplacementMap.destroy();
+											mesh->mesh->m_MTLRecreateFlag = true;
+										}
+
+									ImGui::TreePop();
+								}
+								if (ImGui::TreeNodeEx("Metallic Map", vgl::EditorColorScheme::TreeNodeFlagsFramed)) {
+									if (mesh->mesh->getMaterial(j).m_MetallicMap.isValid())
+										vgl::ImGuiContext::Image(mesh->mesh->getMaterial(j).m_MetallicMap, { 64, 64 });
+									else
+										vgl::ImGuiContext::Image(m_DefaultImage, { 64, 64 });
+
+									//if (ImGui::BeginDragDropTarget() && vgl::Input::mouseButtonIsReleased(0)) {
+									//	if (ImGui::AcceptDragDropPayload("Image")) {
+									//		if (mesh->mesh->getMaterial(j).m_MetallicMap.isValid())
+									//			mesh->mesh->getMaterial(j).m_MetallicMap.destroy();
+									//
+									//		vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_MetallicMap, m_Draggable.c_str(), SamplerMode::Repeat);
+									//
+									//		mesh->mesh->m_MTLRecreateFlag = true;
+									//	}
+									//	ImGui::EndDragDropTarget();
+									//}
+
+									ImGui::SameLine();
+
+									if (ImGui::Button("...")) {
+										if (mesh->mesh->getMaterial(j).m_MetallicMap.isValid())
+											mesh->mesh->getMaterial(j).m_MetallicMap.destroy();
+
+										vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_MetallicMap, Utils::FileGUI::getFileDialog({ "jpg", "png", "bmp" }), vgl::ColorSpace::SRGB, vgl::SamplerMode::Repeat);
+
+										mesh->mesh->m_MTLRecreateFlag = true;
+									}
+									if (ImGui::Button("Remove"))
+										if (mesh->mesh->getMaterial(j).m_MetallicMap.isValid()) {
+											mesh->mesh->getMaterial(j).m_MetallicMap.destroy();
+											mesh->mesh->m_MTLRecreateFlag = true;
+										}
+
+									ImGui::TreePop();
+								}
+								if (ImGui::TreeNodeEx("Roughness Map", vgl::EditorColorScheme::TreeNodeFlagsFramed)) {
+									if (mesh->mesh->getMaterial(j).m_RoughnessMap.isValid())
+										vgl::ImGuiContext::Image(mesh->mesh->getMaterial(j).m_RoughnessMap, { 64, 64 });
+									else
+										vgl::ImGuiContext::Image(m_DefaultImage, { 64, 64 });
+
+									//if (ImGui::BeginDragDropTarget() && vgl::Input::mouseButtonIsReleased(0)) {
+									//	if (ImGui::AcceptDragDropPayload("Image")) {
+									//		if (mesh->mesh->getMaterial(j).m_RoughnessMap.isValid())
+									//			mesh->mesh->getMaterial(j).m_RoughnessMap.destroy();
+									//
+									//		vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_RoughnessMap, m_Draggable.c_str(), SamplerMode::Repeat);
+									//
+									//		mesh->mesh->m_MTLRecreateFlag = true;
+									//	}
+									//	ImGui::EndDragDropTarget();
+									//}
+
+									ImGui::SameLine();
+
+									if (ImGui::Button("...")) {
+										if (mesh->mesh->getMaterial(j).m_RoughnessMap.isValid())
+											mesh->mesh->getMaterial(j).m_RoughnessMap.destroy();
+
+										vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_RoughnessMap, Utils::FileGUI::getFileDialog({ "jpg", "png", "bmp" }), vgl::ColorSpace::SRGB, vgl::SamplerMode::Repeat);
+
+										mesh->mesh->m_MTLRecreateFlag = true;
+									}
+									if (ImGui::Button("Remove"))
+										if (mesh->mesh->getMaterial(j).m_RoughnessMap.isValid()) {
+											mesh->mesh->getMaterial(j).m_RoughnessMap.destroy();
+											mesh->mesh->m_MTLRecreateFlag = true;
+										}
+
+									ImGui::TreePop();
+								}
+								if (ImGui::TreeNodeEx("AO Map", vgl::EditorColorScheme::TreeNodeFlagsFramed)) {
+									if (mesh->mesh->getMaterial(j).m_AOMap.isValid())
+										vgl::ImGuiContext::Image(mesh->mesh->getMaterial(j).m_AOMap, { 64, 64 });
+									else
+										vgl::ImGuiContext::Image(m_DefaultImage, { 64, 64 });
+
+									//if (ImGui::BeginDragDropTarget() && vgl::Input::mouseButtonIsReleased(0)) {
+									//	if (ImGui::AcceptDragDropPayload("Image")) {
+									//		if (mesh->mesh->getMaterial(j).m_AOMap.isValid())
+									//			mesh->mesh->getMaterial(j).m_AOMap.destroy();
+									//
+									//		vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_AOMap, m_Draggable.c_str(), SamplerMode::Repeat);
+									//
+									//		mesh->mesh->m_MTLRecreateFlag = true;
+									//	}
+									//	ImGui::EndDragDropTarget();
+									//}
+
+									ImGui::SameLine();
+
+									if (ImGui::Button("...")) {
+										if (mesh->mesh->getMaterial(j).m_AOMap.isValid())
+											mesh->mesh->getMaterial(j).m_AOMap.destroy();
+
+										vgl::ImageLoader::getImageFromPath(mesh->mesh->getMaterial(j).m_AOMap, Utils::FileGUI::getFileDialog({ "jpg", "png", "bmp" }), vgl::ColorSpace::SRGB, vgl::SamplerMode::Repeat);
+
+										mesh->mesh->m_MTLRecreateFlag = true;
+									}
+									if (ImGui::Button("Remove"))
+										if (mesh->mesh->getMaterial(j).m_AOMap.isValid()) {
+											mesh->mesh->getMaterial(j).m_AOMap.destroy();
+											mesh->mesh->m_MTLRecreateFlag = true;
+										}
+
+									ImGui::TreePop();
+								}
+								ImGui::TreePop();
+							}
+							ImGui::End();
+							ImGui::TreePop();
+						}
+					}
+					ImGui::TreePop();
+				}
+			}
+			else if (open) {
+				if (ImGui::BeginPopupContextWindow(std::to_string(i).c_str())) {
+					if (ImGui::MenuItem(("Delete##" + std::to_string(i)).c_str())) {
+						m_Scene.deleteEntity(m_Scene.getEntities()[i]);
+						ImGui::EndPopup();
+						ImGui::TreePop();
+						continue;
+					}
+					else if (ImGui::BeginMenu(("Add Component##" + std::to_string(i)).c_str())) {
+						if (ImGui::MenuItem("Sphere")) {
+							vgl::Mesh3DComponent* new_mesh = new vgl::Mesh3DComponent();
+							vgl::Transform3DComponent* new_transform = new vgl::Transform3DComponent();
+							new_mesh->mesh = new vgl::MeshData();
+							new_mesh->mesh->m_FileName = "Sphere";
+
+							generateUVSphere(50, 50, *new_mesh->mesh);
+							new_transform->transform.setScale(100);
+
+							m_Scene.addComponent(m_Scene.getEntities()[i], new_mesh);
+							m_Scene.addComponent(m_Scene.getEntities()[i], new_transform);
+							ImGui::EndPopup();
+						}
+						else if (ImGui::MenuItem("Cube")) {
+							vgl::Mesh3DComponent* new_mesh = new vgl::Mesh3DComponent();
+							vgl::Transform3DComponent* new_transform = new vgl::Transform3DComponent();
+							new_mesh->mesh = new vgl::MeshData();
+							new_mesh->mesh->m_FileName = "Cube";
+
+							generateCube(*new_mesh->mesh);
+							new_transform->transform.setScale(100);
+
+							m_Scene.addComponent(m_Scene.getEntities()[i], new_mesh);
+							m_Scene.addComponent(m_Scene.getEntities()[i], new_transform);
+							ImGui::EndPopup();
+						}
+						else if (ImGui::MenuItem("Grid")) {
+							openGridEdit = true;
+							entity_idx = i;
+							ImGui::EndPopup();
+						}
+						else ImGui::EndPopup();
+						ImGui::EndMenu();
+					}
+					else ImGui::EndPopup();
+				}
+				ImGui::TreePop();
+			}
+
+			//ImGui::Begin("Entity Names");
+			//ImGui::Text(("Entity Name " + std::to_string(i)).c_str());
+			//ImGui::SameLine();
+			//ImGui::InputText(("##" + std::to_string(i)).c_str(), const_cast<char*>(name->name.c_str()), 30);
+			//ImGui::End();
+
+			if (openGridEdit && entity_idx == i) {
+				static int settings[4];
+				ImGui::Begin("Grid settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+				ImGui::DragInt2("Tesselations", settings, 0);
+				ImGui::DragInt2("Grid size", &settings[2], 0);
+
+				if (ImGui::Button("Create")) {
+					vgl::Mesh3DComponent* model = new vgl::Mesh3DComponent();
+					vgl::Transform3DComponent* new_transform = new vgl::Transform3DComponent();
+					model->mesh = new vgl::MeshData();
+					model->mesh->m_FileName = "Grid";
+
+					generateGrid(settings[0], settings[1], { (float)settings[2], (float)settings[3] }, *model->mesh);
+					openGridEdit = false;
+					m_Scene.addComponent(m_Scene.getEntities()[i], model);
+					m_Scene.addComponent(m_Scene.getEntities()[i], new_transform);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Cancel"))
+					openGridEdit = false;
+
+				ImGui::End();
+
+			}
+		}
+
+		ImGui::EndChild();
+		//if (ImGui::BeginDragDropTarget() && vgl::Input::mouseButtonIsReleased(0)) {
+		//	if (ImGui::AcceptDragDropPayload("OBJ")) {
+		//		vgl::Mesh3DComponent* model = new vgl::Mesh3DComponent();
+		//		model->mesh = new vgl::MeshData();
+		//		vgl::EntityNameComponent* name = new vgl::EntityNameComponent;
+		//		name->Name = stripExtension(m_DraggableFileName, ".obj").c_str();
+		//		vgl::Transform3DComponent* new_transform = new vgl::Transform3DComponent();
+		//
+		//		vgl::OBJ_Loader::loadModel((m_DraggableDirectory + "/").c_str(), m_DraggableFileName.c_str(), model->mesh, false);
+		//
+		//		m_Scene.addEntity(*model, *name, *new_transform);
+		//	}
+		//	ImGui::EndDragDropTarget();
+		//}
+
+		ImGui::End();
 	}
 
 	bool onMouseMove(Event::MouseMovedEvent& p_Move) { m_CameraController.onMouseMovedEvent(p_Move); return false; };
@@ -457,6 +984,7 @@ private:
 	friend class TestApp;
 
 	vgl::Image img;
+	vgl::Image m_DefaultImage;
 
 	vgl::CameraController3D m_CameraController;
 	vgl::Window* m_WindowPtr;

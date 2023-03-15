@@ -22,15 +22,21 @@ namespace vgl
 
 		m_SSAOShader.setShader("data/Shaders/SSAO/vert.spv", "data/Shaders/SSAO/frag.spv");
 		m_SSAOBlurShader.setShader("data/Shaders/SSAO/Blur/vert.spv", "data/Shaders/SSAO/Blur/frag.spv");
+		m_SSRShader.setShader("data/Shaders/SSR/vert.spv", "data/Shaders/SSR/frag.spv");
 		m_HDRShader.setShader("data/Shaders/HDR/vert.spv", "data/Shaders/HDR/frag.spv");
 		m_DOFShader.setShader("data/Shaders/BokehDOF/vert.spv", "data/Shaders/BokehDOF/frag.spv");
 		m_FXAAShader.setShader("data/Shaders/FXAA/vert.spv", "data/Shaders/FXAA/frag.spv");
+		m_DownsamplingShader.setShader("data/Shaders/Bloom/Downsampling/vert.spv", "data/Shaders/Bloom/Downsampling/frag.spv");
+		m_UpsamplingShader.setShader("data/Shaders/Bloom/Upsampling/vert.spv", "data/Shaders/Bloom/Upsampling/frag.spv");
+		m_PrefilterShader.setShader("data/Shaders/Bloom/Prefilter/vert.spv", "data/Shaders/Bloom/Prefilter/frag.spv");
+		m_BloomShader.setShader("data/Shaders/Bloom/vert.spv", "data/Shaders/Bloom/frag.spv");
 
 		setupGBuffer();
 		setupSSAOBuffers();
 		setupLightPassBuffer();
 		setupSSRBuffer();
 		setupPostProcessBuffers();
+		setupBloomBuffers();
 
 		vk::GCS::getInstance().createSkyboxPipelines(*m_GBuffer.m_FramebufferAttachmentInfo.p_RenderPipelineInfo.p_RenderPass);
 	}
@@ -102,7 +108,7 @@ namespace vgl
 		m_RendererPtr->endRenderPass();
 
 		transferSSRData();
-
+		
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_SSRFramebuffer);
 		m_RendererPtr->endRenderPass();
 		
@@ -113,8 +119,24 @@ namespace vgl
 		// Depth of Field
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_DOFFramebuffer);
 		m_RendererPtr->endRenderPass();
+		
+		// Prefilter for bloom
+		m_RendererPtr->beginRenderPass(p_RenderInfo, m_PrefilterFramebufferAttachment);
+		m_RendererPtr->endRenderPass();
 
-		for (auto& img : m_DOFFramebuffer.getImageAttachments())
+		for (auto& framebuffer : m_DownsamplingFramebuffers) {
+			m_RendererPtr->beginRenderPass(p_RenderInfo, framebuffer);
+			m_RendererPtr->endRenderPass();
+		}
+		for (int32_t mip = m_UpsampleMipLevels - 1; mip > -1; mip--) {
+			m_RendererPtr->beginRenderPass(p_RenderInfo, m_UpsamplingFramebuffers[mip]);
+			m_RendererPtr->endRenderPass();
+		}
+
+		m_RendererPtr->beginRenderPass(p_RenderInfo, m_BloomFramebufferAttachment);
+		m_RendererPtr->endRenderPass();
+
+		for (auto& img : m_BloomFramebufferAttachment.getImageAttachments())
 			m_RendererPtr->blitImage(img[0].getImage());
 		
 		m_RendererPtr->beginRenderPass(p_RenderInfo, m_HDRFramebuffer);
@@ -228,7 +250,7 @@ namespace vgl
 			m_WindowPtr->getWindowSize(),
 			ImageFormat::C16SF_4C,
 			Layout::ShaderR,
-			true, false,
+			true, false, false,
 			BorderColor::OpaqueBlack,
 			SamplerMode::ClampToEdge
 		);
@@ -280,7 +302,6 @@ namespace vgl
 		m_SSRFramebuffer.getDescriptors().create(infoSSR);
 		
 		// Create SSR framebuffer
-		m_SSRShader.setShader("data/Shaders/SSR/vert.spv", "data/Shaders/SSR/frag.spv");
 		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
 		m_SSRFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_SSRShader;
 		m_SSRFramebuffer.addAttachment(
@@ -320,7 +341,7 @@ namespace vgl
 		m_DOFFramebuffer.m_FramebufferAttachmentInfo.p_Shader = &m_DOFShader;
 
 		// Takes image from lightpass and applies depth of field
-		m_DOFFramebuffer.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR, true, true);
+		m_DOFFramebuffer.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR, true);
 
 		static ShaderDescriptorInfo infoDOF = {};
 		infoDOF.p_FragmentUniformBuffer = UniformBuffer(sizeof(DOFInfo), 1);
@@ -330,15 +351,124 @@ namespace vgl
 
 		m_DOFFramebuffer.getDescriptors().create(infoDOF);
 		m_DOFFramebuffer.create();
+	}
+
+	void RenderPipeline_Deferred::setupBloomBuffers()
+	{
+		static ShaderDescriptorInfo infoPrefilter;
+		//infoHDR.p_FragmentUniformBuffer = UniformBuffer(sizeof(m_DOFInfo), 1);
+		for (int32_t i = 0; i < m_DOFFramebuffer.getImageAttachments().size(); i++)
+			infoPrefilter.addImage(&m_DOFFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
+		m_PrefilterFramebufferAttachment.getDescriptors().create(infoPrefilter);
+
+		m_PrefilterFramebufferAttachment.m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
+		m_PrefilterFramebufferAttachment.m_FramebufferAttachmentInfo.p_Shader = &m_PrefilterShader;
+		m_PrefilterFramebufferAttachment.m_FramebufferAttachmentInfo.p_PushConstantData = &m_BloomThreshold;
+		m_PrefilterFramebufferAttachment.m_FramebufferAttachmentInfo.p_PushConstantSize = sizeof(m_BloomThreshold);
+		m_PrefilterFramebufferAttachment.m_FramebufferAttachmentInfo.p_PushConstantShaderStage = ShaderStage::FragmentBit;
+		m_PrefilterFramebufferAttachment.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR, true, false);
+		m_PrefilterFramebufferAttachment.create();
+
+		/////////////////////////////////////////////////////////////////////////////////////////////
+		//				Downsampling framebuffers
+		/////////////////////////////////////////////////////////////////////////////////////////////
+#undef max
+		m_DownsampleMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(m_WindowPtr->getWindowSize().x, m_WindowPtr->getWindowSize().y)))) + 1;
+
+		static std::vector<ShaderDescriptorInfo> infoDownsample;
+		infoDownsample.resize(m_DownsampleMipLevels);
+		m_DownsamplingFramebuffers.resize(m_DownsampleMipLevels);
+
+		for (int32_t i = 0; i < m_PrefilterFramebufferAttachment.getImageAttachments().size(); i++)
+			infoDownsample[0].addImage(&m_PrefilterFramebufferAttachment.getImageAttachments()[i][0].getImage(), 0, i);
+		m_DownsamplingFramebuffers[0].getDescriptors().create(infoDownsample[0]);
+
+		m_DownsamplingFramebuffers[0].m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
+		m_DownsamplingFramebuffers[0].m_FramebufferAttachmentInfo.p_Shader = &m_DownsamplingShader;
+		m_DownsamplingFramebuffers[0].addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR, true, false);
+		m_DownsamplingFramebuffers[0].create();
+
+		for (int32_t mip = 1; mip < m_DownsampleMipLevels; mip++) {
+			for (int32_t i = 0; i < m_DownsamplingFramebuffers[mip-1].getImageAttachments().size(); i++)
+				infoDownsample[mip].addImage(&m_DownsamplingFramebuffers[mip-1].getImageAttachments()[i][0].getImage(), 0, i);
+			m_DownsamplingFramebuffers[mip].getDescriptors().create(infoDownsample[mip]);
+
+			m_DownsamplingFramebuffers[mip].m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize() / (2*mip);
+			m_DownsamplingFramebuffers[mip].m_FramebufferAttachmentInfo.p_Shader = &m_DownsamplingShader;
+			m_DownsamplingFramebuffers[mip].addAttachment(m_WindowPtr->getWindowSize() / (2 * mip), ImageFormat::C16SF_4C, Layout::ShaderR, true, false);
+			m_DownsamplingFramebuffers[mip].create();
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////
+		//				Upsampling framebuffers
+		/////////////////////////////////////////////////////////////////////////////////////////////
+
+		m_UpsampleMipLevels = m_DownsampleMipLevels;
+
+		static std::vector<ShaderDescriptorInfo> infoUpsample;
+		infoUpsample.resize(m_UpsampleMipLevels);
+		m_UpsamplingFramebuffers.resize(m_UpsampleMipLevels);
+
+		for (int32_t i = 0; i < m_DownsamplingFramebuffers[m_UpsampleMipLevels - 1].getImageAttachments().size(); i++) {
+			infoUpsample[m_UpsampleMipLevels - 1].addImage(&m_DownsamplingFramebuffers[m_UpsampleMipLevels - 1].getImageAttachments()[i][0].getImage(), 0, i);
+			infoUpsample[m_UpsampleMipLevels - 1].addImage(&m_DownsamplingFramebuffers[m_UpsampleMipLevels - 1].getImageAttachments()[i][0].getImage(), 1, i);
+		}
+		m_UpsamplingFramebuffers[m_UpsampleMipLevels - 1].getDescriptors().create(infoUpsample[m_UpsampleMipLevels - 1]);
+
+		m_UpsamplingFramebuffers[m_UpsampleMipLevels - 1].m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize() / (2 * (m_UpsampleMipLevels - 1));
+		m_UpsamplingFramebuffers[m_UpsampleMipLevels - 1].m_FramebufferAttachmentInfo.p_Shader = &m_UpsamplingShader;
+		m_UpsamplingFramebuffers[m_UpsampleMipLevels - 1].m_FramebufferAttachmentInfo.p_PushConstantData = &m_FilterRadius;
+		m_UpsamplingFramebuffers[m_UpsampleMipLevels - 1].m_FramebufferAttachmentInfo.p_PushConstantSize = sizeof(m_FilterRadius);
+		m_UpsamplingFramebuffers[m_UpsampleMipLevels - 1].m_FramebufferAttachmentInfo.p_PushConstantShaderStage = ShaderStage::FragmentBit;
+		m_UpsamplingFramebuffers[m_UpsampleMipLevels - 1].addAttachment(m_WindowPtr->getWindowSize() / (2 * (m_UpsampleMipLevels - 1)), ImageFormat::C16SF_4C, Layout::ShaderR, true, false);
+		m_UpsamplingFramebuffers[m_UpsampleMipLevels - 1].create();
+
+		for (int32_t mip = m_UpsampleMipLevels - 2; mip > -1; mip--) {
+			for (int32_t i = 0; i < m_DownsamplingFramebuffers[mip].getImageAttachments().size(); i++) {
+				infoUpsample[mip].addImage(&m_UpsamplingFramebuffers[mip+1].getImageAttachments()[i][0].getImage(), 0, i);
+				infoUpsample[mip].addImage(&m_DownsamplingFramebuffers[mip].getImageAttachments()[i][0].getImage(), 1, i);
+			}
+			m_UpsamplingFramebuffers[mip].getDescriptors().create(infoUpsample[mip]);
+
+			if(mip == 0)
+				m_UpsamplingFramebuffers[mip].m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
+			else
+				m_UpsamplingFramebuffers[mip].m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize() / (2 * mip);
+
+			m_UpsamplingFramebuffers[mip].m_FramebufferAttachmentInfo.p_Shader = &m_UpsamplingShader;
+			m_UpsamplingFramebuffers[mip].m_FramebufferAttachmentInfo.p_PushConstantData = &m_FilterRadius;
+			m_UpsamplingFramebuffers[mip].m_FramebufferAttachmentInfo.p_PushConstantSize = sizeof(m_FilterRadius);
+			m_UpsamplingFramebuffers[mip].m_FramebufferAttachmentInfo.p_PushConstantShaderStage = ShaderStage::FragmentBit;
+			if (mip == 0)
+				m_UpsamplingFramebuffers[mip].addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR, true, false);
+			else
+				m_UpsamplingFramebuffers[mip].addAttachment(m_WindowPtr->getWindowSize() / (2 * (mip)), ImageFormat::C16SF_4C, Layout::ShaderR, true, false);
+			m_UpsamplingFramebuffers[mip].create();
+		}
+
+		// Mix DOF image and Upsampled image
+		static ShaderDescriptorInfo infoBloom;
+		//infoHDR.p_FragmentUniformBuffer = UniformBuffer(sizeof(m_DOFInfo), 1);
+		for (int32_t i = 0; i < m_DOFFramebuffer.getImageAttachments().size(); i++) {
+			infoBloom.addImage(&m_DOFFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
+			infoBloom.addImage(&m_UpsamplingFramebuffers[0].getImageAttachments()[i][0].getImage(), 1, i);
+		}
+		m_BloomFramebufferAttachment.getDescriptors().create(infoBloom);
+
+		m_BloomFramebufferAttachment.m_FramebufferAttachmentInfo.p_Size = m_WindowPtr->getWindowSize();
+		m_BloomFramebufferAttachment.m_FramebufferAttachmentInfo.p_Shader = &m_BloomShader;
+		m_BloomFramebufferAttachment.addAttachment(m_WindowPtr->getWindowSize(), ImageFormat::C16SF_4C, Layout::ShaderR, true, true);
+		m_BloomFramebufferAttachment.create();// Mix DOF image and Upsampled image
 
 		/////////////////////////////////////////////////////////////////////////////////////////////
 		//				Hight-Definition-Range & Post-Processing
 		/////////////////////////////////////////////////////////////////////////////////////////////
 		static ShaderDescriptorInfo infoHDR;
 		//infoHDR.p_FragmentUniformBuffer = UniformBuffer(sizeof(m_DOFInfo), 1);
-		infoHDR.p_StorageBuffer = StorageBuffer(ShaderStage::FragmentBit, sizeof(float), 1);
-		for (int32_t i = 0; i < m_DOFFramebuffer.getImageAttachments().size(); i++)
-			infoHDR.addImage(&m_DOFFramebuffer.getImageAttachments()[i][0].getImage(), 0, i);
+		for (int32_t i = 0; i < m_BloomFramebufferAttachment.getImageAttachments().size(); i++) {
+			infoHDR.addImage(&m_BloomFramebufferAttachment.getImageAttachments()[i][0].getImage(), 0, i);
+		}
+		infoHDR.p_StorageBuffer = StorageBuffer({ ShaderStage::FragmentBit }, sizeof(float), 1);
 		m_HDRFramebuffer.getDescriptors().create(infoHDR);
 		m_HDRFramebuffer.getDescriptors().copyToStorageBuffer(&m_HDRInfo.exposure, sizeof(float), 0);
 
@@ -390,11 +520,15 @@ namespace vgl
 			}
 			if (directional_light) {
 				m_LightPassFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, directional_light->Direction, sizeof(Matrix4f) + sizeof(Vector4f));
-				m_LightPassFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, directional_light->Color, sizeof(Matrix4f) + 2 * sizeof(Vector4f));
+				m_LightPassFramebuffer.getDescriptors().copy(ShaderStage::FragmentBit, directional_light->Color * directional_light->LightIntensity, sizeof(Matrix4f) + 2 * sizeof(Vector4f));
 			}
 			auto point_light = m_ScenePtr->getComponent<PointLight3DComponent>(entity);
 			if (point_light) {
-				p_light.Color = { point_light->Color.r, point_light->Color.g, point_light->Color.b, 0 };
+				p_light.Color = { 
+					point_light->Color.r * point_light->LightIntensity,
+					point_light->Color.g * point_light->LightIntensity,
+					point_light->Color.b * point_light->LightIntensity, 0 
+				};
 				p_light.Position = { point_light->Position.x, point_light->Position.y, point_light->Position.z, 0 };
 				p_light.Radius = point_light->Radius;
 				p_light.m_ShadowMapID = point_light->ShadowMapID;
@@ -411,5 +545,9 @@ namespace vgl
 
 		m_HDRInfo.deltatime = m_WindowPtr->getDeltaTime();
 		m_HDRInfo.fstop = m_DOFInfo.fstop;
+	}
+	void RenderPipeline_Deferred::transferBloomData()
+	{
+
 	}
 }
