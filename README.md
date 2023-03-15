@@ -2,7 +2,7 @@
 > C++ Vulkan/OpenGL engine for both 2D and 3D
 
 ## __Engine Features:__
-- Built on Vulkan API (OpenGL not implemented at the moment, but API is meant to be render agnostic)
+- Built on Vulkan API (OpenGL not implemented at the moment, but API is written to be render agnostic)
 - Custom Math Library.
 - Load/Save scenes (editable in .yaml format)
 - Custom Entity Component System (ECS)
@@ -20,9 +20,10 @@
   - Add basic shapes eg. Spheres (UV), Cubes and Grids.
   - Basic Content Browser to directly load textures, obj models or scenes.
 - __Graphical Features__
+  - Parallax Occlusion Mapping (Requires displacement map)
   - Physically Based Rendering.
   - Screen Space Ambient Occlusion (SSAO)
-  - Directional Shadow mapping + Percentage Closer Soft Shadows(PCSS), also includes basic PCF Filtering
+  - Directional/Point light Shadow mapping + Percentage Closer Soft Shadows(PCSS), also includes basic PCF Filtering
   - Volumetric lighting (Using ray marching).
   - Physically based Atmospheric Scattering.
   - Fast Approximate Anti-Aliasing (FXAA)
@@ -42,7 +43,9 @@ ___(Editor is currently not running, rewrite is pending)___
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(183).png?raw=true)
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(185).png?raw=true)
 ![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(84).png?raw=true)
-
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(31).png?raw=true)
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(30).png?raw=true)
+![Alt text](https://github.com/PeterVondra/VGL/blob/main/resources/images/Screenshot%20(23).png?raw=true)
 
 
 
