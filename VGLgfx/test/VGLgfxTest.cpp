@@ -39,7 +39,7 @@ public:
 
 		auto directional_light = new vgl::DirectionalLight3DComponent;
 		directional_light->Color = { 1, 1, 1 };
-		directional_light->LightIntensity = 12;
+		directional_light->LightIntensity = 32;
 		directional_light->Direction = { 0.333, 1, 0.333 };
 
 		auto shadow_map = new vgl::DShadowMapComponent;

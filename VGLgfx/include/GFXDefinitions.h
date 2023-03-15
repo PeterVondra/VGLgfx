@@ -9,7 +9,7 @@ namespace vgl
 		//bool autoExposure;
 		float deltatime = 0.0f;
 
-        alignas(4) float gamma = 1.780f;
+        alignas(4) float gamma = 2.300f;
 		alignas(4) float exposure = 2.06f;
 		alignas(4) float exposure_adapt_rate = 0.025;
 

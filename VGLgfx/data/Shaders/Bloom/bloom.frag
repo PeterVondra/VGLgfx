@@ -15,6 +15,6 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-   outColor.rgb = texture(imageDOF, UV).rgb + texture(imageBloom, UV).rgb;
+   outColor.rgb = mix(texture(imageDOF, UV).rgb, texture(imageBloom, UV).rgb, 0.2f);
    outColor.a = 1.0f;
 }

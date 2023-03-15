@@ -63,4 +63,6 @@ void main()
     downsample.rgb += (b+d+f+h)*0.0625;
     downsample.rgb += (j+k+l+m)*0.125;
     downsample.a = 1.0f;
+
+    downsample = max(downsample, 0.0001f);
 }
