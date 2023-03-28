@@ -8,21 +8,26 @@ SET(BUILD_SHARED_LIBS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-ADD_CUSTOM_TARGET(debug
-	COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Debug ${CMAKE_SOURCE_DIR}
-	COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target all
-	COMMENT "Creating the executable in the debug mode.")
-
-ADD_CUSTOM_TARGET(release
-	COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release ${CMAKE_SOURCE_DIR}
-	COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target all
-	COMMENT "Creating the executable in the release mode.")
-
 ### Require out-of-source builds
 #file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
 #if(EXISTS "${LOC_PATH}")
 #    message(FATAL_ERROR "You cannot build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
 #endif()
+
+#############################################################################################
+#	VGLgfx Static Library
+#############################################################################################
+
+ADD_CUSTOM_TARGET(debug PRIVATE
+	COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Debug ${CMAKE_SOURCE_DIR}
+	COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target all
+	COMMENT "Creating the executable in the debug mode.")
+
+ADD_CUSTOM_TARGET(release PRIVATE
+	COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release ${CMAKE_SOURCE_DIR}
+	COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target all
+	COMMENT "Creating the executable in the release mode.")
+
 
 project(VGLgfx)
 
@@ -31,166 +36,166 @@ add_compile_definitions(VGL_RENDER_API_VULKAN GLEW_STATIC IMGUI_UNLIMITED_FRAME_
 set(
 	HEADER_FILES
 
-	include/VGLgfx.h
+	include/VGLgfx/VGLgfx.h
 
-	include/Platform/VkIncludes.h
-	#include/Platform/GLIncludes.h
-	include/VGL_Internal.h
-	include/VGL_Logger.h
+	include/VGLgfx/Platform/VkIncludes.h
+	#include/VGLgfx/Platform/GLIncludes.h
+	include/VGLgfx/VGL_Internal.h
+	include/VGLgfx/VGL_Logger.h
 
-	include/GFXDefinitions.h
-	include/Platform/Definitions.h
+	include/VGLgfx/GFXDefinitions.h
+	include/VGLgfx/Platform/Definitions.h
 
 	# Buffer layouts and handling
-	include/Platform/BufferLayout.h
+	include/VGLgfx/Platform/BufferLayout.h
 	
 	# Base glfw window
-	include/Platform/BaseWindow.h
+	include/VGLgfx/Platform/BaseWindow.h
 
 	# Math library
-	include/Math/Math.h
-	include/Math/Matrix.h
-	include/Math/Vector.h
-	include/Math/Quaternion.h
-	include/Math/Camera.h
-	include/Math/Transform.h
+	include/VGLgfx/Math/Math.h
+	include/VGLgfx/Math/Matrix.h
+	include/VGLgfx/Math/Vector.h
+	include/VGLgfx/Math/Quaternion.h
+	include/VGLgfx/Math/Camera.h
+	include/VGLgfx/Math/Transform.h
 	
 	# General application handling, e.g. events, windows, renderAPI handling...
-	include/Application/RenderAPI.h
-	include/Application/InputManager.h
-	include/Application/Application.h
-	include/Application/Layer.h
-	include/Application/LayerStack.h
+	include/VGLgfx/Application/RenderAPI.h
+	include/VGLgfx/Application/InputManager.h
+	include/VGLgfx/Application/Application.h
+	include/VGLgfx/Application/Layer.h
+	include/VGLgfx/Application/LayerStack.h
 	
-	include/RenderPipelines.h
-	include/Scene.h
+	include/VGLgfx/RenderPipelines.h
+	include/VGLgfx/Scene.h
 	
 	# Event system
-	include/Events/Event.h
-	include/Events/ApplicationEvent.h
-	include/Events/KeyEvent.h
-	include/Events/MouseEvent.h
+	include/VGLgfx/Events/Event.h
+	include/VGLgfx/Events/ApplicationEvent.h
+	include/VGLgfx/Events/KeyEvent.h
+	include/VGLgfx/Events/MouseEvent.h
 	
-	include/VGL-3D/Mesh/Material.h
-	include/VGL-3D/Mesh/Mesh.h
-	include/VGL-3D/Mesh/OBJ_Loader.h
-	include/VGL-3D/Mesh/VGL-Assimp.h
-	include/VGL-3D/Cuboid.h
-	include/VGL-3D/Grid.h
-	include/VGL-3D/Shapes.h
-	include/VGL-3D/SkyBox.h
+	include/VGLgfx/VGL-3D/Mesh/Material.h
+	include/VGLgfx/VGL-3D/Mesh/Mesh.h
+	include/VGLgfx/VGL-3D/Mesh/OBJ_Loader.h
+	include/VGLgfx/VGL-3D/Mesh/VGL-Assimp.h
+	include/VGLgfx/VGL-3D/Cuboid.h
+	include/VGLgfx/VGL-3D/Grid.h
+	include/VGLgfx/VGL-3D/Shapes.h
+	include/VGLgfx/VGL-3D/SkyBox.h
 	
 	# Utilites
-	include/Utils/Logger.h
-	include/Utils/FileGUI.h
+	include/VGLgfx/Utils/Logger.h
+	include/VGLgfx/Utils/FileGUI.h
 	
 	#Entity component system
-	include/ECS/Component.h
-	include/ECS/System.h
-	include/ECS/ECS.h
-	include/DefaultECSComponents.h
+	include/VGLgfx/ECS/Component.h
+	include/VGLgfx/ECS/System.h
+	include/VGLgfx/ECS/ECS.h
+	include/VGLgfx/DefaultECSComponents.h
 	
-	include/Octree.h
-	include/Font.h
+	include/VGLgfx/Octree.h
+	include/VGLgfx/Font.h
 	
-	#include/Platform/OpenGL/GlWindow.h
-	#include/Platform/OpenGL/GlRenderer.h
-	#include/Platform/OpenGL/GlFramebufferAttachment.h
-	#include/Platform/OpenGL/GlDefinitions.h
-	#include/Platform/OpenGL/GlBuffers.h
+	#include/VGLgfx/Platform/OpenGL/GlWindow.h
+	#include/VGLgfx/Platform/OpenGL/GlRenderer.h
+	#include/VGLgfx/Platform/OpenGL/GlFramebufferAttachment.h
+	#include/VGLgfx/Platform/OpenGL/GlDefinitions.h
+	#include/VGLgfx/Platform/OpenGL/GlBuffers.h
 	
-	include/Platform/Vulkan/VkDescriptorLayoutCache.h
-	include/Platform/Vulkan/VkContext.h
-	include/Platform/Vulkan/VkWindow.h
+	include/VGLgfx/Platform/Vulkan/VkDescriptorLayoutCache.h
+	include/VGLgfx/Platform/Vulkan/VkContext.h
+	include/VGLgfx/Platform/Vulkan/VkWindow.h
 	
-	include/Platform/Vulkan/VkRenderer.h
-	include/Platform/Vulkan/VkRenderPass.h
-	include/Platform/Vulkan/VkDescriptor.h
-	include/Platform/Vulkan/VkFramebuffer.h
-	include/Platform/Vulkan/VkFramebufferAttachment.h
-	include/Platform/Vulkan/VkDefinitions.h
-	include/Platform/Vulkan/VkCommandBuffer.h 
-	include/Platform/Vulkan/VkImage.h 
-	include/Platform/Vulkan/VkBuffers.h
-	include/Platform/Vulkan/VkShader.h
-	include/Platform/Vulkan/VkGraphics_Internal.h
-	include/Platform/Vulkan/VkImGui.h
+	include/VGLgfx/Platform/Vulkan/VkRenderer.h
+	include/VGLgfx/Platform/Vulkan/VkRenderPass.h
+	include/VGLgfx/Platform/Vulkan/VkDescriptor.h
+	include/VGLgfx/Platform/Vulkan/VkFramebuffer.h
+	include/VGLgfx/Platform/Vulkan/VkFramebufferAttachment.h
+	include/VGLgfx/Platform/Vulkan/VkDefinitions.h
+	include/VGLgfx/Platform/Vulkan/VkCommandBuffer.h 
+	include/VGLgfx/Platform/Vulkan/VkImage.h 
+	include/VGLgfx/Platform/Vulkan/VkBuffers.h
+	include/VGLgfx/Platform/Vulkan/VkShader.h
+	include/VGLgfx/Platform/Vulkan/VkGraphics_Internal.h
+	include/VGLgfx/Platform/Vulkan/VkImGui.h
 )
 
 set(
 	SOURCE_FILES
 	
-	include/VGL_Logger.cpp
+	include/VGLgfx/VGL_Logger.cpp
 
 	# Buffer layouts and handling
-	include/Platform/BufferLayout.cpp
+	include/VGLgfx/Platform/BufferLayout.cpp
 
 	# Base glfw window
-	include/Platform/BaseWindow.cpp
+	include/VGLgfx/Platform/BaseWindow.cpp
 
 	# Math library
-	include/Math/Math.cpp
-	include/Math/Matrix.cpp
-	include/Math/Vector.cpp
-	include/Math/Quaternion.cpp
-	include/Math/Camera.cpp
-	include/Math/Transform.cpp
+	include/VGLgfx/Math/Math.cpp
+	include/VGLgfx/Math/Matrix.cpp
+	include/VGLgfx/Math/Vector.cpp
+	include/VGLgfx/Math/Quaternion.cpp
+	include/VGLgfx/Math/Camera.cpp
+	include/VGLgfx/Math/Transform.cpp
 	
 	# General application handling, e.g. events, windows, renderAPI
-	include/Application/InputManager.cpp
-	include/Application/Application.cpp
-	include/Application/Layer.cpp
-	include/Application/LayerStack.cpp
+	include/VGLgfx/Application/InputManager.cpp
+	include/VGLgfx/Application/Application.cpp
+	include/VGLgfx/Application/Layer.cpp
+	include/VGLgfx/Application/LayerStack.cpp
 
-	include/RenderPipelines.cpp
-	include/Scene.cpp
+	include/VGLgfx/RenderPipelines.cpp
+	include/VGLgfx/Scene.cpp
 
 	# Event system
-	include/Events/Event.cpp
-	include/Events/ApplicationEvent.cpp
-	include/Events/KeyEvent.cpp
-	include/Events/MouseEvent.cpp
+	include/VGLgfx/Events/Event.cpp
+	include/VGLgfx/Events/ApplicationEvent.cpp
+	include/VGLgfx/Events/KeyEvent.cpp
+	include/VGLgfx/Events/MouseEvent.cpp
 
 	# 3D
-	include/VGL-3D/Mesh/Material.cpp
-	include/VGL-3D/Mesh/Mesh.cpp
-	include/VGL-3D/Mesh/OBJ_Loader.cpp
-	include/VGL-3D/Cuboid.cpp
-	include/VGL-3D/Grid.cpp
-	include/VGL-3D/Shapes.cpp
-	include/VGL-3D/SkyBox.cpp
+	include/VGLgfx/VGL-3D/Mesh/Material.cpp
+	include/VGLgfx/VGL-3D/Mesh/Mesh.cpp
+	include/VGLgfx/VGL-3D/Mesh/OBJ_Loader.cpp
+	include/VGLgfx/VGL-3D/Cuboid.cpp
+	include/VGLgfx/VGL-3D/Grid.cpp
+	include/VGLgfx/VGL-3D/Shapes.cpp
+	include/VGLgfx/VGL-3D/SkyBox.cpp
 
 	# Utilites
-	include/Utils/Logger.h
-	include/Utils/Logger.cpp
-	include/Utils/FileGUI.h
-	include/Utils/FileGUI.cpp
+	include/VGLgfx/Utils/Logger.h
+	include/VGLgfx/Utils/Logger.cpp
+	include/VGLgfx/Utils/FileGUI.h
+	include/VGLgfx/Utils/FileGUI.cpp
 
 	# Entity component system
-	include/ECS/Component.cpp
-	include/ECS/System.cpp
-	include/ECS/ECS.cpp
+	include/VGLgfx/ECS/Component.cpp
+	include/VGLgfx/ECS/System.cpp
+	include/VGLgfx/ECS/ECS.cpp
 
-	include/Octree.cpp
-	include/Font.cpp
+	include/VGLgfx/Octree.cpp
+	include/VGLgfx/Font.cpp
 
-	#include/Platform/OpenGL/GlWindow.cpp
-	#include/Platform/OpenGL/GlRenderer.cpp
-	#include/Platform/OpenGL/GlFramebufferAttachment.cpp
-	#include/Platform/OpenGL/GlBuffers.cpp
+	#include/VGLgfx/Platform/OpenGL/GlWindow.cpp
+	#include/VGLgfx/Platform/OpenGL/GlRenderer.cpp
+	#include/VGLgfx/Platform/OpenGL/GlFramebufferAttachment.cpp
+	#include/VGLgfx/Platform/OpenGL/GlBuffers.cpp
 
-	include/Platform/Vulkan/VkContext.cpp
-	include/Platform/Vulkan/VkWindow.cpp
-	include/Platform/Vulkan/VkRenderer.cpp
-	include/Platform/Vulkan/VkRenderPass.cpp
-	include/Platform/Vulkan/VkDescriptor.cpp
-	include/Platform/Vulkan/VkFramebuffer.cpp
-	include/Platform/Vulkan/VkFramebufferAttachment.cpp
-	include/Platform/Vulkan/VkCommandBuffer.cpp 
-	include/Platform/Vulkan/VkImage.cpp 
-	include/Platform/Vulkan/VkBuffers.cpp
-	include/Platform/Vulkan/VkShader.cpp
-	include/Platform/Vulkan/VkGraphics_Internal.cpp
+	include/VGLgfx/Platform/Vulkan/VkContext.cpp
+	include/VGLgfx/Platform/Vulkan/VkWindow.cpp
+	include/VGLgfx/Platform/Vulkan/VkRenderer.cpp
+	include/VGLgfx/Platform/Vulkan/VkRenderPass.cpp
+	include/VGLgfx/Platform/Vulkan/VkDescriptor.cpp
+	include/VGLgfx/Platform/Vulkan/VkFramebuffer.cpp
+	include/VGLgfx/Platform/Vulkan/VkFramebufferAttachment.cpp
+	include/VGLgfx/Platform/Vulkan/VkCommandBuffer.cpp 
+	include/VGLgfx/Platform/Vulkan/VkImage.cpp 
+	include/VGLgfx/Platform/Vulkan/VkBuffers.cpp
+	include/VGLgfx/Platform/Vulkan/VkShader.cpp
+	include/VGLgfx/Platform/Vulkan/VkGraphics_Internal.cpp
 )
 
 set(
@@ -228,8 +233,6 @@ set(
 	${PROJECT_SOURCE_DIR}/libs/ImGuizmo/ImSequencer.cpp
 )
 
-set(VGLGFX_DATA_DIRECTORY ${PROJECT_SOURCE_DIR}/data)
-
 find_package(Vulkan REQUIRED)
 find_package(OpenGL REQUIRED)
 
@@ -244,14 +247,15 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-add_library(VGLgfx STATIC ${HEADER_FILES} ${SOURCE_FILES} ${LIB_SRC_FILES})	
-install(
-	TARGETS VGLgfx
-	PUBLIC_HEADER DESTINATION ${PROJECT_SOURCE_DIR}/build/VGLgfx/include/
-	RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/build/
-	ARCHIVE DESTINATION ${PROJECT_SOURCE_DIR}/build/VGLgfx/
-	LIBRARY DESTINATION ${PROJECT_SOURCE_DIR}/build/VGLgfx/
+add_library(VGLgfx STATIC ${HEADER_FILES} ${SOURCE_FILES} ${LIB_SRC_FILES})
+
+set_target_properties( VGLgfx
+    PROPERTIES
+	ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}"
 )
+
+set(VGLGFX_DATA_DIR ${PROJECT_SOURCE_DIR}/data)
 
 target_include_directories( 
 	VGLgfx PRIVATE 
@@ -281,20 +285,42 @@ target_link_libraries(
 	spdlog
 )
 
+#install(
+#	TARGETS VGLgfx
+#	PUBLIC_HEADER DESTINATION ${PROJECT_SOURCE_DIR}/build/VGLgfx/include/
+#	RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/build/
+#	ARCHIVE DESTINATION ${PROJECT_SOURCE_DIR}/build/VGLgfx/
+#	LIBRARY DESTINATION ${PROJECT_SOURCE_DIR}/build/VGLgfx/
+#)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
-set(CMAKE_EXECUTABLE_PATH ${PROJECT_SOURCE_DIR}/test)
+
+#############################################################################################
+#	VGLgfx Test Application
+#############################################################################################
 
 add_executable(
-	VGLgfxTest
+	VGLgfxTest3D
 
-	${PROJECT_SOURCE_DIR}/test/VGLgfxTest.cpp
+	${PROJECT_SOURCE_DIR}/test/VGLgfxTest3D.cpp
 	data/CMakeResources/icon.rc
 )
 
-target_include_directories(VGLgfxTest PRIVATE ${PROJECT_SOURCE_DIR}/include/)
+set_target_properties( VGLgfxTest3D
+    PROPERTIES
+	ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/VGLgfxTest3D/"
+    LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/VGLgfxTest3D/"
+    RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/VGLgfxTest3D/"
+)
 
-target_link_libraries(VGLgfxTest VGLgfx)
+target_include_directories(VGLgfxTest3D PRIVATE ${PROJECT_SOURCE_DIR}/include)
+
+target_link_libraries(VGLgfxTest3D VGLgfx)
+
+file(COPY ${VGLGFX_DATA_DIR} DESTINATION "${PROJECT_SOURCE_DIR}/bin/VGLgfxTest3D/")
+
+#############################################################################################
+#	VGLgfx 2D Test Application
+#############################################################################################
 
 add_executable(
 	VGLgfxTest2D
@@ -303,11 +329,22 @@ add_executable(
 	data/CMakeResources/icon.rc
 )
 
+set_target_properties( VGLgfxTest2D
+    PROPERTIES
+	ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/VGLgfxTest2D/"
+    LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/VGLgfxTest2D/"
+    RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/VGLgfxTest2D/"
+)
+
 target_include_directories(VGLgfxTest2D PRIVATE ${PROJECT_SOURCE_DIR}/include/)
 
 target_link_libraries(VGLgfxTest2D VGLgfx)
 
-file(COPY ${VGLGFX_DATA_DIRECTORY} DESTINATION "${PROJECT_SOURCE_DIR}/test")
+file(COPY ${VGLGFX_DATA_DIR} DESTINATION "${PROJECT_SOURCE_DIR}/bin/VGLgfxTest2D/")
+
+#############################################################################################
+#	VGLgfx Voxel Cone Tracing Application
+#############################################################################################
 
 add_executable(
 	VGLvxgi
@@ -316,8 +353,15 @@ add_executable(
 	data/CMakeResources/icon.rc
 )
 
+set_target_properties( VGLvxgi
+    PROPERTIES
+	ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/VXGI/"
+    LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/VXGI/"
+    RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/VXGI/"
+)
+
 target_include_directories(VGLvxgi PRIVATE ${PROJECT_SOURCE_DIR}/include/)
 
 target_link_libraries(VGLvxgi VGLgfx)
 
-file(COPY ${VGLGFX_DATA_DIRECTORY} DESTINATION "${PROJECT_SOURCE_DIR}/samples")
+file(COPY ${VGLGFX_DATA_DIR} DESTINATION "${PROJECT_SOURCE_DIR}/bin/VXGI/")

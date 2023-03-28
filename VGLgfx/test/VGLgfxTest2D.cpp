@@ -1,12 +1,19 @@
 #include <ostream>
 #define VGL_RENDER_API_VULKAN
-#include <VGLgfx.h>
-#include "../include/Utils/FileGUI.h"
+#include <VGLgfx/VGLgfx.h>
+#include <VGLgfx/Utils/FileGUI.h>
+#include "../libs/ImGuiFileDialog/ImGuiFileDialog.h"
 
 class TestLayer : public vgl::Layer
 {
 public:
 	void onAttach() {
+		ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleFlags_::IGFD_FileStyleByExtention, ".cpp", ImVec4(0.5, 1, 0, 1));
+		ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleFlags_::IGFD_FileStyleByExtention, ".h", ImVec4(0, 1, 0, 1));
+		ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleFlags_::IGFD_FileStyleByExtention, ".hpp", ImVec4(0, 0, 1, 1));
+		ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleFlags_::IGFD_FileStyleByExtention, ".md", ImVec4(1, 0, 1, 1));
+		ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleFlags_::IGFD_FileStyleByExtention, ".txt", ImVec4(1, 0.5, 0.8, 1));
+
 		m_Camera = vgl::Camera(Vector3f(0.0f, 1.0f, 0.0f));
 		m_Camera.setView(vgl::View::First_Person);
 		m_CameraController.bind(m_Camera);
@@ -91,9 +98,14 @@ public:
 		ImGui::Text(("Position: [" + std::to_string(m_Camera.getPosition().x) + ", " + std::to_string(m_Camera.getPosition().y) + "]").c_str());
 		ImGui::Text(("Rotation: [" + std::to_string(m_Camera.getRotation().x) + ", " + std::to_string(m_Camera.getRotation().y) + std::to_string(m_Camera.getRotation().z) + "]").c_str());
 
-		ImGui::BeginMainMenuBar();
-		ImGui::Text(time.c_str());
-		ImGui::EndMainMenuBar();
+		//ImGui::BeginMainMenuBar();
+		//ImGui::Text(time.c_str());
+		//ImGui::EndMainMenuBar();
+
+		if (ImGui::BeginViewportSideBar("##FileMenu", ImGui::GetMainViewport(), ImGuiDir_::ImGuiDir_Down, 50, ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar)) {
+			ImGui::Text("Happy secondary menu bar");
+			ImGui::End();
+		}
 	}
 
 	bool onMouseMove(Event::MouseMovedEvent& p_Move) { m_CameraController.onMouseMovedEvent(p_Move); return false; };
